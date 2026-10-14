@@ -1,0 +1,1 @@
+"""MatchMate application package."""

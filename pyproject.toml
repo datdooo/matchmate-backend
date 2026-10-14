@@ -1,0 +1,16 @@
+[project]
+name = "matchmate-backend"
+version = "0.0.1"
+description = "Minimal technical skeleton for MatchMate Phase 1"
+requires-python = ">=3.11"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
