@@ -145,12 +145,14 @@ def test_reject_does_not_recheck_capacity_or_eligibility(session_factory, servic
         player = session.get(UserModel, 2)
         assert player is not None
         player.skill_level = 1
+        player.gender = "UNSPECIFIED"
         seed_participation(session, 50, 3, 1, status="ACCEPTED")
         session.commit()
 
     rejected = service.decide(1, pending.id, "REJECT")
     assert rejected.status == "REJECTED"
     assert rejected.decided_at == NOW
+    assert rejected.player.gender == "UNSPECIFIED"
 
 
 def test_second_approval_sees_session_full(session_factory, service) -> None:

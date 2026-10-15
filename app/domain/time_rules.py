@@ -3,13 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Protocol
-
-
-class Clock(Protocol):
-    """Provide the current UTC-aware instant."""
-
-    def now(self) -> datetime: ...
 
 
 class SystemClock:

@@ -7,6 +7,8 @@ from datetime import datetime
 from enum import StrEnum
 from typing import ContextManager, Protocol
 
+from app.domain.ports import MatchingRequestWriter
+
 
 class Gender(StrEnum):
     MALE = "MALE"
@@ -252,16 +254,6 @@ class ParticipationRepository(Protocol):
         status: str,
         now: datetime,
     ) -> Participation: ...
-
-
-class MatchingRequestWriter(Protocol):
-    def close_overlapping(
-        self,
-        user_id: int,
-        starts_at: datetime,
-        ends_at: datetime,
-        now: datetime,
-    ) -> None: ...
 
 
 class ParticipationTransaction(Protocol):

@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from app.domain.time_rules import Clock, ensure_utc_aware
+from app.domain.ports import Clock
+from app.domain.time_rules import ensure_utc_aware
 from app.features.sessions.participation_contracts import (
     LEVEL_NAME_BY_RANK,
     CreateParticipationInput,
@@ -306,7 +307,13 @@ class ParticipationService:
         now: datetime,
     ) -> ParticipationDetail:
         session = self._require_session(tx, participation.session_id)
-        user = self._require_profile(tx, participation.user_id)
+        user = tx.users.get_by_id(participation.user_id)
+        if user is None:
+            raise ParticipationError(
+                "INTERNAL_ERROR",
+                "Dữ liệu người chơi của lượt tham gia không còn tồn tại",
+                {"user_id": participation.user_id},
+            )
         accepted_count = tx.participations.count_accepted(session.id)
         session_summary = self._session_summary(session, accepted_count, now)
 

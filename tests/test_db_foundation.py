@@ -8,9 +8,11 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
+from app.db.base import Base
 from app.db.models import ParticipationModel, UserModel
+from app.db.session import create_session_factory, create_sqlite_engine
 from app.db.types import from_db_utc, to_db_utc
-from app.db.unit_of_work import SqlAlchemyUnitOfWork
+from app.db.unit_of_work import DatabaseBusy, SqlAlchemyUnitOfWork
 from tests.conftest import NOW, seed_match_session, seed_participation, seed_user, seed_venue
 
 
@@ -84,3 +86,24 @@ def test_write_uow_rolls_back_when_block_raises(session_factory) -> None:
 
     with session_factory() as session:
         assert session.get(UserModel, 99) is None
+
+
+
+def test_busy_write_maps_to_database_busy(tmp_path) -> None:
+    engine = create_sqlite_engine(
+        f"sqlite:///{tmp_path / 'busy.db'}",
+        busy_timeout_ms=25,
+    )
+    Base.metadata.create_all(engine)
+    factory = create_session_factory(engine)
+    holder = factory()
+    try:
+        holder.connection().exec_driver_sql("BEGIN IMMEDIATE")
+        uow = SqlAlchemyUnitOfWork(factory)
+        with pytest.raises(DatabaseBusy):
+            with uow.write():
+                pass
+    finally:
+        holder.rollback()
+        holder.close()
+        engine.dispose()
