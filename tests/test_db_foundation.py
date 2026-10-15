@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -12,7 +13,7 @@ from app.db.base import Base
 from app.db.models import ParticipationModel, UserModel
 from app.db.session import create_session_factory, create_sqlite_engine
 from app.db.types import from_db_utc, to_db_utc
-from app.db.unit_of_work import DatabaseBusy, SqlAlchemyUnitOfWork
+from app.db.unit_of_work import DatabaseBusy, SqlAlchemyUnitOfWork, is_sqlite_busy
 from tests.conftest import NOW, seed_match_session, seed_participation, seed_user, seed_venue
 
 
@@ -106,3 +107,11 @@ def test_busy_write_maps_to_database_busy(tmp_path) -> None:
         holder.rollback()
         holder.close()
         engine.dispose()
+
+
+def test_sqlite_locked_is_not_misclassified_as_database_busy() -> None:
+    error = sqlite3.OperationalError("database table is locked")
+    error.sqlite_errorcode = sqlite3.SQLITE_LOCKED
+    error.sqlite_errorname = "SQLITE_LOCKED"
+
+    assert is_sqlite_busy(error) is False
