@@ -88,7 +88,6 @@ def test_write_uow_rolls_back_when_block_raises(session_factory) -> None:
         assert session.get(UserModel, 99) is None
 
 
-
 def test_busy_write_maps_to_database_busy(tmp_path) -> None:
     engine = create_sqlite_engine(
         f"sqlite:///{tmp_path / 'busy.db'}",
