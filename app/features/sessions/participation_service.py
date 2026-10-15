@@ -283,10 +283,7 @@ class ParticipationService:
         policy_ok = (
             session.gender_policy == GenderPolicy.ANY
             or (session.gender_policy == GenderPolicy.MALE_ONLY and user.gender == Gender.MALE)
-            or (
-                session.gender_policy == GenderPolicy.FEMALE_ONLY
-                and user.gender == Gender.FEMALE
-            )
+            or (session.gender_policy == GenderPolicy.FEMALE_ONLY and user.gender == Gender.FEMALE)
         )
         if not level_ok or not policy_ok:
             raise ParticipationError(
@@ -318,8 +315,7 @@ class ParticipationService:
         can_cancel = (
             is_owner
             and not is_host_participation
-            and participation.status
-            in (ParticipationStatus.PENDING, ParticipationStatus.ACCEPTED)
+            and participation.status in (ParticipationStatus.PENDING, ParticipationStatus.ACCEPTED)
             and session.status == SessionStatus.OPEN
             and now < session.starts_at
         )

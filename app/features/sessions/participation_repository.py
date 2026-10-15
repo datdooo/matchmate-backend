@@ -211,8 +211,7 @@ class SqlAlchemyParticipationRepository:
             return False
         message = str(origin)
         return (
-            "participations.user_id" in message
-            and "participations.session_id" in message
+            "participations.user_id" in message and "participations.session_id" in message
         ) or "uq_participations_active_user_session" in message
 
 

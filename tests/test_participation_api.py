@@ -107,10 +107,13 @@ def test_router_exposes_exact_three_participation_operations() -> None:
 def test_join_rejects_extra_fields_and_non_integer_session_id() -> None:
     with _client() as client:
         assert client.post("/participations", json={"session_id": 1}).status_code == 201
-        assert client.post(
-            "/participations",
-            json={"session_id": 1, "user_id": 99},
-        ).status_code == 422
+        assert (
+            client.post(
+                "/participations",
+                json={"session_id": 1, "user_id": 99},
+            ).status_code
+            == 422
+        )
         assert client.post("/participations", json={"session_id": "1"}).status_code == 422
         assert client.post("/participations", json={"session_id": True}).status_code == 422
 
@@ -123,10 +126,13 @@ def test_decision_and_delete_contract() -> None:
         )
         assert approved.status_code == 200
         assert approved.json()["status"] == "ACCEPTED"
-        assert client.post(
-            "/participations/10/decision",
-            json={"decision": "APPROVED"},
-        ).status_code == 422
+        assert (
+            client.post(
+                "/participations/10/decision",
+                json={"decision": "APPROVED"},
+            ).status_code
+            == 422
+        )
 
         cancelled = client.delete("/participations/10")
         assert cancelled.status_code == 200
