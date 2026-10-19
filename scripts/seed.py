@@ -1,11 +1,18 @@
-from pathlib import Path
+import os
+
+import app.db.models
 
 from sqlalchemy import select
 
-from app.db import  SessionLocal, engine             #sửa sau khi biết cấu trúc của Đạt  
-from app.models import Base, Vennue
+import app.db.models 
+
+from app.db.base import  Base
+from app.db.session import create_db_engine, create_session_factory
+from app.db.models import VenueModel  
 
 DEMO_TAG = "DEMO"
+
+DATABASE_URL = "sqlite:///./app.db"
 
 #id:int, name:str, address:str, district_code:str
 VENNUES = [
@@ -25,31 +32,51 @@ def seed_venue(db) -> tuple[int, int]:
     added = skipped = 0
     for id, name, address, district_code in VENNUES:
         full_name = f"{name} {DEMO_TAG}"
-        exists = db.scalar(select(Vennue.id).where(Vennue.name == full_name))
+        exists = db.scalar(select(VenueModel.id).where(VenueModel.name == full_name))
 
         if exists:
             skipped += 1
             continue
         else:
-            db.add(Vennue(
+            db.add(VenueModel(
                             id = id,
                             name = full_name,
-                            address = f"{address} {demo}", 
-                            district_code = district_code
-                            is_active = True))
+                            address = f"{address} (demo)", 
+                            district_code = district_code,
+                            is_active = True
+                            )
+                    )
             added += 1
 
-    return skipped, added
+    return added, skipped
 
 
 def main() -> None:
+    engine = create_db_engine(DATABASE_URL)
+    session_factory = create_session_factory(engine)
+
     Base.metadata.create_all(engine)
 
-    with SessionLocal() as db:
-        added, skipped = seed_venues(db)
-        db.commit()
+    with session_factory() as db:
+        try:
+            #Tạo bảng
+            Base.metadata.create_all(bind=engine)
 
-    print(f"Seed xong: thêm {added} sân, bỏ qua {skipped} sân đã có.")
+            # Tạo session và seed dữ liệu
+            with session_factory() as db:
+                try:
+                    added, skipped = seed_venue(db)
+                    db.commit()
+                except Exception:
+                    db.rollback()
+                    raise
+
+            print(
+                f"Seed xong: thêm {added} sân, "
+                f"bỏ qua {skipped} sân đã có."
+            )
+        finally:
+            engine.dispose()
 
 if __name__ == "__main__":
     main()
