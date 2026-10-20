@@ -7,12 +7,11 @@ from sqlalchemy import select
 import app.db.models 
 
 from app.db.base import  Base
-from app.db.session import create_db_engine, create_session_factory
+from app.db.session import engine, create_session_factory
 from app.db.models import VenueModel  
 
 DEMO_TAG = "DEMO"
 
-DATABASE_URL = "sqlite:///./app.db"
 
 #id:int, name:str, address:str, district_code:str
 VENNUES = [
@@ -52,7 +51,6 @@ def seed_venue(db) -> tuple[int, int]:
 
 
 def main() -> None:
-    engine = create_db_engine(DATABASE_URL)
     session_factory = create_session_factory(engine)
 
     Base.metadata.create_all(engine)
