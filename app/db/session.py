@@ -3,6 +3,7 @@ import sqlite3
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
+DATABASE_URL = "sqlite:///./app.db"
 
 def create_db_engine(
     database_url: str,
@@ -34,6 +35,7 @@ def create_db_engine(
 
     return engine
 
+engine = create_db_engine(DATABASE_URL)
 
 def create_session_factory(engine: Engine) -> sessionmaker[Session]:
     """Tạo bộ cấp DB Session để repository sử dụng."""
