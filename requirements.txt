@@ -3,3 +3,4 @@ fastapi
 uvicorn
 email-validator
 pwdlib[argon2]
+SQLAlchemy
