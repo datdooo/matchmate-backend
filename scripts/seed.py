@@ -1,14 +1,9 @@
-import os
-
-import app.db.models
-
 from sqlalchemy import select
 
-import app.db.models 
-
-from app.db.base import  Base
-from app.db.session import engine, create_session_factory
-from app.db.models import VenueModel  
+import app.db.models
+from app.db.base import Base
+from app.db.models import VenueModel
+from app.db.session import create_session_factory, engine
 
 DEMO_TAG = "DEMO"
 
