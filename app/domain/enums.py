@@ -6,6 +6,10 @@ class Gender(str, Enum):
     FEMALE = "FEMALE" 
     UNSPECIFIED = "UNSPECIFIED"
 
+class GenderPolicy(str, Enum):
+    ANY = "ANY"
+    MALE_ONLY = "MALE_ONLY"
+    FEMALE_ONLY = "FEMALE_ONLY"
 
 class SkillLevel(str, Enum):
     NEWBIE = "NEWBIE"
@@ -27,3 +31,11 @@ class SkillLevel(str, Enum):
     T_MINUS = "T_MINUS"
     T = "T"
     T_PLUS = "T_PLUS"
+
+class PlayType(str, Enum):
+    SINGLES = "SINGLES"
+    DOUBLES = "DOUBLES"
+
+class Status(str, Enum):
+    ACTIVE = "ACTIVE"
+    CLOSED = "CLOSED"
