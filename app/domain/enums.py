@@ -36,6 +36,28 @@ class PlayType(str, Enum):
     SINGLES = "SINGLES"
     DOUBLES = "DOUBLES"
 
-class Status(str, Enum):
+class MatchingStatus(str, Enum):
     ACTIVE = "ACTIVE"
     CLOSED = "CLOSED"
+
+class SessionStatus(str, Enum):
+    OPEN = "OPEN"
+    CANCELLED = "CANCELLED"
+
+class DisplayStatus(str, Enum):
+    CANCELLED = "CANCELLED"
+    ENDED = "ENDED"
+    STARTED = "STARTED"
+    FULL = "FULL"
+    AVAILABLE = "AVAILABLE"
+
+class EffectiveStatus(str, Enum):
+    ACTIVE = "ACTIVE"
+    CLOSED = "CLOSED"
+    EXPIRED = "EXPIRED"
+
+class CloseReason(str, Enum):
+    REPLACED = "REPLACED"
+    CONFIRMED = "CONFIRMED"
+    CANCELLED = "CANCELLED"
+
