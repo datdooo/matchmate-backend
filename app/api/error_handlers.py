@@ -1,8 +1,8 @@
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from app.features.auth.contracts import EmailAlreadyExistsError
 
