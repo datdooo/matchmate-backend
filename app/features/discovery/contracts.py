@@ -28,6 +28,7 @@ class VenueRecord:
     name: str
     address: str
     district_code: str
+    is_active: bool
 
 @dataclass(frozen=True)
 class VenueFilter:
@@ -86,6 +87,7 @@ class SessionFilter:
     max_fee_vnd: int | None = None
 
     only_available: bool = True
+    host_me: bool = False
     host_user_id: int | None = None
     only_listable: bool = True
 
@@ -169,7 +171,7 @@ class DiscoveryRepository(Protocol):
     def find_venues(self, filter: VenueFilter) -> Page[VenueRecord]:
         """Trả về sân theo yêu cầu."""
 
-    def find_session(self, filter: SessionFilter) -> Page[SessionRecord]:
+    def find_sessions(self, filter: SessionFilter) -> Page[SessionRecord]:
         """ Trả về session theo yêu cầu."""
 
 class MatchingRepository(Protocol):

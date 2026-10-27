@@ -42,6 +42,7 @@ class VenueView(BaseModel):
     name: str
     address: str
     district_code: str
+    is_active: bool
 
 class SessionQuery(VenueQuery):
 
