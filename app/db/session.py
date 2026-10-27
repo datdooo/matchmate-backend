@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 DATABASE_URL = "sqlite:///./app.db"
 
+
 def create_db_engine(
     database_url: str,
     busy_timeout: int = 5000,
@@ -35,7 +36,9 @@ def create_db_engine(
 
     return engine
 
+
 engine = create_db_engine(DATABASE_URL)
+
 
 def create_session_factory(engine: Engine) -> sessionmaker[Session]:
     """Tạo bộ cấp DB Session để repository sử dụng."""
