@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Generic, Protocol, TypeVar, Annotated
+from typing import Generic, Protocol, TypeVar
 
 from app.domain.enums import (
     CloseReason,
@@ -50,7 +50,7 @@ class SessionRecord:
     host: PlayerSummary
     venue: VenueRecord
 
-    titles: str
+    title: str
     notes: str
 
     starts_at: datetime
