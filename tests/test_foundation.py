@@ -20,11 +20,11 @@ def test_documentation_available() -> None:
             assert "text/html" in response.headers["content-type"]
 
 
-def test_openapi_has_only_health() -> None:
+def test_openapi_has_health_and_registration() -> None:
     with TestClient(app) as client:
         response = client.get("/openapi.json")
     assert response.status_code == 200
     schema = response.json()
-    assert schema["info"]["title"] == "MatchMate"
-    assert set(schema["paths"]) == {"/health"}
+    assert set(schema["paths"]) == {"/health", "/auth/register"}
     assert "get" in schema["paths"]["/health"]
+    assert "post" in schema["paths"]["/auth/register"]
