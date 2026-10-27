@@ -2,12 +2,12 @@ from dataclasses import replace
 from itertools import combinations
 
 from app.features.discovery.contracts import (
-    CreateMatchingInput, DiscoveryRepository, MatchingCandidate, MatchingFilter,
+    CreateMatchingInput, DiscoveryRepository, MatchingFilter,
     MatchingRepository, MatchingRequestRecord, MatchingResult, MatchingSuggestion,
     Page, PlayerSummary, SessionFilter, SuggestedMember, VenueFilter,
 )
 
-from app.domain.enums import Gender, GenderPolicy, PlayType, skill_to_rank
+from app.domain.enums import Gender, GenderPolicy, PlayType, skill_to_rank, CloseReason
 from app.domain.ports import Clock, UnitOfWork
 from app.domain.time_rules import is_valid_time_window
 from app.domain.errors import DomainError
@@ -39,7 +39,7 @@ def group_is_valid(
         if user.gender not in (Gender.MALE, Gender.FEMALE):
             return False
 
-    ranks = [user.skill_level for user in users]
+    ranks = [skill_to_rank(user.skill_level) for user in users]
     if max(ranks) - min(ranks) > MAX_RANK_SPREAD:
         return False
 
@@ -66,7 +66,8 @@ def find_group(
     caller_request: MatchingRequestRecord,
     candidates: list[tuple[PlayerSummary, MatchingRequestRecord]],
 ) -> MatchingSuggestion | None:
-    need = CAPACITY[caller_request.play_type] - 1
+    capacity = CAPACITY[caller_request.play_type]
+    need = capacity - 1
 
     candidate_members = [(c.player, c.request) for c in candidates]
     candidate_members.sort(key=lambda m: (m[1].created_at, m[1].id))
@@ -122,16 +123,14 @@ class DiscoveryService:
         self._uow = uow
         self._clock = clock
         self._discovery = discovery_repo
-        self._users = user_repo
-        self._venues = venue_reader
         self._matching = matching_repo
 
-    def search_venues(self, filt: VenueFilter) -> PageResult:
+    def search_venues(self, filt: VenueFilter) -> Page:
         with self._uow.read():
             return self._discovery.find_venues(filt)
 
-    def search_sessions(self, filt: SessionFilter, viewer_id: int | None) -> PageResult:
-        if filt.host_me & viewer_id is None:
+    def search_sessions(self, filt: SessionFilter, viewer_id: int | None) -> Page:
+        if filt.host_me and viewer_id is None:
             raise DomainError(
             "UNAUTHORIZED",
             "Đăng nhập để xem các kèo của bạn.",
@@ -140,7 +139,7 @@ class DiscoveryService:
         with self._uow.read():
             now = self._clock.now()
 
-            if host_me:
+            if filt.host_me:
                 filt = replace(
                     filt,
                     now=now,
@@ -163,7 +162,7 @@ class DiscoveryService:
             if caller is None:
                 raise DomainError("UNAUTHORIZED", "Tài khoản không tồn tại")
 
-            if caller.gender is not (Gender.MALE, Gender.FEMALE):
+            if caller.gender not in (Gender.MALE, Gender.FEMALE):
                 raise DomainError("PROFILE_INCOMPLETE", "Hồ sơ chưa có giới tính")
             
             venue = self._matching.get_venue(data.venue_id)
