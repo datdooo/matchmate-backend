@@ -3,7 +3,8 @@ from collections.abc import Callable, Iterator
 from fastapi import APIRouter, Depends, status
 
 from app.api.schemas import ErrorResponse
-from app.features.auth.schemas import RegisterRequest, UserSelf
+from app.features.auth.contracts import TokenIssuer
+from app.features.auth.schemas import LoginRequest, RegisterRequest, TokenData, UserSelf
 from app.features.auth.service import AuthService
 
 
@@ -55,6 +56,40 @@ def create_auth_router(
             display_name=user.display_name,
             skill_level=user.skill_level,
             gender=user.gender,
+        )
+
+    return router
+
+
+def create_login_router(
+    service_provider: Callable[..., AuthService | Iterator[AuthService]],
+    token_issuer_provider: Callable[..., TokenIssuer],
+) -> APIRouter:
+    router = APIRouter(prefix="/auth", tags=["Auth"])
+
+    @router.post(
+        "/login",
+        response_model=TokenData,
+        responses={
+            401: {"model": ErrorResponse, "description": "INVALID_CREDENTIALS"},
+            422: {"model": ErrorResponse, "description": "VALIDATION_ERROR"},
+            503: {"model": ErrorResponse, "description": "DATABASE_BUSY"},
+        },
+    )
+    def login(
+        payload: LoginRequest,
+        service: AuthService = Depends(service_provider, scope="function"),
+        token_issuer: TokenIssuer = Depends(token_issuer_provider),
+    ) -> TokenData:
+        result = service.login(
+            email=str(payload.email),
+            password=payload.password,
+            token_issuer=token_issuer,
+        )
+        return TokenData(
+            access_token=result.access_token,
+            token_type=result.token_type,
+            expires_in=result.expires_in,
         )
 
     return router
