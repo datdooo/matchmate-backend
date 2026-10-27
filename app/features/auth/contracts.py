@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Protocol
 
 from app.domain.enums import Gender, SkillLevel
@@ -20,6 +21,7 @@ class NewUser:
     display_name: str
     skill_level: SkillLevel
     gender: Gender
+    created_at: datetime
 
 
 class EmailAlreadyExistsError(Exception):
@@ -36,3 +38,7 @@ class UserRepository(Protocol):
 
 class PasswordHasher(Protocol):
     def hash(self, password: str) -> str: ...
+
+
+class DatabaseBusyError(Exception):
+    """Không lấy được khóa ghi DB trong thời gian cho phép."""

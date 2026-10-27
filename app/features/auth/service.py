@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from app.domain.enums import Gender, SkillLevel
 from app.features.auth.contracts import (
     EmailAlreadyExistsError,
@@ -39,6 +41,7 @@ class AuthService:
             display_name=display_name,
             skill_level=skill_level,
             gender=gender,
+            created_at=datetime.now(timezone.utc),
         )
 
         return self.user_repository.create(new_user)

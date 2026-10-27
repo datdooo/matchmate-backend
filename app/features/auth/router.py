@@ -1,13 +1,14 @@
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 
 from fastapi import APIRouter, Depends, status
 
+from app.api.schemas import ErrorResponse
 from app.features.auth.schemas import RegisterRequest, UserSelf
 from app.features.auth.service import AuthService
 
 
 def create_auth_router(
-    service_provider: Callable[..., AuthService],
+    service_provider: Callable[..., AuthService | Iterator[AuthService]],
 ) -> APIRouter:
     router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -15,10 +16,30 @@ def create_auth_router(
         "/register",
         response_model=UserSelf,
         status_code=status.HTTP_201_CREATED,
+        responses={
+            409: {
+                "model": ErrorResponse,
+                "description": "EMAIL_ALREADY_EXISTS: email đã được đăng ký",
+            },
+            422: {
+                "model": ErrorResponse,
+                "description": "VALIDATION_ERROR: dữ liệu không hợp lệ",
+            },
+            503: {
+                "model": ErrorResponse,
+                "description": "DATABASE_BUSY: hết thời gian chờ khóa DB",
+                "headers": {
+                    "Retry-After": {
+                        "description": "Thời gian chờ gợi ý, tính bằng giây",
+                        "schema": {"type": "integer", "example": 1},
+                    }
+                },
+            },
+        },
     )
     def register(
         payload: RegisterRequest,
-        service: AuthService = Depends(service_provider),
+        service: AuthService = Depends(service_provider, scope="function"),
     ) -> UserSelf:
         user = service.register(
             email=str(payload.email),
