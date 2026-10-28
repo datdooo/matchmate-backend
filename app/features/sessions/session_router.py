@@ -94,3 +94,28 @@ def get_session_detail(
     ),
 ) -> SessionDetail:
     return SessionDetail.model_validate(service.get_detail(session_id, request.state.principal.id))
+
+
+@router.delete(
+    "/sessions/{session_id}",
+    response_model=SessionDetail,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(_bearer)],
+    responses={
+        401: {"model": ErrorResponse, "description": "UNAUTHORIZED"},
+        403: {"model": ErrorResponse, "description": "FORBIDDEN"},
+        404: {"model": ErrorResponse, "description": "SESSION_NOT_FOUND"},
+        409: {"model": ErrorResponse, "description": "SESSION_ALREADY_STARTED"},
+        422: {"model": ErrorResponse, "description": "VALIDATION_ERROR"},
+        503: {"model": ErrorResponse, "description": "DATABASE_BUSY"},
+    },
+)
+def cancel_session(
+    session_id: Annotated[int, Path(gt=0, le=9223372036854775807)],
+    request: Request,
+    service: SessionService = Depends(
+        provide_create_session_service,
+        scope="function",
+    ),
+) -> SessionDetail:
+    return SessionDetail.model_validate(service.cancel(session_id, request.state.principal.id))

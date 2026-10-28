@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.db.matching_request_writer import SqlAlchemyMatchingRequestWriter
@@ -179,3 +179,19 @@ class SqlAlchemySessionRepository:
             "host_user_id": model.host_user_id,
             "participations": records,
         }
+
+    def cancel_active(self, session_id: int, now: datetime) -> None:
+        self.session.execute(
+            update(SessionModel)
+            .where(SessionModel.id == session_id)
+            .values(status="CANCELLED", cancelled_at=now)
+        )
+
+        self.session.execute(
+            update(ParticipationModel)
+            .where(
+                ParticipationModel.session_id == session_id,
+                ParticipationModel.status.in_(("PENDING", "ACCEPTED")),
+            )
+            .values(status="CANCELLED", cancelled_at=now)
+        )
