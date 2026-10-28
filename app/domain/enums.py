@@ -63,6 +63,13 @@ class SessionStatus(str, Enum):
     CANCELLED = "CANCELLED"
 
 
+class ParticipationStatus(str, Enum):
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    CANCELLED = "CANCELLED"
+
+
 class DisplayStatus(str, Enum):
     CANCELLED = "CANCELLED"
     ENDED = "ENDED"
