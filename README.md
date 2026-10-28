@@ -2,7 +2,7 @@
 
 MatchMate hỗ trợ người chơi cầu lông tìm kèo phù hợp và chủ kèo tuyển thêm người. Pha 1 là backend REST JSON, demo qua Swagger, dùng một ứng dụng và một SQLite DB. Tìm sân/kèo theo `district_code`; nhóm đã bỏ GPS.
 
-Phạm vi gồm **11 API nghiệp vụ, 5 bảng và 19 mức trình**. Đã nối đủ **11 API và `/health`**, có test tích hợp qua SQLite thật. Docker toàn luồng và tải Kaggle chưa được nghiệm thu.
+Phạm vi gồm **11 API nghiệp vụ, 5 bảng và 19 mức trình**. Đã nối đủ **11 API và `/health`**, có test tích hợp qua SQLite thật. Kaggle CPU đạt baseline read/lifecycle 10 users và read 50/100 users; lifecycle 50/100 dừng trước đo do quá tải. Docker toàn luồng chưa được nghiệm thu.
 
 ## Bài toán và nghiệp vụ
 
@@ -102,7 +102,7 @@ docker compose up -d
 
 SQLite chỉ có một writer nên tải ghi đồng thời có thể phải chờ hoặc gặp 503. Cần giữ đúng transaction, kiểm lại capacity/lịch khi ghi và đọc invariant sau test. [Trạng thái tải](docs/LOAD_TEST_RESULTS.md) ghi bằng chứng chạy và giới hạn môi trường.
 
-Runner Kaggle có hai profile read/lifecycle riêng ở 10/50/100 users, một worker, DB mới mỗi lượt và HTML/CSV/metadata. **Chưa có số đo Kaggle**; lượt local 10 users dừng trước đo vì monitor Locust không đọc được process (`psutil.NoSuchProcess`). Nhóm cần chạy Kaggle Pha 1 trước khi chốt baseline; Phase 2 dựa trên số đo thật để đánh giá giới hạn. Bản hiện tại không dùng cache, queue hoặc nhiều worker.
+Runner Kaggle có hai profile read/lifecycle riêng ở 10/50/100 users, một worker, DB mới mỗi lượt và HTML/CSV/metadata. **Đã có số đo Kaggle CPU**: read 10/50/100 users và lifecycle 10 users đo đủ 60 giây, không lỗi; lifecycle 50 gặp 503 khi warm-up, 100 dừng ở login timeout nên chưa có số đo hợp lệ. Baseline và HTML/CSV/metadata nằm trong [báo cáo tải](docs/LOAD_TEST_RESULTS.md); Phase 2 dùng kết quả này để đánh giá giới hạn. Bản hiện tại không dùng cache, queue hoặc nhiều worker.
 
 ## Phân công và trình bày
 
