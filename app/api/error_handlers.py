@@ -4,11 +4,13 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from app.domain.errors import DomainError
 from app.features.auth.contracts import (
     DatabaseBusyError,
     EmailAlreadyExistsError,
     InvalidCredentialsError,
 )
+from app.features.sessions.session_contracts import SessionError
 
 
 def register_error_handlers(app: FastAPI) -> None:
@@ -105,6 +107,68 @@ def register_error_handlers(app: FastAPI) -> None:
             },
         )
 
+    
+    @app.exception_handler(SessionError)
+    async def handle_session_error(
+        request: Request,
+        exc: SessionError,
+    ) -> JSONResponse:
+        request_id = getattr(request.state, "request_id", None) or uuid4().hex
+
+        status_codes = {
+            "TIME_CONFLICT": 409,
+            "VENUE_NOT_FOUND": 404,
+            "VENUE_INACTIVE": 409,
+            "UNAUTHORIZED": 401,
+            "PROFILE_INCOMPLETE": 409,
+            "VALIDATION_ERROR": 422,
+        }
+        status_code = status_codes.get(exc.code, 400)
+
+        return JSONResponse(
+            status_code=status_code,
+            headers={"X-Request-ID": request_id},
+            content={
+                "error": {
+                    "code": exc.code,
+                    "message": exc.message,
+                    "details": {},
+                    "request_id": request_id,
+                }
+            },
+        )
+
+    @app.exception_handler(DomainError)
+    async def handle_domain_error(
+        request: Request,
+        exc: DomainError,
+    ) -> JSONResponse:
+        request_id = getattr(request.state, "request_id", None) or uuid4().hex
+
+        status_codes = {
+            "TIME_CONFLICT": 409,
+            "VENUE_NOT_FOUND": 404,
+            "VENUE_INACTIVE": 409,
+            "UNAUTHORIZED": 401,
+            "PROFILE_INCOMPLETE": 409,
+            "VALIDATION_ERROR": 422,
+            "INVALID_TIME_WINDOW": 422,
+            "ELIGIBILITY_MISMATCH": 422,
+        }
+        status_code = status_codes.get(exc.code, 400)
+
+        return JSONResponse(
+            status_code=status_code,
+            headers={"X-Request-ID": request_id},
+            content={
+                "error": {
+                    "code": exc.code,
+                    "message": exc.message,
+                    "details": exc.details,
+                    "request_id": request_id,
+                }
+            },
+        )
 
 def make_error_response(
     request: Request,

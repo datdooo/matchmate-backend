@@ -18,7 +18,7 @@ START = "2026-11-01T19:00:00+07:00"
 END = "2026-11-01T21:00:00+07:00"
 PLAYER = {"id": 1, "display_name": "P1", "skill_level": "TB", "gender": "MALE"}
 VENUE = {
-    "id": 1, "name": "V", "address": "A", "district_code": "DONG_DA"
+    "id": 1, "name": "V", "address": "A", "district_code": "DONG_DA",  "is_active": True,
 }  # fmt: skip
 BODY = {
     "venue_id": 1, "play_type": "DOUBLES", "starts_at": START, "ends_at": END,
