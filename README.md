@@ -1,43 +1,45 @@
 # MatchMate Backend
 
-Skeleton tối thiểu cho backend tìm kèo và ghép người chơi cầu lông, Pha 1 môn Kiến trúc phần mềm.
+Backend tìm kèo và ghép người chơi cầu lông cho học phần Kiến trúc phần mềm. Pha 1 dùng FastAPI, SQLAlchemy và SQLite; phạm vi là 11 API nghiệp vụ, 5 bảng và 19 mức trình. Đã bỏ GPS, tìm sân/kèo theo `district_code`.
 
-**Trạng thái: chỉ triển khai nền tảng kỹ thuật.** `GET /health` hoạt động; chưa có auth, database hoặc logic nghiệp vụ. 11 API nghiệp vụ là phạm vi dự kiến, chưa xuất hiện trong Swagger. Không có endpoint giả trả `501`, dữ liệu nghiệp vụ mẫu hoặc service/repository chứa TODO.
+Hiện đã tích hợp auth/JWT, tạo kèo và ba API participation. Discovery có repository/service/schema, còn cần nối route; API xem chi tiết và hủy kèo chưa được tích hợp. Chưa có số đo tải Kaggle hoặc nghiệm thu Docker toàn luồng.
+
+Phần tạo kèo hiện trả `id`; Chiến còn cần hoàn thiện response `SessionDetail` theo contract. Ba API participation đã trả đủ `ParticipationDetail`.
 
 ## Chạy local
 
-Yêu cầu Python 3.11+ và Git. Docker/CI dùng Python 3.11. Các lệnh dưới đây dành cho macOS/Linux, chạy từ thư mục gốc repository.
+Python 3.11 trở lên. Docker/CI dùng Python 3.11.
 
 ```bash
-git clone https://github.com/datdooo/matchmate-backend.git
-cd matchmate-backend
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-dev.txt
+python -m scripts.init_env
+python -m scripts.seed
 python -m uvicorn app.main:app --reload --no-access-log
 ```
 
-| Đường dẫn local | Mục đích |
-| --- | --- |
-| http://127.0.0.1:8000/health | Liveness, trả `{"status":"ok"}`; không kiểm DB |
-| http://127.0.0.1:8000/docs | Swagger UI, hiện chỉ có health |
-| http://127.0.0.1:8000/redoc | ReDoc |
-| http://127.0.0.1:8000/openapi.json | Schema OpenAPI |
+`init_env` tạo JWT secret ngẫu nhiên trong `.env`, giữ nguyên file nếu đã có. Seed được chạy chủ động để tạo schema và 10 sân demo; app không tự seed hoặc reset DB lúc khởi động.
 
-`.env.example` chỉ ghi biến mục tiêu cho bước auth/DB sau này. Skeleton không đọc chúng và không cần tạo `.env` để chạy. Secret thật không được commit.
+Mở `http://127.0.0.1:8000/docs` để thao tác bằng Swagger. `/health` chỉ kiểm liveness và không query DB. Runtime đọc `DATABASE_URL` từ environment, mặc định `sqlite:///./app.db`; `SQLITE_BUSY_TIMEOUT_MS` mặc định 5000. Khi đổi URL, seed và app phải dùng cùng environment. Git chỉ đồng bộ code/seed, không đồng bộ dữ liệu SQLite giữa các máy.
 
-## Docker
+## API đã tích hợp
 
-```bash
-docker compose up --build -d
-docker compose ps
-curl http://127.0.0.1:8000/health
-docker compose down
-```
+| Method | Route | Quyền |
+|---|---|---|
+| POST | `/auth/register` | Public |
+| POST | `/auth/login` | Public |
+| POST | `/sessions` | JWT |
+| POST | `/participations` | JWT |
+| POST | `/participations/{participation_id}/decision` | Host |
+| DELETE | `/participations/{participation_id}` | Owner, không rút riêng lượt host |
+| GET | `/health` | Public |
 
-Container dùng một Uvicorn worker và user non-root. Volume `/app/data` chuẩn bị cho SQLite ở bước sau; skeleton chưa tạo DB hoặc seed. `docker compose down` giữ volume; thêm `-v` sẽ xóa volume cùng dữ liệu nếu sau này đã có DB.
+Các endpoint không có prefix `/api/v1`. Tạo participation trả `ParticipationDetail` gồm player và session đầy đủ, không trả ORM. `PENDING` chưa giữ chỗ; capacity đơn/đôi là 2/4 và tính cả host. Snapshot phí/giới tính được giữ sau duyệt/rút/hủy.
 
-## Kiểm tra
+## Code và kiểm thử
+
+API → Service → Protocol → Repository → SQLite. Service/domain/contracts thuần Python; repository map ORM sang dữ liệu thuần. UoW dùng `BEGIN IMMEDIATE` trước kiểm dữ liệu, đọc Clock sau khi lấy quyền ghi, commit một lần và rollback khi lỗi. Không có counter/capacity lưu riêng, cache hoặc queue.
 
 ```bash
 python -m ruff check .
@@ -45,62 +47,22 @@ python -m ruff format --check .
 python -m pytest -q
 ```
 
-Test đồng bộ dùng FastAPI `TestClient` và HTTPX, không cần `pytest-asyncio`. Kiểm health, giao diện tài liệu và schema chỉ có health. CI hiện chạy lint/format/test, chưa build hoặc publish Docker image và chưa thiết lập branch protection.
+Test có SQLite file tạm, JWT/API thật, unique/rollback, snapshot, idempotency và sáu ca concurrency nghiệp vụ. Một warning deprecation từ Starlette vẫn còn. Hướng dẫn bàn giao participation nằm ở [docs/PARTICIPATIONS.md](docs/PARTICIPATIONS.md).
 
-`requirements*.txt` chọn dependency cần cài; `constraints.txt` pin các phiên bản. Khi thêm thư viện, cập nhật constraints sau kiểm tra, không sao chép `pip freeze` từ môi trường cá nhân có các package không liên quan.
+## Tải và Docker
 
-## Cấu trúc và kiến trúc mục tiêu
+[docs/LOAD_TEST_RESULTS.md](docs/LOAD_TEST_RESULTS.md) ghi trạng thái tải và lệnh chạy Kaggle CPU. Runner dùng DB tạm mới cho mỗi lượt và dừng trước phát tải khi thiếu API. Không dùng kết quả `/health` để thay tải nghiệp vụ.
 
-| Đường dẫn hiện có | Vai trò |
-| --- | --- |
-| `app/main.py` | FastAPI và health; chưa include router nghiệp vụ |
-| `app/features/auth/` | Package đặt chỗ cho Chiến |
-| `app/features/discovery/` | Package đặt chỗ cho Hải |
-| `app/features/sessions/` | Package đặt chỗ; phân chia file theo bảng dưới |
-| `tests/test_foundation.py` | Smoke test nền tảng |
+Dockerfile/Compose đã có; sau khi tích hợp đủ endpoint cần kiểm lại build, seed, volume DB và toàn luồng. Không tự coi Docker đã được nghiệm thu vì CI lint/test xanh.
 
-Chỉ giữ ba package feature để chia việc. `app/api/`, `app/domain/`, `app/db/` và các file schema/service/contracts/repository sẽ được tạo khi triển khai, không tạo sẵn package dùng chung trống hoặc sub-package sessions.
+Chiến còn cần nối environment/JWT và URL DB vào volume `/app/data`, đồng thời đưa thư mục `scripts` vào image để chạy seed trong container. Đây là phần vận hành chưa được nghiệm thu.
 
-Kiến trúc mục tiêu là API → Service → Repository/ORM. Service dùng entity/DTO và port Python thuần; không import framework web hoặc thư viện DB. Repository map dữ liệu ORM; composition root nối các thành phần. Đây là thiết kế mục tiêu, chưa phải code đã có trong skeleton.
+## Phân công và Git
 
-```mermaid
-flowchart TD
-    API["API: FastAPI + schemas"] --> S["Service: Python thuần"]
-    S --> P["Ports: hợp đồng truy cập dữ liệu"]
-    R["Repository: SQLAlchemy"] -. "triển khai" .-> P
-    R --> DB["SQLite"]
-```
+- Chiến: auth, tạo/xem/hủy kèo, JWT/config, composition root, Docker/CI/README.
+- Hải: discovery/matching, seed/dataset, query và read scenario.
+- Đạt: DB/UoW/UTC, `participation_*`, matching writer, concurrency và tích hợp tải.
 
-Đặc tả và nghiệm thu: [Google Docs MatchMate](https://docs.google.com/document/d/1uKPAGgImttE029ZZ9ZAqeioh0bX514sAla_Jq38PPj4/edit?tab=t.0).
+Mỗi người làm trên feature branch, đồng bộ main và tích hợp qua PR nhỏ. Không gọi chéo Service/router. Trong sessions, `session_*` thuộc Chiến, `participation_*` thuộc Đạt; thay phần dùng chung cần nêu module bị ảnh hưởng và kiểm regression.
 
-## Phân công và ownership
-
-| Người | Phạm vi sau skeleton | Nhánh |
-| --- | --- | --- |
-| Chiến | Auth; tạo/xem/hủy kèo; 5 API; tích hợp | `feature/auth-session-management` |
-| Hải | Tra cứu/GPS/matching; 3 API | `feature/discovery-matching` |
-| Đạt | Xin/duyệt/rút lượt; 3 API; DB/UoW và tải | `feature/participations-transactions` |
-
-Trong `sessions/`, Chiến tạo/sở hữu `session_*.py`; Đạt tạo/sở hữu `participation_*.py`. Các port dùng chung và router tổng hợp được thống nhất bằng PR nhỏ trước khi tích hợp; không gọi chéo Service.
-
-Chiến tích hợp `app/main.py`, dependency/constraints, `pyproject.toml`, Docker/Compose, CI và README. Đạt sở hữu hạ tầng DB/UoW khi được tạo. Thành viên có thể đề xuất patch file chung trong PR; người tích hợp review và phối hợp, không cấm đóng góp. Không có router auto-discovery.
-
-## Git workflow
-
-`main` là baseline tích hợp; chưa dùng `develop`. Ba feature branch tách từ cùng commit skeleton. Sau mỗi thay đổi chung đã merge, đồng bộ `main` trước khi tiếp tục:
-
-```bash
-git fetch origin
-git switch feature/discovery-matching
-git merge origin/main
-```
-
-Mỗi người làm trên nhánh được giao và mở PR vào `main`; ít nhất một người khác tác giả review. Commit theo thay đổi thực tế: `feat:`, `fix:`, `docs:`, `test:`, `chore:`. Branch protection là việc cấu hình sau, chưa được bật chỉ vì có CI.
-
-## Phạm vi baseline và bước tiếp theo
-
-Skeleton không có entity/enum nghiệp vụ, Protocol, ORM, connection DB, JWT/hash, UoW, repository, Haversine, matching, seed hoặc runner tải. Không tạo frontend, issue/project board hay workflow deploy.
-
-Sau baseline mới triển khai auth và luồng tạo → xin → duyệt trên SQLite thật. Mốc mục tiêu cuối tuần 1 là luồng này chạy cùng Docker, auth và protected GET/POST. Swagger là demo chính; UI đầy đủ và tải bổ sung làm sau.
-
-Nguồn kỹ thuật: [FastAPI testing](https://fastapi.tiangolo.com/tutorial/testing/), [pip constraints](https://pip.pypa.io/en/stable/topics/dependency-resolution/), [GitHub Python CI](https://docs.github.com/actions/guides/building-and-testing-python).
+Nguồn nghiệp vụ: [đặc tả MatchMate](https://docs.google.com/document/d/1uKPAGgImttE029ZZ9ZAqeioh0bX514sAla_Jq38PPj4/edit?usp=drivesdk). Các đoạn GPS trong bản cũ đã được thay bằng quyết định tìm theo quận.
