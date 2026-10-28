@@ -1,7 +1,7 @@
 from dataclasses import replace
 from itertools import combinations
 
-from app.domain.enums import CloseReason, Gender, GenderPolicy, PlayType, skill_to_rank
+from app.domain.enums import CloseReason, Gender, GenderPolicy, PlayType
 from app.domain.errors import DomainError
 from app.domain.ports import Clock, UnitOfWork
 from app.domain.time_rules import is_valid_time_window
