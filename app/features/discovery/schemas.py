@@ -64,6 +64,9 @@ class SessionQuery(VenueQuery):
     only_available: bool = True
     host_me: bool = False  # thiếu JWT -> 401 (xử lý ở api.py)
 
+    limit: int = Field(default=20, ge=1, le=100)
+    offset: int = Field(default=0, ge=0)
+
     @model_validator(mode="after")
     def _check_window(self):
         if (self.available_from is None) != (self.available_to is None):
