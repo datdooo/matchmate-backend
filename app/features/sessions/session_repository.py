@@ -1,11 +1,11 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.db.matching_request_writer import SqlAlchemyMatchingRequestWriter
 from app.db.models import (
-    MatchingRequestModel,
     ParticipationModel,
     SessionModel,
     UserModel,
@@ -95,19 +95,8 @@ class SqlAlchemySessionRepository:
         ends_at: datetime,
         now: datetime,
     ) -> None:
-        self.session.execute(
-            update(MatchingRequestModel)
-            .where(
-                MatchingRequestModel.user_id == user_id,
-                MatchingRequestModel.status == "ACTIVE",
-                MatchingRequestModel.starts_at < ends_at,
-                MatchingRequestModel.ends_at > starts_at,
-            )
-            .values(
-                status="CLOSED",
-                closed_reason="CONFIRMED",
-                closed_at=now,
-            )
+        SqlAlchemyMatchingRequestWriter(lambda: self.session).close_overlapping(
+            user_id, starts_at, ends_at, now
         )
 
     @staticmethod

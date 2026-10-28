@@ -39,6 +39,8 @@ class VenueQuery(BaseModel):
 
 
 class VenueView(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     address: str
@@ -58,9 +60,6 @@ class SessionQuery(VenueQuery):
     skill_level: SkillLevel | None = None
     gender: Gender | None = None
     max_fee_vnd: int | None = Field(None, ge=0)
-
-    fee_min: int | None = Field(default=None, ge=0)
-    fee_max: int | None = Field(default=None, ge=0)
 
     only_available: bool = True
     host_me: bool = False  # thiếu JWT -> 401 (xử lý ở api.py)

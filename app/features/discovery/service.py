@@ -49,7 +49,7 @@ def group_is_valid(
         if user.gender not in (Gender.MALE, Gender.FEMALE):
             return False
 
-    ranks = [skill_to_rank(user.skill_level) for user in users]
+    ranks = [user.skill_level for user in users]
     if max(ranks) - min(ranks) > MAX_RANK_SPREAD:
         return False
 
@@ -161,7 +161,7 @@ class DiscoveryService:
                 )
             else:
                 filt = replace(filt, now=now, host_user_id=None)
-            return self._discovery.find_session(filt)
+            return self._discovery.find_sessions(filt)
 
     def create_matching_request(
         self, actor_user_id: int, data: CreateMatchingInput
@@ -191,7 +191,9 @@ class DiscoveryService:
                 raise DomainError("ELIGIBILITY_MISMATCH", "Hồ sơ không đáp ứng policy giới tính")
 
             my_fee = fee_for(
-                caller.gender, data.proposed_fee_male_vnd, data.proposed_fee_female_vnd
+                caller.gender,
+                data.proposed_fee_male_vnd,
+                data.proposed_fee_female_vnd,
             )
             if my_fee > data.budget_max_vnd:
                 raise DomainError("VALIDATION_ERROR", "Phí đề xuất vượt ngân sách của bạn")

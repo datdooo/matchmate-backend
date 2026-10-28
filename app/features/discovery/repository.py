@@ -152,16 +152,19 @@ class SqlAlchemyDiscoveryRepository:
             conditions.append(VenueModel.district_code == filter.district_code)
 
         total = session.scalar(select(func.count()).select_from(VenueModel).where(*conditions)) or 0
-        rows = session.scalars(
-            select(VenueModel)
-            .where(*conditions)
-            .order_by(VenueModel.id)
-            .limit(filter.limit)
-            .offset(filter.offset)
-        ).all()
-
+        rows = (
+            self._uow.session.execute(
+                select(VenueModel)
+                .where(*conditions)
+                .order_by(VenueModel.id)
+                .limit(filter.limit)
+                .offset(filter.offset)
+            )
+            .scalars()
+            .all()
+        )
         return Page(
-            item=[to_venue_record(r) for r in rows],
+            items=[to_venue_record(r) for r in rows],
             total=total,
             limit=filter.limit,
             offset=filter.offset,
@@ -375,7 +378,7 @@ class SqlAlchemyMatchingRepository:
             select(ParticipationModel.id)
             .join(SessionModel, SessionModel.id == ParticipationModel.session_id)
             .where(
-                ParticipationModel.user_id == user_id,
+                ParticipationModel.user_id == UserModel.id,
                 ParticipationModel.status == "ACCEPTED",
                 SessionModel.starts_at < matching_filter.ends_at,
                 SessionModel.ends_at > matching_filter.starts_at,
@@ -384,9 +387,12 @@ class SqlAlchemyMatchingRepository:
             .exists()
         )
 
-        row = self._uow.session.execute(
+        rows = self._uow.session.execute(
             select(MatchingRequestModel, UserModel)
-            .join(UserModel, UserModel.id == MatchingRequestModel.user_id)
+            .join(
+                UserModel,
+                UserModel.id == MatchingRequestModel.user_id,
+            )
             .where(
                 MatchingRequestModel.status == "ACTIVE",
                 MatchingRequestModel.venue_id == matching_filter.venue_id,
@@ -398,8 +404,11 @@ class SqlAlchemyMatchingRepository:
                 UserModel.gender.in_((Gender.MALE.value, Gender.FEMALE.value)),
                 ~has_overlap,
             )
-            .order_by(MatchingRequestModel.created_at, MatchingRequestModel.id)
-        )
+            .order_by(
+                MatchingRequestModel.created_at,
+                MatchingRequestModel.id,
+            )
+        ).all()
 
         return [
             MatchingCandidate(request=to_matching_record(r), player=to_player_summary(u))
