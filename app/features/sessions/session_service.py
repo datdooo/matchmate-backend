@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Any
 
 from app.domain.enums import Gender, skill_to_rank
 from app.domain.ports import Clock
@@ -75,3 +76,49 @@ class SessionService:
         session_id = self.sessions.create_with_host(data, host, now)
         self.sessions.close_overlapping(host_id, data.starts_at, data.ends_at, now)
         return session_id
+
+    def get_detail(self, session_id: int, viewer_id: int) -> dict[str, Any]:
+        snapshot = self.sessions.get_detail_data(session_id)
+        if snapshot is None:
+            raise SessionError("SESSION_NOT_FOUND", "Không tìm thấy kèo")
+
+        data = snapshot["session"]
+        records = snapshot["participations"]
+        is_host = snapshot["host_user_id"] == viewer_id
+        now = self.clock.now()
+
+        capacity = 2 if data["play_type"] == "SINGLES" else 4
+        accepted_count = sum(record["status"] == "ACCEPTED" for record in records)
+        available_for_changes = data["status"] == "OPEN" and now < data["starts_at"]
+
+        for record in records:
+            record["can_cancel"] = (
+                available_for_changes
+                and not is_host
+                and record["user_id"] == viewer_id
+                and record["status"] in ("PENDING", "ACCEPTED")
+            )
+            record["can_decide"] = (
+                available_for_changes and is_host and record["status"] == "PENDING"
+            )
+
+        if data["status"] == "CANCELLED":
+            display_status = "CANCELLED"
+        elif now >= data["ends_at"]:
+            display_status = "ENDED"
+        elif now >= data["starts_at"]:
+            display_status = "STARTED"
+        elif accepted_count >= capacity:
+            display_status = "FULL"
+        else:
+            display_status = "AVAILABLE"
+
+        data.update(
+            capacity=capacity,
+            accepted_count=accepted_count,
+            remaining_capacity=capacity - accepted_count,
+            display_status=display_status,
+            my_participations=[record for record in records if record["user_id"] == viewer_id],
+            management={"participations": records} if is_host else None,
+        )
+        return data

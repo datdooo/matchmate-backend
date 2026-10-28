@@ -1,6 +1,7 @@
 from collections.abc import Iterator
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Path, Request, status
 from fastapi.security import HTTPBearer
 
 from app.api.schemas import ErrorResponse
@@ -9,7 +10,7 @@ from app.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.features.auth.contracts import DatabaseBusyError
 from app.features.auth.repository import SqlAlchemyUserRepository
 from app.features.sessions.session_repository import SqlAlchemySessionRepository
-from app.features.sessions.session_schemas import CreateSessionRequest
+from app.features.sessions.session_schemas import CreateSessionRequest, SessionDetail
 from app.features.sessions.session_service import SessionService, SystemClock
 
 router = APIRouter(tags=["Sessions"])
@@ -32,6 +33,20 @@ def provide_create_session_service() -> Iterator[SessionService]:
         uow.commit()
 
 
+def provide_read_session_service() -> Iterator[SessionService]:
+    uow = SqlAlchemyUnitOfWork(
+        session_factory=_session_factory,
+        busy_error_factory=DatabaseBusyError,
+    )
+
+    with uow.read():
+        yield SessionService(
+            sessions=SqlAlchemySessionRepository(uow.session),
+            users=SqlAlchemyUserRepository(uow.session),
+            clock=SystemClock(),
+        )
+
+
 @router.post(
     "/sessions",
     status_code=status.HTTP_201_CREATED,
@@ -51,9 +66,31 @@ def create_session(
         provide_create_session_service,
         scope="function",
     ),
-) -> dict[str, int]:
+) -> SessionDetail:
     session_id = service.create(
         data=payload.to_input(),
         host_id=request.state.principal.id,
     )
-    return {"id": session_id}
+    return SessionDetail.model_validate(service.get_detail(session_id, request.state.principal.id))
+
+
+@router.get(
+    "/sessions/{session_id}",
+    response_model=SessionDetail,
+    dependencies=[Depends(_bearer)],
+    responses={
+        401: {"model": ErrorResponse, "description": "UNAUTHORIZED"},
+        404: {"model": ErrorResponse, "description": "SESSION_NOT_FOUND"},
+        422: {"model": ErrorResponse, "description": "VALIDATION_ERROR"},
+        503: {"model": ErrorResponse, "description": "DATABASE_BUSY"},
+    },
+)
+def get_session_detail(
+    session_id: Annotated[int, Path(gt=0, le=9223372036854775807)],
+    request: Request,
+    service: SessionService = Depends(
+        provide_read_session_service,
+        scope="function",
+    ),
+) -> SessionDetail:
+    return SessionDetail.model_validate(service.get_detail(session_id, request.state.principal.id))
