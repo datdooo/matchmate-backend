@@ -3,11 +3,50 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.models import ParticipationModel, SessionModel, UserModel, VenueModel
 from app.db.session import create_db_engine, create_session_factory
+from app.features.auth import dependencies as auth_dependencies
+from app.features.auth.tokens import JwtTokenIssuer
+from app.features.discovery import dependencies as discovery_dependencies
+from app.features.sessions import participation_dependencies, session_router
+from app.main import app
+
+TEST_SECRET = "matchmate-tests-only-secret-32-bytes"
+
+
+@pytest.fixture
+def client(monkeypatch, db_session_factory):
+    """Mọi feature dùng cùng DB tạm; không gọi vào DB local khi test API."""
+    monkeypatch.setenv("JWT_SECRET_KEY", TEST_SECRET)
+    for module in (
+        auth_dependencies,
+        discovery_dependencies,
+        participation_dependencies,
+        session_router,
+    ):
+        monkeypatch.setattr(module, "_session_factory", db_session_factory)
+    saved = app.dependency_overrides.copy()
+    try:
+        with TestClient(app, raise_server_exceptions=False) as test_client:
+            yield test_client
+    finally:
+        app.dependency_overrides.clear()
+        app.dependency_overrides.update(saved)
+
+
+@pytest.fixture
+def auth_headers():
+    """Tạo JWT cho user đã có trong fixture, vẫn đi qua middleware thật."""
+
+    def headers(user_id):
+        token = JwtTokenIssuer(TEST_SECRET, ttl_seconds=3600).issue(user_id)
+        return {"Authorization": f"Bearer {token.access_token}"}
+
+    return headers
 
 
 @pytest.fixture
