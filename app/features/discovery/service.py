@@ -23,6 +23,7 @@ from app.features.discovery.contracts import (
 CAPACITY = {PlayType.SINGLES: 2, PlayType.DOUBLES: 4}
 MAX_RANK_SPREAD = 2
 
+
 def policy_allows(policy: GenderPolicy, gender: Gender) -> bool:
     if policy == GenderPolicy.ANY:
         return True
@@ -30,8 +31,10 @@ def policy_allows(policy: GenderPolicy, gender: Gender) -> bool:
         return gender == Gender.MALE
     return gender == Gender.FEMALE
 
+
 def fee_for(gender: Gender, fee_male_vnd: int, fee_female_vnd: int) -> int:
     return fee_male_vnd if gender == Gender.MALE else fee_female_vnd
+
 
 def group_is_valid(
     members: list[tuple[PlayerSummary, MatchingRequestRecord]],
@@ -88,6 +91,7 @@ def find_group(
 
     return None
 
+
 def build_suggestion(
     group: list[tuple[PlayerSummary, MatchingRequestRecord]],
     caller_request: MatchingRequestRecord,
@@ -119,6 +123,7 @@ def build_suggestion(
         requires_confirmation=True,
     )
 
+
 class DiscoveryService:
     def __init__(
         self,
@@ -139,9 +144,9 @@ class DiscoveryService:
     def search_sessions(self, filt: SessionFilter, viewer_id: int | None) -> Page:
         if filt.host_me and viewer_id is None:
             raise DomainError(
-            "UNAUTHORIZED",
-            "Đăng nhập để xem các kèo của bạn.",
-        )
+                "UNAUTHORIZED",
+                "Đăng nhập để xem các kèo của bạn.",
+            )
 
         with self._uow.read():
             now = self._clock.now()
@@ -171,7 +176,7 @@ class DiscoveryService:
 
             if caller.gender not in (Gender.MALE, Gender.FEMALE):
                 raise DomainError("PROFILE_INCOMPLETE", "Hồ sơ chưa có giới tính")
-            
+
             venue = self._matching.get_venue(data.venue_id)
             if venue is None:
                 raise DomainError("VENUE_NOT_FOUND", "Không tìm thấy sân")
@@ -186,16 +191,14 @@ class DiscoveryService:
                 raise DomainError("ELIGIBILITY_MISMATCH", "Hồ sơ không đáp ứng policy giới tính")
 
             my_fee = fee_for(
-                        caller.gender,
-                        data.proposed_fee_male_vnd,
-                        data.proposed_fee_female_vnd,
-                    )
+                caller.gender,
+                data.proposed_fee_male_vnd,
+                data.proposed_fee_female_vnd,
+            )
             if my_fee > data.budget_max_vnd:
                 raise DomainError("VALIDATION_ERROR", "Phí đề xuất vượt ngân sách của bạn")
 
-            if self._matching.has_accepted_overlap(
-                actor_user_id, data.starts_at, data.ends_at
-            ):
+            if self._matching.has_accepted_overlap(actor_user_id, data.starts_at, data.ends_at):
                 raise DomainError("TIME_CONFLICT", "Đã có lịch ACCEPTED chồng giờ")
 
             self._matching.close_active_for_user(actor_user_id, CloseReason.REPLACED, now)

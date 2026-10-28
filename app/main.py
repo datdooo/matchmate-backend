@@ -10,6 +10,7 @@ from app.features.auth.dependencies import (
 )
 from app.features.auth.middleware import JwtMiddleware
 from app.features.auth.router import create_auth_router, create_login_router
+from app.features.sessions.participation_router import router as participation_router
 from app.features.sessions.session_router import router as session_router
 
 app = FastAPI(
@@ -29,6 +30,7 @@ app.include_router(
     )
 )
 app.include_router(session_router)
+app.include_router(participation_router)
 
 
 @app.get("/health", tags=["Technical"], summary="Application liveness")

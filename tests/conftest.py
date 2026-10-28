@@ -1,11 +1,12 @@
 from collections.abc import Iterator
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.db.models import VenueModel
+from app.db.models import ParticipationModel, SessionModel, UserModel, VenueModel
 from app.db.session import create_db_engine, create_session_factory
 
 
@@ -38,3 +39,67 @@ def db_session(
             yield session
         finally:
             session.rollback()
+
+
+@pytest.fixture
+def game_data(db_session_factory: sessionmaker[Session]) -> dict[str, int]:
+    """Hai kèo nối tiếp, mỗi kèo đã có host ACCEPTED; player chưa có lượt."""
+    now = datetime(2030, 11, 1, 10, tzinfo=timezone.utc)
+    with db_session_factory() as session:
+        users = [
+            UserModel(
+                email=f"{name}@example.com",
+                password_hash="test-only",
+                display_name=name,
+                skill_level=9,
+                gender=gender,
+                created_at=now,
+                updated_at=now,
+            )
+            for name, gender in [("host", "MALE"), ("player", "FEMALE"), ("other", "MALE")]
+        ]
+        venue = VenueModel(name="Sân test", address="Địa chỉ test", district_code="CAU_GIAY")
+        session.add_all([*users, venue])
+        session.flush()
+        games = [
+            SessionModel(
+                host_user_id=users[0].id,
+                venue_id=venue.id,
+                title=f"Kèo {index}",
+                notes="",
+                starts_at=now + timedelta(hours=2 + 2 * index),
+                ends_at=now + timedelta(hours=4 + 2 * index),
+                play_type="DOUBLES",
+                fee_male_vnd=60000,
+                fee_female_vnd=40000,
+                min_level=8,
+                max_level=10,
+                gender_policy="ANY",
+                status="OPEN",
+                created_at=now,
+            )
+            for index in range(2)
+        ]
+        session.add_all(games)
+        session.flush()
+        for game in games:
+            session.add(
+                ParticipationModel(
+                    user_id=users[0].id,
+                    session_id=game.id,
+                    status="ACCEPTED",
+                    gender_at_join="MALE",
+                    quoted_fee_vnd=60000,
+                    created_at=now,
+                    decided_at=now,
+                )
+            )
+        session.commit()
+        return dict(
+            host=users[0].id,
+            player=users[1].id,
+            other=users[2].id,
+            venue=venue.id,
+            first=games[0].id,
+            second=games[1].id,
+        )
