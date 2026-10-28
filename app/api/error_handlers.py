@@ -107,7 +107,6 @@ def register_error_handlers(app: FastAPI) -> None:
             },
         )
 
-    
     @app.exception_handler(SessionError)
     async def handle_session_error(
         request: Request,
@@ -169,6 +168,7 @@ def register_error_handlers(app: FastAPI) -> None:
                 }
             },
         )
+
 
 def make_error_response(
     request: Request,

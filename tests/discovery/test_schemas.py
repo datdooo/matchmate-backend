@@ -1,4 +1,3 @@
-
 from datetime import timedelta
 
 import pytest
@@ -105,9 +104,7 @@ def test_create_matching_request_invalid(change):
 
 
 def test_create_matching_request_missing_field():
-    invalid(
-        CreateMatchingRequest, **{k: v for k, v in BODY.items() if k != "play_type"}
-    )
+    invalid(CreateMatchingRequest, **{k: v for k, v in BODY.items() if k != "play_type"})
 
 
 def test_session_summary():

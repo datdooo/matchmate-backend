@@ -40,18 +40,14 @@ def test_create_user_persists_after_commit(
 
         assert loaded == user
 
-        model = session.scalar(
-            select(UserModel).where(UserModel.id == user.id)
-        )
+        model = session.scalar(select(UserModel).where(UserModel.id == user.id))
 
         assert model is not None
         assert model.skill_level == 9
         assert model.gender == "MALE"
         assert model.created_at == new_user.created_at
         assert model.updated_at == new_user.created_at
-        assert Argon2PasswordHasher().verify(
-            "example-password", model.password_hash
-        )
+        assert Argon2PasswordHasher().verify("example-password", model.password_hash)
 
 
 def test_duplicate_email_rolls_back(
@@ -66,8 +62,6 @@ def test_duplicate_email_rolls_back(
             SqlAlchemyUserRepository(session).create(new_user)
 
     with db_session_factory() as session:
-        count = session.scalar(
-            select(func.count()).select_from(UserModel)
-        )
+        count = session.scalar(select(func.count()).select_from(UserModel))
 
         assert count == 1
