@@ -2,9 +2,9 @@
 
 Backend tìm kèo và ghép người chơi cầu lông cho học phần Kiến trúc phần mềm. Pha 1 dùng FastAPI, SQLAlchemy và SQLite; phạm vi là 11 API nghiệp vụ, 5 bảng và 19 mức trình. Đã bỏ GPS, tìm sân/kèo theo `district_code`.
 
-Hiện đã tích hợp auth/JWT, tạo kèo và ba API participation. Discovery có repository/service/schema, còn cần nối route; API xem chi tiết và hủy kèo chưa được tích hợp. Chưa có số đo tải Kaggle hoặc nghiệm thu Docker toàn luồng.
+Hiện đã tích hợp auth/JWT, tạo/xem kèo và ba API participation. Discovery có repository/service/schema, còn cần nối route; API hủy kèo chưa được tích hợp. Chưa có số đo tải Kaggle hoặc nghiệm thu Docker toàn luồng.
 
-Phần tạo kèo hiện trả `id`; Chiến còn cần hoàn thiện response `SessionDetail` theo contract. Ba API participation đã trả đủ `ParticipationDetail`.
+Tạo/xem kèo trả `SessionDetail`. Ba API participation trả `ParticipationDetail`.
 
 ## Chạy local
 
@@ -30,6 +30,7 @@ Mở `http://127.0.0.1:8000/docs` để thao tác bằng Swagger. `/health` ch�
 | POST | `/auth/register` | Public |
 | POST | `/auth/login` | Public |
 | POST | `/sessions` | JWT |
+| GET | `/sessions/{session_id}` | JWT |
 | POST | `/participations` | JWT |
 | POST | `/participations/{participation_id}/decision` | Host |
 | DELETE | `/participations/{participation_id}` | Owner, không rút riêng lượt host |

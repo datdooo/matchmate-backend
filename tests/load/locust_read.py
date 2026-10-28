@@ -123,7 +123,9 @@ class AuthenticatedUser(HttpUser):
             raise StopUser()
         return {"Authorization": f"Bearer {data['access_token']}"}
 
-    def request_json(self, method, path, *, expected=200, required_fields=(), **kwargs):
+    def request_json(
+        self, method, path, *, expected=200, required_fields=(), expected_values=None, **kwargs
+    ):
         with self.client.request(
             method, path, catch_response=True, timeout=20, **kwargs
         ) as response:
@@ -137,6 +139,10 @@ class AuthenticatedUser(HttpUser):
                 return None
             if not isinstance(data, dict) or any(field not in data for field in required_fields):
                 response.failure("Response thiếu field theo contract")
+                return None
+            if any(data.get(field) != value for field, value in (expected_values or {}).items()):
+                # HTTP đúng chưa đủ: trạng thái và snapshot cũng phải đúng sau từng bước.
+                response.failure("Response sai giá trị theo contract")
                 return None
             return data
 
