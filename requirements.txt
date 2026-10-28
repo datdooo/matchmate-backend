@@ -4,3 +4,5 @@ uvicorn
 email-validator
 pwdlib[argon2]
 SQLAlchemy
+PyJWT
+python-dotenv
