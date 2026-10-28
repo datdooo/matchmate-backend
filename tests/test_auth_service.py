@@ -28,6 +28,8 @@ class FakeUserRepository:
             display_name=data.display_name,
             skill_level=data.skill_level,
             gender=data.gender,
+            created_at=data.created_at,
+            updated_at=data.created_at,
         )
         self.users[data.email] = user
         self.saved_data = data

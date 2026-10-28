@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import pytest
 from pydantic import ValidationError
 
-from app.features.discovery.contracts import VenueFilter, VenueRecord, Page
+from app.features.discovery.contracts import Page, VenueFilter, VenueRecord
 from app.features.discovery.schemas import VenueQuery, VenueView
 
 

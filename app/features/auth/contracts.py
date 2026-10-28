@@ -12,6 +12,8 @@ class User:
     display_name: str
     skill_level: SkillLevel
     gender: Gender
+    created_at: datetime
+    updated_at: datetime
 
 
 @dataclass(frozen=True)

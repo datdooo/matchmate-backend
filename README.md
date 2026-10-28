@@ -2,14 +2,14 @@
 
 MatchMate hỗ trợ người chơi cầu lông tìm kèo phù hợp và chủ kèo tuyển thêm người. Pha 1 là backend REST JSON, demo qua Swagger, dùng một ứng dụng và một SQLite DB. Tìm sân/kèo theo `district_code`; nhóm đã bỏ GPS.
 
-Phạm vi thiết kế gồm **11 API nghiệp vụ, 5 bảng và 19 mức trình**. Hiện đã tích hợp **7 API nghiệp vụ và `/health`**; bốn API còn thiếu được ghi bên dưới. Docker toàn luồng và tải Kaggle chưa được nghiệm thu.
+Phạm vi gồm **11 API nghiệp vụ, 5 bảng và 19 mức trình**. Đã nối đủ **11 API và `/health`**, có test tích hợp qua SQLite thật. Docker toàn luồng và tải Kaggle chưa được nghiệm thu.
 
 ## Bài toán và nghiệp vụ
 
 - Người chơi đăng ký hồ sơ, đăng nhập, tra cứu sân/kèo theo quận, trình độ, giới tính, lịch và phí.
 - Host tạo kèo đơn/đôi, tự có một lượt `ACCEPTED`. Sức chứa là 2/4 người, tính cả host. Người chơi xin tham gia tạo `PENDING`, chưa giữ chỗ; host duyệt hoặc từ chối trước giờ bắt đầu.
 - Khi duyệt phải kiểm lại điều kiện, chỗ và lịch `ACCEPTED`. Hai lịch nối tiếp được phép. Mức phí và giới tính lúc xin được giữ nguyên; đăng ký lại tạo lượt mới. Người chơi rút lượt của mình; host phải hủy cả kèo.
-- Luồng matching trong thiết kế gom đủ 2/4 người cùng sân, giờ và loại kèo; kiểm trình, giới tính và ngân sách. API này chưa được nối vào app.
+- Matching gợi ý đủ 2/4 người cùng sân, giờ và loại kèo; kiểm trình, giới tính và ngân sách. Chưa đủ nhóm thì trả `suggestion=null`; gợi ý không tự giữ chỗ.
 
 ## Framework và tổ chức code
 
@@ -62,14 +62,18 @@ Test dùng SQLite file tạm riêng, có JWT/API thật, rollback, snapshot, ide
 | Method | Route | Quyền |
 |---|---|---|
 | POST | `/auth/register`, `/auth/login` | Public |
+| GET | `/venues` | Public |
+| GET | `/sessions` | Public; `host_me=true` cần JWT |
 | POST | `/sessions` | JWT |
 | GET | `/sessions/{session_id}` | JWT |
+| DELETE | `/sessions/{session_id}` | Host |
 | POST | `/participations` | JWT |
 | POST | `/participations/{participation_id}/decision` | Host |
 | DELETE | `/participations/{participation_id}` | Chủ lượt, không rút riêng lượt host |
+| POST | `/matching/requests` | JWT |
 | GET | `/health` | Public, chỉ liveness |
 
-Còn thiếu `GET /venues`, `GET /sessions`, `DELETE /sessions/{session_id}` và `POST /matching/requests`. Tạo/xem kèo trả `SessionDetail`; ba API participation trả `ParticipationDetail` đầy đủ.
+Tạo/xem/hủy kèo trả `SessionDetail`, mở rộng schema `SessionSummary` dùng chung. Ba API participation trả `ParticipationDetail` đầy đủ. Datetime nhận ISO 8601 có timezone; từ chối Unix timestamp và số nguyên vượt miền INTEGER của SQLite bằng 422.
 
 Khi thêm hoặc sửa route/schema, xuất lại JSON từ thư mục repo để tránh lệch với app:
 
@@ -81,11 +85,19 @@ python -c 'import json; from pathlib import Path; from app.main import app; Path
 
 Dockerfile dùng `python:3.11-slim`, chạy non-root, Uvicorn một worker trên `0.0.0.0:8000`. Compose publish port 8000, healthcheck `/health` và volume `matchmate_data` tại `/app/data`. DB trong container dự kiến dùng `sqlite:////app/data/matchmate.db`; giữ volume để giữ dữ liệu.
 
-**Docker chưa được nghiệm thu:** Compose còn thiếu JWT/environment và URL DB trỏ vào volume; image mới copy `app`, chưa có `scripts` để seed. Chiến cần hoàn thiện wiring rồi kiểm build, seed, restart và luồng nghiệp vụ trước khi dùng làm bản deploy bàn giao.
+Compose đã nối JWT/environment và URL DB vào volume; image đã có `scripts`. Sau khi tạo `.env`, các lệnh dự kiến là:
 
-SQLite chỉ có một writer nên tải ghi đồng thời có thể phải chờ hoặc gặp 503. Cần giữ đúng transaction, kiểm lại capacity/lịch khi ghi và đọc invariant sau test. Discovery còn điểm cần sửa/nối, liệt kê ở [trạng thái tải](docs/LOAD_TEST_RESULTS.md).
+```bash
+docker compose build
+docker compose run --rm api python -m scripts.seed
+docker compose up -d
+```
 
-Runner Kaggle đã chuẩn bị hai profile read/lifecycle riêng ở 10/50/100 users, một worker, DB mới mỗi lượt và HTML/CSV/metadata. Runner dừng trước phát tải khi thiếu API. **Chưa có số đo Kaggle**; nhóm cần hoàn tất API và đo tải Pha 1 trước khi chốt baseline bàn giao. Phase 2 dựa trên kết quả chạy thật để đánh giá giới hạn. Bản hiện tại không dùng cache, queue hoặc nhiều worker.
+**Docker chưa được nghiệm thu trong lượt rà này:** môi trường kiểm tra không có Docker CLI. Nhóm cần kiểm build, seed lặp, restart giữ dữ liệu và luồng nghiệp vụ trên máy có Docker trước khi bàn giao.
+
+SQLite chỉ có một writer nên tải ghi đồng thời có thể phải chờ hoặc gặp 503. Cần giữ đúng transaction, kiểm lại capacity/lịch khi ghi và đọc invariant sau test. [Trạng thái tải](docs/LOAD_TEST_RESULTS.md) ghi bằng chứng chạy và giới hạn môi trường.
+
+Runner Kaggle có hai profile read/lifecycle riêng ở 10/50/100 users, một worker, DB mới mỗi lượt và HTML/CSV/metadata. **Chưa có số đo Kaggle**; lượt local 10 users dừng trước đo vì monitor Locust không đọc được process (`psutil.NoSuchProcess`). Nhóm cần chạy Kaggle Pha 1 trước khi chốt baseline; Phase 2 dựa trên số đo thật để đánh giá giới hạn. Bản hiện tại không dùng cache, queue hoặc nhiều worker.
 
 ## Phân công và trình bày
 

@@ -56,6 +56,8 @@ def create_auth_router(
             display_name=user.display_name,
             skill_level=user.skill_level,
             gender=user.gender,
+            created_at=user.created_at,
+            updated_at=user.updated_at,
         )
 
     return router

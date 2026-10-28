@@ -30,6 +30,8 @@ class FakeUserRepository:
             display_name=data.display_name,
             skill_level=data.skill_level,
             gender=data.gender,
+            created_at=data.created_at,
+            updated_at=data.created_at,
         )
         self.users[data.email] = user
         self.saved_data = data
@@ -65,12 +67,15 @@ def test_register_returns_201_without_password() -> None:
         )
 
     assert response.status_code == 201
+    timestamp = repository.saved_data.created_at.isoformat().replace("+00:00", "Z")
     assert response.json() == {
         "id": 1,
         "email": "player01@example.com",
         "display_name": "Player 01",
         "skill_level": "TB",
         "gender": "MALE",
+        "created_at": timestamp,
+        "updated_at": timestamp,
     }
 
     saved = repository.saved_data

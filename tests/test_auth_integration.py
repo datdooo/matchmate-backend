@@ -34,12 +34,16 @@ def test_registration_with_sqlite(
 
         assert first.status_code == 201
         user_id = first.json()["id"]
+        timestamp = first.json()["created_at"]
+        assert timestamp.endswith("Z") and first.json()["updated_at"] == timestamp
         assert first.json() == {
             "id": user_id,
             "email": "player01@example.com",
             "display_name": "Player 01",
             "skill_level": "TB",
             "gender": "MALE",
+            "created_at": timestamp,
+            "updated_at": timestamp,
         }
 
         # Email đã tồn tại.
@@ -84,6 +88,7 @@ def test_registration_with_sqlite(
         assert users[0].id == user_id
         assert users[0].skill_level == 9
         assert users[0].gender == "MALE"
+        assert users[0].created_at.isoformat().replace("+00:00", "Z") == timestamp
 
         hasher = Argon2PasswordHasher()
         for user in users:

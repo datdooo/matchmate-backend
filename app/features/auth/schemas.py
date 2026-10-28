@@ -2,6 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from app.api.schemas import UtcDatetime
 from app.domain.enums import Gender, SkillLevel
 
 
@@ -35,6 +36,8 @@ class UserSelf(BaseModel):
     display_name: str
     skill_level: SkillLevel
     gender: Gender
+    created_at: UtcDatetime
+    updated_at: UtcDatetime
 
 
 class LoginRequest(BaseModel):
