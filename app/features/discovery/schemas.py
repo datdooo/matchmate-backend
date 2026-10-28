@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar, Literal, Annotated
+from typing import Annotated, Generic, Literal, TypeVar
 
 from pydantic import (
     AfterValidator,
@@ -15,10 +15,10 @@ from app.domain.enums import (
     EffectiveStatus,
     Gender,
     GenderPolicy,
-    SkillLevel,
     MatchingStatus,
     PlayType,
     SessionStatus,
+    SkillLevel,
 )
 from app.domain.time_rules import to_utc
 
@@ -29,13 +29,14 @@ UtcDatetime = Annotated[AwareDatetime, AfterValidator(to_utc)]
 IdInt = Annotated[int, Field(strict=True, gt=0)]
 VndInt = Annotated[int, Field(strict=True, ge=0)]
 
-class VenueQuery(BaseModel):
 
+class VenueQuery(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     district_code: str | None = Field(default=None, max_length=50)
     limit: int = Field(default=20, ge=1, le=100)
     offset: int = Field(default=0, ge=0)
+
 
 class VenueView(BaseModel):
     id: int
@@ -44,8 +45,8 @@ class VenueView(BaseModel):
     district_code: str
     is_active: bool
 
-class SessionQuery(VenueQuery):
 
+class SessionQuery(VenueQuery):
     model_config = ConfigDict(extra="forbid")
 
     venue_id: int | None = Field(None, gt=0)
@@ -62,28 +63,25 @@ class SessionQuery(VenueQuery):
     fee_max: int | None = Field(default=None, ge=0)
 
     only_available: bool = True
-    host_me: bool = False                       # thiếu JWT -> 401 (xử lý ở api.py)
+    host_me: bool = False  # thiếu JWT -> 401 (xử lý ở api.py)
 
     @model_validator(mode="after")
     def _check_window(self):
         if (self.available_from is None) != (self.available_to is None):
-            raise ValueError(
-                "available_from và available_to phải cùng có hoặc cùng không có"
-            )
-        if (
-            self.available_from is not None
-            and not self.available_from < self.available_to
-        ):
+            raise ValueError("available_from và available_to phải cùng có hoặc cùng không có")
+        if self.available_from is not None and not self.available_from < self.available_to:
             raise ValueError("available_from phải nhỏ hơn available_to")
         return self
 
+
 class PlayerSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     display_name: str
     skill_level: SkillLevel
     gender: Gender
+
 
 class SessionSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -112,6 +110,7 @@ class SessionSummary(BaseModel):
     accepted_count: int
     remaining_capacity: int
 
+
 class PageResult(BaseModel, Generic[T]):
     model_config = ConfigDict(from_attributes=True)
 
@@ -120,9 +119,10 @@ class PageResult(BaseModel, Generic[T]):
     limit: int
     offset: int
 
+
 class CreateMatchingRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    
+
     venue_id: IdInt
 
     starts_at: UtcDatetime
@@ -143,12 +143,13 @@ class CreateMatchingRequest(BaseModel):
         duration = (self.ends_at - self.starts_at).total_seconds() / 60
 
         if self.starts_at >= self.ends_at:
-                raise ValueError("starts_at phải bé hơn ends_at")
+            raise ValueError("starts_at phải bé hơn ends_at")
 
         if not 60 <= duration <= 240:
-                raise ValueError("Thời gian trong khoảng 60-240 phút")
+            raise ValueError("Thời gian trong khoảng 60-240 phút")
 
         return self
+
 
 class MatchingRequestSelf(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -172,6 +173,7 @@ class MatchingRequestSelf(BaseModel):
     created_at: UtcDatetime
     closed_at: UtcDatetime | None
 
+
 class SuggestedMember(PlayerSummary):
     estimated_fee_vnd: int
 
@@ -188,7 +190,7 @@ class MatchingSuggestion(BaseModel):
     proposed_fee_female_vnd: int
     members: list[SuggestedMember]
     requires_confirmation: Literal[True]
-    
+
     @model_validator(mode="after")
     def _check_members(self):
         if len(self.members) != self.capacity:
@@ -201,8 +203,3 @@ class MatchingResult(BaseModel):
 
     request: MatchingRequestSelf
     suggestion: MatchingSuggestion | None
-
-
-
-
-

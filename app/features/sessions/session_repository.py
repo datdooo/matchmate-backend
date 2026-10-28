@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
@@ -7,9 +8,10 @@ from app.db.models import (
     MatchingRequestModel,
     ParticipationModel,
     SessionModel,
+    UserModel,
     VenueModel,
 )
-from app.domain.enums import Gender, skill_to_rank
+from app.domain.enums import Gender, rank_to_skill, skill_to_rank
 from app.features.auth.contracts import User
 from app.features.sessions.session_contracts import CreateSessionInput
 
@@ -107,3 +109,84 @@ class SqlAlchemySessionRepository:
                 closed_at=now,
             )
         )
+
+    @staticmethod
+    def _player_summary(model: UserModel) -> dict[str, Any]:
+        return {
+            "id": model.id,
+            "display_name": model.display_name,
+            "skill_level": rank_to_skill(model.skill_level),
+            "gender": model.gender,
+        }
+
+    def get_detail_data(self, session_id: int) -> dict[str, Any] | None:
+        model = self.session.get(SessionModel, session_id)
+        if model is None:
+            return None
+
+        host = self.session.get(UserModel, model.host_user_id)
+        venue = self.session.get(VenueModel, model.venue_id)
+        if host is None or venue is None:
+            raise RuntimeError("Session references missing host or venue")
+
+        fields = (
+            "id",
+            "title",
+            "notes",
+            "starts_at",
+            "ends_at",
+            "play_type",
+            "fee_male_vnd",
+            "fee_female_vnd",
+            "gender_policy",
+            "status",
+            "created_at",
+            "cancelled_at",
+        )
+        data = {name: getattr(model, name) for name in fields}
+        data.update(
+            host=self._player_summary(host),
+            venue={
+                "id": venue.id,
+                "name": venue.name,
+                "address": venue.address,
+                "district_code": venue.district_code,
+                "distance_km": None,
+            },
+            min_level=rank_to_skill(model.min_level),
+            max_level=rank_to_skill(model.max_level),
+        )
+
+        statement = (
+            select(ParticipationModel, UserModel)
+            .select_from(ParticipationModel)
+            .join(UserModel, ParticipationModel.user_id == UserModel.id)
+            .where(ParticipationModel.session_id == session_id)
+            .order_by(
+                ParticipationModel.created_at.desc(),
+                ParticipationModel.id.desc(),
+            )
+        )
+
+        participation_fields = (
+            "id",
+            "user_id",
+            "session_id",
+            "status",
+            "created_at",
+            "decided_at",
+            "cancelled_at",
+            "gender_at_join",
+            "quoted_fee_vnd",
+        )
+        records = []
+        for participation, player in self.session.execute(statement):
+            record = {name: getattr(participation, name) for name in participation_fields}
+            record["player"] = self._player_summary(player)
+            records.append(record)
+
+        return {
+            "session": data,
+            "host_user_id": model.host_user_id,
+            "participations": records,
+        }

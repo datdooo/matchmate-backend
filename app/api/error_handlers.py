@@ -9,6 +9,7 @@ from app.features.auth.contracts import (
     EmailAlreadyExistsError,
     InvalidCredentialsError,
 )
+from app.features.sessions.session_contracts import SessionError
 
 
 def register_error_handlers(app: FastAPI) -> None:
@@ -103,6 +104,31 @@ def register_error_handlers(app: FastAPI) -> None:
                     "request_id": request_id,
                 }
             },
+        )
+
+    @app.exception_handler(SessionError)
+    async def handle_session_error(
+        request: Request,
+        exc: SessionError,
+    ) -> JSONResponse:
+        status_code = {
+            "UNAUTHORIZED": 401,
+            "VENUE_NOT_FOUND": 404,
+            "SESSION_NOT_FOUND": 404,
+            "VENUE_INACTIVE": 409,
+            "PROFILE_INCOMPLETE": 409,
+            "ELIGIBILITY_MISMATCH": 409,
+            "TIME_CONFLICT": 409,
+            "INVALID_TIME_WINDOW": 422,
+            "VALIDATION_ERROR": 422,
+        }.get(exc.code, 500)
+
+        return make_error_response(
+            request,
+            status_code=status_code,
+            code=exc.code if status_code != 500 else "INTERNAL_ERROR",
+            message=exc.message if status_code != 500 else "Lỗi hệ thống",
+            headers=({"WWW-Authenticate": "Bearer"} if status_code == 401 else None),
         )
 
 

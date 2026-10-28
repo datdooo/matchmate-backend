@@ -14,12 +14,14 @@ from app.domain.enums import (
 
 T = TypeVar("T")
 
+
 @dataclass(frozen=True)
 class Page(Generic[T]):
     items: list[T]
     total: int
     limit: int
     offset: int
+
 
 # Venue
 @dataclass(frozen=True)
@@ -30,11 +32,13 @@ class VenueRecord:
     district_code: str
     is_active: bool
 
+
 @dataclass(frozen=True)
 class VenueFilter:
     district_code: str | None = None
     limit: int = 20
     offset: int = 0
+
 
 @dataclass(frozen=True)
 class PlayerSummary:
@@ -42,6 +46,7 @@ class PlayerSummary:
     display_name: str
     skill_level: int
     gender: Gender
+
 
 # Session
 @dataclass(frozen=True)
@@ -70,6 +75,7 @@ class SessionRecord:
     remaining_capacity: int
     display_status: DisplayStatus
 
+
 @dataclass(frozen=True)
 class SessionFilter:
     now: datetime
@@ -94,7 +100,8 @@ class SessionFilter:
     limit: int = 20
     offset: int = 0
 
-#Matching
+
+# Matching
 @dataclass(frozen=True)
 class MatchingRequestRecord:
     id: int
@@ -116,6 +123,7 @@ class MatchingRequestRecord:
     created_at: datetime
     closed_at: datetime | None
 
+
 @dataclass(frozen=True)
 class CreateMatchingInput:
     venue_id: int
@@ -127,6 +135,7 @@ class CreateMatchingInput:
     budget_max_vnd: int
     gender_policy: GenderPolicy = GenderPolicy.ANY
 
+
 @dataclass(frozen=True)
 class MatchingFilter:
     venue_id: int
@@ -136,11 +145,12 @@ class MatchingFilter:
     exclude_user_id: int
     now: datetime
 
+
 @dataclass(frozen=True)
 class MatchingCandidate:
-
     request: MatchingRequestRecord
     player: PlayerSummary
+
 
 @dataclass(frozen=True)
 class SuggestedMember:
@@ -149,6 +159,7 @@ class SuggestedMember:
     skill_level: int
     gender: Gender
     estimated_fee_vnd: int
+
 
 @dataclass(frozen=True)
 class MatchingSuggestion:
@@ -162,22 +173,23 @@ class MatchingSuggestion:
     members: list[SuggestedMember]
     requires_confirmation: bool = True
 
+
 @dataclass(frozen=True)
 class MatchingResult:
     request: MatchingRequestRecord
     suggestion: MatchingSuggestion | None
+
 
 class DiscoveryRepository(Protocol):
     def find_venues(self, filter: VenueFilter) -> Page[VenueRecord]:
         """Trả về sân theo yêu cầu."""
 
     def find_sessions(self, filter: SessionFilter) -> Page[SessionRecord]:
-        """ Trả về session theo yêu cầu."""
+        """Trả về session theo yêu cầu."""
+
 
 class MatchingRepository(Protocol):
-    def close_active_for_user(
-        self, user_id: int, reason: CloseReason, closed_at: datetime
-    ) -> None:
+    def close_active_for_user(self, user_id: int, reason: CloseReason, closed_at: datetime) -> None:
         """Đóng nhu cầu ACTIVE của user."""
 
     def create(
@@ -192,7 +204,5 @@ class MatchingRepository(Protocol):
 
     def get_user(self, user_id: int) -> PlayerSummary | None: ...
 
-    def has_accepted_overlap(
-        self, user_id: int, starts_at: datetime, ends_at: datetime
-    ) -> bool:
+    def has_accepted_overlap(self, user_id: int, starts_at: datetime, ends_at: datetime) -> bool:
         """Chồng giờ khi a < d và c < b."""

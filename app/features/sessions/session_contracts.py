@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 from app.domain.enums import SkillLevel
 from app.domain.ports import MatchingRequestWriter
@@ -37,3 +37,5 @@ class SessionRepository(MatchingRequestWriter, Protocol):
     ) -> bool: ...
 
     def create_with_host(self, data: CreateSessionInput, host: User, now: datetime) -> int: ...
+
+    def get_detail_data(self, session_id: int) -> dict[str, Any] | None: ...
