@@ -152,21 +152,40 @@ def register_error_handlers(app: FastAPI) -> None:
             "PROFILE_INCOMPLETE": 409,
             "VALIDATION_ERROR": 422,
             "INVALID_TIME_WINDOW": 422,
-            "ELIGIBILITY_MISMATCH": 422,
+            "ELIGIBILITY_MISMATCH": 409,
+            "FORBIDDEN": 403,
+            "SESSION_NOT_FOUND": 404,
+            "PARTICIPATION_NOT_FOUND": 404,
+            "SESSION_CANCELLED": 409,
+            "SESSION_ALREADY_STARTED": 409,
+            "SESSION_FULL": 409,
+            "PARTICIPATION_ALREADY_EXISTS": 409,
+            "INVALID_STATE": 409,
+            "HOST_PARTICIPATION_REQUIRED": 409,
         }
-        status_code = status_codes.get(exc.code, 400)
+        status_code = status_codes.get(exc.code, 500)
 
         return JSONResponse(
             status_code=status_code,
-            headers={"X-Request-ID": request_id},
+            headers={
+                "X-Request-ID": request_id,
+                **({"WWW-Authenticate": "Bearer"} if status_code == 401 else {}),
+            },
             content={
                 "error": {
-                    "code": exc.code,
-                    "message": exc.message,
-                    "details": exc.details,
+                    "code": exc.code if status_code != 500 else "INTERNAL_ERROR",
+                    "message": exc.message if status_code != 500 else "Không thể xử lý yêu cầu",
+                    "details": exc.details if status_code != 500 else {},
                     "request_id": request_id,
                 }
             },
+        )
+
+    @app.exception_handler(Exception)
+    async def handle_internal_error(request: Request, exc: Exception) -> JSONResponse:
+        # Giữ SQL/params/exception gốc ở phía server, không đưa vào response.
+        return make_error_response(
+            request, status_code=500, code="INTERNAL_ERROR", message="Không thể xử lý yêu cầu"
         )
 
 
