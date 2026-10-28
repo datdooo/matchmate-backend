@@ -31,7 +31,7 @@ Bốn lượt đo đủ có `exit_code=0`, không 4xx/5xx/409/DATABASE_BUSY ho�
 - **Lifecycle 100 users:** mới login đủ 42 cặp thì một request `/auth/login` timeout sau khoảng 20 giây (`HTTP_0` trong log). Runner dừng trước warm-up/đo, exit 1. Log còn có lỗi Locust CSV writer lúc thoát (`I/O operation on closed file`); failures CSV trống không có nghĩa là không lỗi, phải đọc log và metadata.
 - Cả sáu DB sau dừng đều có `over_capacity=0`, `accepted_overlap=0`, `active_in_cancelled=0`, `open_without_host=0`. Với lượt chưa đo, kết quả này chỉ mô tả DB đã kiểm tra, không thay thế kiểm tải đầy đủ.
 
-Không sửa ứng dụng hoặc mở rộng kiến trúc để ép đạt 50/100 users. Phase 2 có thể dùng baseline này để đánh giá phần đăng nhập và giới hạn SQLite một writer. Docker toàn luồng vẫn cần kiểm chứng riêng.
+Không sửa ứng dụng hoặc mở rộng kiến trúc để ép đạt 50/100 users. Phase 2 có thể dùng baseline này để đánh giá phần đăng nhập và giới hạn SQLite một writer. Phần Docker đã hoàn thành. Các số đo trong báo cáo này lấy từ Uvicorn chạy trên Kaggle, không phải phép đo qua container.
 
 ## Bằng chứng và chạy lại
 
