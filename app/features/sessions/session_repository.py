@@ -140,7 +140,7 @@ class SqlAlchemySessionRepository:
                 "name": venue.name,
                 "address": venue.address,
                 "district_code": venue.district_code,
-                "distance_km": None,
+                "is_active": venue.is_active,
             },
             min_level=rank_to_skill(model.min_level),
             max_level=rank_to_skill(model.max_level),

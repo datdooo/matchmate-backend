@@ -53,24 +53,21 @@ def to_player_summary(m: UserModel) -> PlayerSummary:
 
 
 def to_matching_record(m: MatchingRequestModel) -> MatchingRequestRecord:
-    return (
-        MatchingRequestRecord(
-            id=m.id,
-            user_id=m.user_id,
-            venue_id=m.venue_id,
-            starts_at=m.starts_at,
-            ends_at=m.ends_at,
-            play_type=m.play_type,
-            proposed_fee_male_vnd=m.proposed_fee_male_vnd,
-            proposed_fee_female_vnd=m.proposed_fee_female_vnd,
-            budget_max_vnd=m.budget_max_vnd,
-            gender_policy=m.gender_policy,
-            status=m.status,
-            closed_reason=m.closed_reason,
-            created_at=m.created_at,
-            closed_at=m.closed_at,
-        )
-        | None
+    return MatchingRequestRecord(
+        id=m.id,
+        user_id=m.user_id,
+        venue_id=m.venue_id,
+        starts_at=m.starts_at,
+        ends_at=m.ends_at,
+        play_type=m.play_type,
+        proposed_fee_male_vnd=m.proposed_fee_male_vnd,
+        proposed_fee_female_vnd=m.proposed_fee_female_vnd,
+        budget_max_vnd=m.budget_max_vnd,
+        gender_policy=m.gender_policy,
+        status=m.status,
+        closed_reason=m.closed_reason,
+        created_at=m.created_at,
+        closed_at=m.closed_at,
     )
 
 
@@ -121,8 +118,8 @@ def to_session_record(
     gender_policy = GenderPolicy(session_m.gender_policy)
     return SessionRecord(
         id=session_m.id,
-        host=host.id,
-        venue=venue.id,
+        host=host,
+        venue=venue,
         title=session_m.title,
         notes=session_m.notes,
         starts_at=session_m.starts_at,

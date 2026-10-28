@@ -14,6 +14,18 @@ from app.features.auth.contracts import (
 )
 
 
+def to_user(model: UserModel) -> User:
+    return User(
+        id=model.id,
+        email=model.email,
+        display_name=model.display_name,
+        skill_level=rank_to_skill(model.skill_level),
+        gender=Gender(model.gender),
+        created_at=model.created_at,
+        updated_at=model.updated_at,
+    )
+
+
 class SqlAlchemyUserRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
@@ -25,13 +37,7 @@ class SqlAlchemyUserRepository:
         if model is None:
             return None
 
-        return User(
-            id=model.id,
-            email=model.email,
-            display_name=model.display_name,
-            skill_level=rank_to_skill(model.skill_level),
-            gender=Gender(model.gender),
-        )
+        return to_user(model)
 
     def get_credentials_by_email(
         self,
@@ -73,23 +79,11 @@ class SqlAlchemyUserRepository:
                 raise EmailAlreadyExistsError() from exc
             raise
 
-        return User(
-            id=model.id,
-            email=model.email,
-            display_name=model.display_name,
-            skill_level=rank_to_skill(model.skill_level),
-            gender=Gender(model.gender),
-        )
+        return to_user(model)
 
     def get_by_id(self, user_id: int) -> User | None:
         model = self.session.get(UserModel, user_id)
         if model is None:
             return None
 
-        return User(
-            id=model.id,
-            email=model.email,
-            display_name=model.display_name,
-            skill_level=rank_to_skill(model.skill_level),
-            gender=Gender(model.gender),
-        )
+        return to_user(model)

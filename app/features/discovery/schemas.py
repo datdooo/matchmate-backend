@@ -1,14 +1,13 @@
 from typing import Annotated, Generic, Literal, TypeVar
 
 from pydantic import (
-    AfterValidator,
-    AwareDatetime,
     BaseModel,
     ConfigDict,
     Field,
     model_validator,
 )
 
+from app.api.schemas import UtcDatetime
 from app.domain.enums import (
     CloseReason,
     DisplayStatus,
@@ -20,14 +19,11 @@ from app.domain.enums import (
     SessionStatus,
     SkillLevel,
 )
-from app.domain.time_rules import to_utc
 
 T = TypeVar("T")
 
-UtcDatetime = Annotated[AwareDatetime, AfterValidator(to_utc)]
-
-IdInt = Annotated[int, Field(strict=True, gt=0)]
-VndInt = Annotated[int, Field(strict=True, ge=0)]
+IdInt = Annotated[int, Field(strict=True, gt=0, le=9223372036854775807)]
+VndInt = Annotated[int, Field(strict=True, ge=0, le=9223372036854775807)]
 
 
 class VenueQuery(BaseModel):
@@ -35,7 +31,7 @@ class VenueQuery(BaseModel):
 
     district_code: str | None = Field(default=None, max_length=50)
     limit: int = Field(default=20, ge=1, le=100)
-    offset: int = Field(default=0, ge=0)
+    offset: int = Field(default=0, ge=0, le=9223372036854775807)
 
 
 class VenueView(BaseModel):
@@ -51,7 +47,7 @@ class VenueView(BaseModel):
 class SessionQuery(VenueQuery):
     model_config = ConfigDict(extra="forbid")
 
-    venue_id: int | None = Field(None, gt=0)
+    venue_id: int | None = Field(None, gt=0, le=9223372036854775807)
     play_type: PlayType | None = None
 
     available_from: UtcDatetime | None = None
@@ -59,13 +55,10 @@ class SessionQuery(VenueQuery):
 
     skill_level: SkillLevel | None = None
     gender: Gender | None = None
-    max_fee_vnd: int | None = Field(None, ge=0)
+    max_fee_vnd: int | None = Field(None, ge=0, le=9223372036854775807)
 
     only_available: bool = True
-    host_me: bool = False  # thiếu JWT -> 401 (xử lý ở api.py)
-
-    limit: int = Field(default=20, ge=1, le=100)
-    offset: int = Field(default=0, ge=0)
+    host_me: bool = False  # thiếu JWT -> 401
 
     @model_validator(mode="after")
     def _check_window(self):
