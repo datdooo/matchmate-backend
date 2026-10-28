@@ -6,16 +6,20 @@ Phạm vi gồm **11 API nghiệp vụ, 5 bảng và 19 mức trình**. Đã n�
 
 ## Bài toán và nghiệp vụ
 
+Người chơi là tài khoản đã đăng ký; host là người chơi tạo một kèo và quản lý yêu cầu của kèo đó, không phải vai trò quản trị riêng.
+
 - Người chơi đăng ký hồ sơ, đăng nhập, tra cứu sân/kèo theo quận, trình độ, giới tính, lịch và phí.
-- Host tạo kèo đơn/đôi, tự có một lượt `ACCEPTED`. Sức chứa là 2/4 người, tính cả host. Người chơi xin tham gia tạo `PENDING`, chưa giữ chỗ; host duyệt hoặc từ chối trước giờ bắt đầu.
+- Host tạo kèo đơn/đôi với một sân, lịch tương lai cố định dài 60–240 phút và tự có một lượt `ACCEPTED`. Sức chứa là 2/4 người, tính cả host. Người chơi xin tham gia tạo `PENDING`, chưa giữ chỗ; host duyệt hoặc từ chối trước giờ bắt đầu.
 - Khi duyệt phải kiểm lại điều kiện, chỗ và lịch `ACCEPTED`. Hai lịch nối tiếp được phép. Mức phí và giới tính lúc xin được giữ nguyên; đăng ký lại tạo lượt mới. Người chơi rút lượt của mình; host phải hủy cả kèo.
-- Matching gợi ý đủ 2/4 người cùng sân, giờ và loại kèo; kiểm trình, giới tính và ngân sách. Chưa đủ nhóm thì trả `suggestion=null`; gợi ý không tự giữ chỗ.
+- Matching gợi ý đủ 2/4 người cùng sân, giờ chính xác và loại kèo; kiểm policy giới tính, ngân sách và chênh trình tối đa 2 bậc. Chưa đủ nhóm thì trả `suggestion=null`; gợi ý không tự giữ chỗ hoặc tạo participation.
+
+Ngoài phạm vi Pha 1: frontend hoàn chỉnh, chat/thông báo đẩy, đặt sân thực tế, thanh toán/hoàn tiền, xác minh trình độ, Elo/AI và danh sách chờ. Mức phí công bố không phải bằng chứng thanh toán.
 
 ## Framework và tổ chức code
 
 Python 3.11+, FastAPI/Pydantic cho HTTP và schema, SQLAlchemy 2 cho ORM, SQLite cho dữ liệu; PyJWT HS256 và Argon2 cho đăng nhập. CI và Docker dùng Python 3.11.
 
-Request đi qua API → Service → Protocol → Repository → SQLite. Service/domain/contracts thuần Python; repository trả dữ liệu thuần, không đưa ORM ra response.
+Request đi qua API → Service → Protocol → Repository → SQLite. Service/domain/contracts thuần Python; repository trả dữ liệu thuần, không đưa ORM ra response. Protocol/port mô tả giao diện Service cần; dependency ghép các adapter tại biên ứng dụng.
 
 | Thư mục | Vai trò |
 |---|---|
@@ -59,19 +63,20 @@ Test dùng SQLite file tạm riêng, có JWT/API thật, rollback, snapshot, ide
 
 **[docs/openapi.json](docs/openapi.json)** được xuất từ app, mô tả các API đã tích hợp. Mở file bằng [Swagger Editor](https://editor.swagger.io/) để preview. Khi chạy local, dùng [Swagger UI](http://127.0.0.1:8000/docs), [ReDoc](http://127.0.0.1:8000/redoc) hoặc [OpenAPI JSON](http://127.0.0.1:8000/openapi.json).
 
-| Method | Route | Quyền |
-|---|---|---|
-| POST | `/auth/register`, `/auth/login` | Public |
-| GET | `/venues` | Public |
-| GET | `/sessions` | Public; `host_me=true` cần JWT |
-| POST | `/sessions` | JWT |
-| GET | `/sessions/{session_id}` | JWT |
-| DELETE | `/sessions/{session_id}` | Host |
-| POST | `/participations` | JWT |
-| POST | `/participations/{participation_id}/decision` | Host |
-| DELETE | `/participations/{participation_id}` | Chủ lượt, không rút riêng lượt host |
-| POST | `/matching/requests` | JWT |
-| GET | `/health` | Public, chỉ liveness |
+| FR | Method | Route | Quyền |
+|---|---|---|---|
+| FR-01 | POST | `/auth/register` | Public |
+| FR-02 | POST | `/auth/login` | Public |
+| FR-03 | GET | `/venues` | Public |
+| FR-04 | GET | `/sessions` | Public; `host_me=true` cần JWT |
+| FR-05 | POST | `/sessions` | JWT |
+| FR-06 | GET | `/sessions/{session_id}` | JWT |
+| FR-07 | DELETE | `/sessions/{session_id}` | Host |
+| FR-08 | POST | `/participations` | JWT |
+| FR-09 | POST | `/participations/{participation_id}/decision` | Host |
+| FR-10 | DELETE | `/participations/{participation_id}` | Chủ lượt, không rút riêng lượt host |
+| FR-11 | POST | `/matching/requests` | JWT |
+| Kỹ thuật | GET | `/health` | Public, chỉ liveness |
 
 Tạo/xem/hủy kèo trả `SessionDetail`, mở rộng schema `SessionSummary` dùng chung. Ba API participation trả `ParticipationDetail` đầy đủ. Datetime nhận ISO 8601 có timezone; từ chối Unix timestamp và số nguyên vượt miền INTEGER của SQLite bằng 422.
 
