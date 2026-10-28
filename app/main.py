@@ -18,7 +18,9 @@ app = FastAPI(
     description="MatchMate Phase 1 backend.",
 )
 app.add_middleware(JwtMiddleware)
+
 register_error_handlers(app)
+
 app.include_router(create_auth_router(provide_registration_service))
 app.include_router(
     create_login_router(

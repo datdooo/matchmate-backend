@@ -6,6 +6,10 @@ class Gender(str, Enum):
     FEMALE = "FEMALE"
     UNSPECIFIED = "UNSPECIFIED"
 
+class GenderPolicy(str, Enum):
+    ANY = "ANY"
+    MALE_ONLY = "MALE_ONLY"
+    FEMALE_ONLY = "FEMALE_ONLY"
 
 class SkillLevel(str, Enum):
     NEWBIE = "NEWBIE"
@@ -40,3 +44,32 @@ def skill_to_rank(level: SkillLevel) -> int:
 
 def rank_to_skill(rank: int) -> SkillLevel:
     return RANK_TO_SKILL[rank]
+
+class PlayType(str, Enum):
+    SINGLES = "SINGLES"
+    DOUBLES = "DOUBLES"
+
+class MatchingStatus(str, Enum):
+    ACTIVE = "ACTIVE"
+    CLOSED = "CLOSED"
+
+class SessionStatus(str, Enum):
+    OPEN = "OPEN"
+    CANCELLED = "CANCELLED"
+
+class DisplayStatus(str, Enum):
+    CANCELLED = "CANCELLED"
+    ENDED = "ENDED"
+    STARTED = "STARTED"
+    FULL = "FULL"
+    AVAILABLE = "AVAILABLE"
+
+class EffectiveStatus(str, Enum):
+    ACTIVE = "ACTIVE"
+    CLOSED = "CLOSED"
+    EXPIRED = "EXPIRED"
+
+class CloseReason(str, Enum):
+    REPLACED = "REPLACED"
+    CONFIRMED = "CONFIRMED"
+    CANCELLED = "CANCELLED"
