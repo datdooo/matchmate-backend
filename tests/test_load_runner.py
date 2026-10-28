@@ -75,3 +75,18 @@ def test_invariant_detector_catches_overlap_and_incomplete_cancel(
         session.commit()
     result = check_invariants(db_engine)
     assert result["accepted_overlap"] == 1 and result["active_in_cancelled"] == 1
+
+
+def test_invariant_detector_catches_open_game_without_host(
+    db_session_factory, db_engine, game_data
+):
+    with db_session_factory() as session:
+        host = session.scalar(
+            select(ParticipationModel).where(
+                ParticipationModel.session_id == game_data["first"],
+                ParticipationModel.user_id == game_data["host"],
+            )
+        )
+        host.status, host.cancelled_at = "CANCELLED", host.created_at
+        session.commit()
+    assert check_invariants(db_engine)["open_without_host"] == 1

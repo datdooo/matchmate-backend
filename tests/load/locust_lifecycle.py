@@ -19,6 +19,7 @@ class LifecycleUser(AuthenticatedUser):
             "/sessions",
             expected=201,
             required_fields=("id", "host", "venue", "my_participations", "management"),
+            expected_values={"status": "OPEN", "accepted_count": 1},
             headers=self.headers,
             json={
                 "venue_id": self.rng.choice(self.manifest["venue_ids"]),
@@ -40,17 +41,27 @@ class LifecycleUser(AuthenticatedUser):
             "/participations",
             expected=201,
             required_fields=("id", "status", "session"),
+            expected_values={
+                "session_id": game["id"],
+                "status": "PENDING",
+                "gender_at_join": "FEMALE",
+                "quoted_fee_vnd": 40000,
+            },
             headers=self.player_headers,
             json={"session_id": game["id"]},
         )
         if pending is None:
             return
         part_id = pending["id"]
+        snapshot = {
+            field: pending[field] for field in ("session_id", "gender_at_join", "quoted_fee_vnd")
+        }
         approved = self.request_json(
             "POST",
             f"/participations/{part_id}/decision",
             name="/participations/{id}/decision",
             required_fields=("id", "status", "session"),
+            expected_values={**snapshot, "id": part_id, "status": "ACCEPTED"},
             headers=self.headers,
             json={"decision": "APPROVE"},
         )
@@ -62,6 +73,7 @@ class LifecycleUser(AuthenticatedUser):
             name="/sessions/{id}",
             headers=self.player_headers,
             required_fields=("id", "my_participations", "management"),
+            expected_values={"id": game["id"], "status": "OPEN", "accepted_count": 2},
         )
         if detail is None:
             return
@@ -73,6 +85,7 @@ class LifecycleUser(AuthenticatedUser):
                 name="/participations/{id}",
                 headers=self.player_headers,
                 required_fields=("id", "status", "session"),
+                expected_values={**snapshot, "id": part_id, "status": "CANCELLED"},
             )
         else:
             self.request_json(
@@ -81,4 +94,5 @@ class LifecycleUser(AuthenticatedUser):
                 name="/sessions/{id}",
                 headers=self.headers,
                 required_fields=("id", "host", "venue", "my_participations", "management"),
+                expected_values={"id": game["id"], "status": "CANCELLED", "accepted_count": 0},
             )

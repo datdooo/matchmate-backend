@@ -116,6 +116,9 @@ def check_invariants(engine):
         "active_in_cancelled": """SELECT COUNT(*) FROM sessions s
             JOIN participations p ON p.session_id=s.id WHERE s.status='CANCELLED'
             AND p.status IN ('PENDING','ACCEPTED')""",
+        "open_without_host": """SELECT COUNT(*) FROM sessions s WHERE s.status='OPEN'
+            AND NOT EXISTS (SELECT 1 FROM participations p WHERE p.session_id=s.id
+            AND p.user_id=s.host_user_id AND p.status='ACCEPTED')""",
     }
     with engine.connect() as connection:
         return {
