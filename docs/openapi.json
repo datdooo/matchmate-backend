@@ -1,0 +1,1569 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "MatchMate",
+    "description": "MatchMate Phase 1 backend.",
+    "version": "0.0.1"
+  },
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Register",
+        "operationId": "register_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSelf"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "EMAIL_ALREADY_EXISTS: email đã được đăng ký",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DATABASE_BUSY: hết thời gian chờ khóa DB",
+            "headers": {
+              "Retry-After": {
+                "description": "Thời gian chờ gợi ý, tính bằng giây",
+                "schema": {
+                  "type": "integer",
+                  "example": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login",
+        "operationId": "login_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenData"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_CREDENTIALS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DATABASE_BUSY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions": {
+      "post": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Create Session",
+        "operationId": "create_session_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Xung đột nghiệp vụ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DATABASE_BUSY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/sessions/{session_id}": {
+      "get": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Get Session Detail",
+        "operationId": "get_session_detail_sessions__session_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "exclusiveMinimum": 0,
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "SESSION_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DATABASE_BUSY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/participations": {
+      "post": {
+        "tags": [
+          "Participations"
+        ],
+        "summary": "Join",
+        "operationId": "join_participations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipationDetailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/participations/{participation_id}/decision": {
+      "post": {
+        "tags": [
+          "Participations"
+        ],
+        "summary": "Decide",
+        "operationId": "decide_participations__participation_id__decision_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "participation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "exclusiveMinimum": 0,
+              "title": "Participation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipationDetailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/participations/{participation_id}": {
+      "delete": {
+        "tags": [
+          "Participations"
+        ],
+        "summary": "Withdraw",
+        "operationId": "withdraw_participations__participation_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "participation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "exclusiveMinimum": 0,
+              "title": "Participation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipationDetailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Technical"
+        ],
+        "summary": "Application liveness",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateSessionRequest": {
+        "properties": {
+          "venue_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Venue Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Notes",
+            "default": ""
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ends At"
+          },
+          "play_type": {
+            "type": "string",
+            "enum": [
+              "SINGLES",
+              "DOUBLES"
+            ],
+            "title": "Play Type"
+          },
+          "fee_male_vnd": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Fee Male Vnd"
+          },
+          "fee_female_vnd": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Fee Female Vnd"
+          },
+          "min_level": {
+            "$ref": "#/components/schemas/SkillLevel"
+          },
+          "max_level": {
+            "$ref": "#/components/schemas/SkillLevel"
+          },
+          "gender_policy": {
+            "type": "string",
+            "enum": [
+              "ANY",
+              "MALE_ONLY",
+              "FEMALE_ONLY"
+            ],
+            "title": "Gender Policy",
+            "default": "ANY"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "venue_id",
+          "title",
+          "starts_at",
+          "ends_at",
+          "play_type",
+          "fee_male_vnd",
+          "fee_female_vnd",
+          "min_level",
+          "max_level"
+        ],
+        "title": "CreateSessionRequest"
+      },
+      "DecisionRequest": {
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "APPROVE",
+              "REJECT"
+            ],
+            "title": "Decision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decision"
+        ],
+        "title": "DecisionRequest"
+      },
+      "DisplayStatus": {
+        "type": "string",
+        "enum": [
+          "CANCELLED",
+          "ENDED",
+          "STARTED",
+          "FULL",
+          "AVAILABLE"
+        ],
+        "title": "DisplayStatus"
+      },
+      "ErrorPayload": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "details",
+          "request_id"
+        ],
+        "title": "ErrorPayload"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorPayload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse"
+      },
+      "Gender": {
+        "type": "string",
+        "enum": [
+          "MALE",
+          "FEMALE",
+          "UNSPECIFIED"
+        ],
+        "title": "Gender"
+      },
+      "GenderPolicy": {
+        "type": "string",
+        "enum": [
+          "ANY",
+          "MALE_ONLY",
+          "FEMALE_ONLY"
+        ],
+        "title": "GenderPolicy"
+      },
+      "JoinSessionRequest": {
+        "properties": {
+          "session_id": {
+            "type": "integer",
+            "maximum": 9.223372036854776e+18,
+            "exclusiveMinimum": 0.0,
+            "title": "Session Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "session_id"
+        ],
+        "title": "JoinSessionRequest"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest"
+      },
+      "Management": {
+        "properties": {
+          "participations": {
+            "items": {
+              "$ref": "#/components/schemas/ParticipationRecord"
+            },
+            "type": "array",
+            "title": "Participations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "participations"
+        ],
+        "title": "Management"
+      },
+      "ParticipationDetailResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "integer",
+            "title": "User Id"
+          },
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id"
+          },
+          "player": {
+            "$ref": "#/components/schemas/PlayerSummary"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ParticipationStatus"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "can_cancel": {
+            "type": "boolean",
+            "title": "Can Cancel"
+          },
+          "can_decide": {
+            "type": "boolean",
+            "title": "Can Decide"
+          },
+          "gender_at_join": {
+            "$ref": "#/components/schemas/Gender"
+          },
+          "quoted_fee_vnd": {
+            "type": "integer",
+            "title": "Quoted Fee Vnd"
+          },
+          "session": {
+            "$ref": "#/components/schemas/SessionSummary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "session_id",
+          "player",
+          "status",
+          "created_at",
+          "decided_at",
+          "cancelled_at",
+          "can_cancel",
+          "can_decide",
+          "gender_at_join",
+          "quoted_fee_vnd",
+          "session"
+        ],
+        "title": "ParticipationDetailResponse"
+      },
+      "ParticipationRecord": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "integer",
+            "title": "User Id"
+          },
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id"
+          },
+          "player": {
+            "$ref": "#/components/schemas/PlayerSummary"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "REJECTED",
+              "CANCELLED"
+            ],
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "can_cancel": {
+            "type": "boolean",
+            "title": "Can Cancel"
+          },
+          "can_decide": {
+            "type": "boolean",
+            "title": "Can Decide"
+          },
+          "gender_at_join": {
+            "type": "string",
+            "enum": [
+              "MALE",
+              "FEMALE"
+            ],
+            "title": "Gender At Join"
+          },
+          "quoted_fee_vnd": {
+            "type": "integer",
+            "title": "Quoted Fee Vnd"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "session_id",
+          "player",
+          "status",
+          "created_at",
+          "decided_at",
+          "cancelled_at",
+          "can_cancel",
+          "can_decide",
+          "gender_at_join",
+          "quoted_fee_vnd"
+        ],
+        "title": "ParticipationRecord"
+      },
+      "ParticipationStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "ACCEPTED",
+          "REJECTED",
+          "CANCELLED"
+        ],
+        "title": "ParticipationStatus"
+      },
+      "PlayType": {
+        "type": "string",
+        "enum": [
+          "SINGLES",
+          "DOUBLES"
+        ],
+        "title": "PlayType"
+      },
+      "PlayerSummary": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "skill_level": {
+            "$ref": "#/components/schemas/SkillLevel"
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "skill_level",
+          "gender"
+        ],
+        "title": "PlayerSummary"
+      },
+      "RegisterRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Password"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "skill_level": {
+            "$ref": "#/components/schemas/SkillLevel"
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "MALE",
+              "FEMALE"
+            ],
+            "title": "Gender"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "display_name",
+          "skill_level",
+          "gender"
+        ],
+        "title": "RegisterRequest"
+      },
+      "SessionDetail": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "notes": {
+            "type": "string",
+            "title": "Notes"
+          },
+          "host": {
+            "$ref": "#/components/schemas/PlayerSummary"
+          },
+          "venue": {
+            "$ref": "#/components/schemas/app__features__sessions__session_schemas__VenueView"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ends At"
+          },
+          "play_type": {
+            "type": "string",
+            "enum": [
+              "SINGLES",
+              "DOUBLES"
+            ],
+            "title": "Play Type"
+          },
+          "capacity": {
+            "type": "integer",
+            "enum": [
+              2,
+              4
+            ],
+            "title": "Capacity"
+          },
+          "fee_male_vnd": {
+            "type": "integer",
+            "title": "Fee Male Vnd"
+          },
+          "fee_female_vnd": {
+            "type": "integer",
+            "title": "Fee Female Vnd"
+          },
+          "min_level": {
+            "$ref": "#/components/schemas/SkillLevel"
+          },
+          "max_level": {
+            "$ref": "#/components/schemas/SkillLevel"
+          },
+          "gender_policy": {
+            "type": "string",
+            "enum": [
+              "ANY",
+              "MALE_ONLY",
+              "FEMALE_ONLY"
+            ],
+            "title": "Gender Policy"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "CANCELLED"
+            ],
+            "title": "Status"
+          },
+          "display_status": {
+            "type": "string",
+            "enum": [
+              "CANCELLED",
+              "ENDED",
+              "STARTED",
+              "FULL",
+              "AVAILABLE"
+            ],
+            "title": "Display Status"
+          },
+          "accepted_count": {
+            "type": "integer",
+            "title": "Accepted Count"
+          },
+          "remaining_capacity": {
+            "type": "integer",
+            "title": "Remaining Capacity"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "my_participations": {
+            "items": {
+              "$ref": "#/components/schemas/ParticipationRecord"
+            },
+            "type": "array",
+            "title": "My Participations"
+          },
+          "management": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Management"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "notes",
+          "host",
+          "venue",
+          "starts_at",
+          "ends_at",
+          "play_type",
+          "capacity",
+          "fee_male_vnd",
+          "fee_female_vnd",
+          "min_level",
+          "max_level",
+          "gender_policy",
+          "status",
+          "display_status",
+          "accepted_count",
+          "remaining_capacity",
+          "created_at",
+          "cancelled_at",
+          "my_participations",
+          "management"
+        ],
+        "title": "SessionDetail"
+      },
+      "SessionStatus": {
+        "type": "string",
+        "enum": [
+          "OPEN",
+          "CANCELLED"
+        ],
+        "title": "SessionStatus"
+      },
+      "SessionSummary": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "host": {
+            "$ref": "#/components/schemas/PlayerSummary"
+          },
+          "venue": {
+            "$ref": "#/components/schemas/app__features__discovery__schemas__VenueView"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ends At"
+          },
+          "play_type": {
+            "$ref": "#/components/schemas/PlayType"
+          },
+          "capacity": {
+            "type": "integer",
+            "title": "Capacity"
+          },
+          "fee_male_vnd": {
+            "type": "integer",
+            "title": "Fee Male Vnd"
+          },
+          "fee_female_vnd": {
+            "type": "integer",
+            "title": "Fee Female Vnd"
+          },
+          "min_level": {
+            "$ref": "#/components/schemas/SkillLevel"
+          },
+          "max_level": {
+            "$ref": "#/components/schemas/SkillLevel"
+          },
+          "gender_policy": {
+            "$ref": "#/components/schemas/GenderPolicy"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SessionStatus"
+          },
+          "display_status": {
+            "$ref": "#/components/schemas/DisplayStatus"
+          },
+          "accepted_count": {
+            "type": "integer",
+            "title": "Accepted Count"
+          },
+          "remaining_capacity": {
+            "type": "integer",
+            "title": "Remaining Capacity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "host",
+          "venue",
+          "starts_at",
+          "ends_at",
+          "play_type",
+          "capacity",
+          "fee_male_vnd",
+          "fee_female_vnd",
+          "min_level",
+          "max_level",
+          "gender_policy",
+          "status",
+          "display_status",
+          "accepted_count",
+          "remaining_capacity"
+        ],
+        "title": "SessionSummary"
+      },
+      "SkillLevel": {
+        "type": "string",
+        "enum": [
+          "NEWBIE",
+          "Y_MINUS",
+          "Y",
+          "Y_PLUS",
+          "TBY_MINUS",
+          "TBY",
+          "TBY_PLUS",
+          "TB_MINUS",
+          "TB",
+          "TB_PLUS",
+          "TBK_MINUS",
+          "TBK",
+          "TBK_PLUS",
+          "K_MINUS",
+          "K",
+          "K_PLUS",
+          "T_MINUS",
+          "T",
+          "T_PLUS"
+        ],
+        "title": "SkillLevel"
+      },
+      "TokenData": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "const": "bearer",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "expires_in": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expires In"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "expires_in"
+        ],
+        "title": "TokenData"
+      },
+      "UserSelf": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Id"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "skill_level": {
+            "$ref": "#/components/schemas/SkillLevel"
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "display_name",
+          "skill_level",
+          "gender"
+        ],
+        "title": "UserSelf"
+      },
+      "app__features__discovery__schemas__VenueView": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "address": {
+            "type": "string",
+            "title": "Address"
+          },
+          "district_code": {
+            "type": "string",
+            "title": "District Code"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "address",
+          "district_code",
+          "is_active"
+        ],
+        "title": "VenueView"
+      },
+      "app__features__sessions__session_schemas__VenueView": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "address": {
+            "type": "string",
+            "title": "Address"
+          },
+          "district_code": {
+            "type": "string",
+            "title": "District Code"
+          },
+          "distance_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distance Km"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "address",
+          "district_code",
+          "distance_km"
+        ],
+        "title": "VenueView"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}
