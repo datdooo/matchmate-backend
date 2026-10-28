@@ -4,7 +4,11 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app.features.auth.contracts import DatabaseBusyError, EmailAlreadyExistsError
+from app.features.auth.contracts import (
+    DatabaseBusyError,
+    EmailAlreadyExistsError,
+    InvalidCredentialsError,
+)
 
 
 def register_error_handlers(app: FastAPI) -> None:
@@ -80,3 +84,47 @@ def register_error_handlers(app: FastAPI) -> None:
                 }
             },
         )
+
+    @app.exception_handler(InvalidCredentialsError)
+    async def handle_invalid_credentials(
+        request: Request,
+        exc: InvalidCredentialsError,
+    ) -> JSONResponse:
+        request_id = getattr(request.state, "request_id", None) or uuid4().hex
+
+        return JSONResponse(
+            status_code=401,
+            headers={"WWW-Authenticate": "Bearer"},
+            content={
+                "error": {
+                    "code": "INVALID_CREDENTIALS",
+                    "message": "Email hoặc mật khẩu không đúng",
+                    "details": {},
+                    "request_id": request_id,
+                }
+            },
+        )
+
+
+def make_error_response(
+    request: Request,
+    *,
+    status_code: int,
+    code: str,
+    message: str,
+    headers: dict[str, str] | None = None,
+) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", None) or uuid4().hex
+
+    return JSONResponse(
+        status_code=status_code,
+        headers={"X-Request-ID": request_id, **(headers or {})},
+        content={
+            "error": {
+                "code": code,
+                "message": message,
+                "details": {},
+                "request_id": request_id,
+            }
+        },
+    )
