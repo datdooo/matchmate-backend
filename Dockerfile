@@ -13,6 +13,7 @@ RUN python -m pip install --no-cache-dir -r requirements.txt \
     && chown app:app /app/data
 
 COPY --chown=app:app app ./app
+COPY --chown=app:app scripts ./scripts
 
 USER app
 EXPOSE 8000
