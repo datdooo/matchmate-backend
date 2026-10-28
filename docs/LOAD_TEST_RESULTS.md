@@ -37,6 +37,8 @@ Không sửa ứng dụng hoặc mở rộng kiến trúc để ép đạt 50/10
 
 [Notebook đã chạy, giữ cả output lỗi](load/kaggle-2026-10-29/matchmate-phase-1-load-test.ipynb), [metadata tổng hợp](load/kaggle-2026-10-29/run-summary.json), [môi trường](load/kaggle-2026-10-29/kaggle-environment.json) và CSV/log từng lượt nằm trong [thư mục kết quả](load/kaggle-2026-10-29). [Gói đầy đủ](load/kaggle-2026-10-29/matchmate-kaggle-results.zip) giữ nguyên HTML, CSV, log, metadata và báo cáo runner (bao gồm lượt không đạt).
 
+Notebook trong repo chỉ được sắp xếp import/format để qua lint chung; output, số đo và lỗi giữ nguyên như bản tải từ Kaggle.
+
 SHA-256 gói đầy đủ: `7c1e26d90b1fd23ea913ad24a06f1ee3119ffca1af22ed6a033fb1be594e1ac4`.
 
 Notebook: https://www.kaggle.com/code/datdooo/matchmate-phase-1-load-test/edit (private, tài khoản sở hữu mới xem được). Để chạy online từ repo:
