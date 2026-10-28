@@ -45,7 +45,6 @@ def provide_discovery_service(
 
 def provide_optional_user_id(request: Request) -> int | None:
     principal = getattr(request.state, "principal", None)
-    # principal = request.state.pricipal
     if principal is None:
         return None
 
@@ -53,7 +52,7 @@ def provide_optional_user_id(request: Request) -> int | None:
 
 
 def provide_current_user_id(request: Request) -> int:
-    user_id = provide_current_user_id(request)
+    user_id = provide_optional_user_id(request)
     if user_id is None:
         raise DomainError("UNAUTHORIZED", "Cần đăng nhập")
 
