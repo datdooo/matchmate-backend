@@ -1,9 +1,10 @@
+import os
 import sqlite3
 
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
-DATABASE_URL = "sqlite:///./app.db"
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
 
 
 def create_db_engine(
@@ -37,7 +38,9 @@ def create_db_engine(
     return engine
 
 
-engine = create_db_engine(DATABASE_URL)
+engine = create_db_engine(
+    DATABASE_URL, busy_timeout=int(os.getenv("SQLITE_BUSY_TIMEOUT_MS", "5000"))
+)
 
 
 def create_session_factory(engine: Engine) -> sessionmaker[Session]:
