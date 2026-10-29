@@ -1,25 +1,25 @@
 # MatchMate Backend
 
-MatchMate hỗ trợ người chơi cầu lông tìm kèo phù hợp và chủ kèo tuyển thêm người. Pha 1 cung cấp backend REST JSON với Swagger UI để thử các luồng chức năng. Hệ thống tra cứu sân/kèo theo quận (`district_code`), không dùng GPS.
+MatchMate giúp người chơi cầu lông tìm kèo và giúp chủ kèo tuyển thêm người. Bản Pha 1 là backend REST JSON, có thể gọi thử API bằng Swagger UI. Sân và kèo được tìm theo quận (`district_code`), không dùng GPS.
 
-Phạm vi gồm **11 API nghiệp vụ, 5 bảng và 19 mức trình**. Ứng dụng quản lý hồ sơ, sân, kèo, lượt tham gia và gợi ý ghép nhóm; `/health` phục vụ kiểm tra tiến trình.
+Backend có 11 API nghiệp vụ, 5 bảng dữ liệu và 19 mức trình. Các chức năng gồm quản lý hồ sơ, tìm sân, tạo kèo, xử lý lượt tham gia và gợi ý ghép nhóm. Endpoint `/health` dùng để kiểm tra tiến trình còn chạy.
 
 ## Bài toán và nghiệp vụ
 
-Người chơi cần tìm kèo còn chỗ, phù hợp điều kiện và không trùng lịch đã nhận. Chủ kèo cần duyệt người tham gia mà không vượt sức chứa. Hệ thống kiểm tra các điều kiện này cùng trạng thái kèo và lượt tham gia.
+Người chơi cần biết kèo nào còn chỗ, có phù hợp với mình và có trùng lịch đã nhận hay không. Khi chủ kèo duyệt người tham gia, hệ thống phải kiểm tra lại các điều kiện đó để tránh nhận quá số người.
 
-Người chơi là tài khoản đã đăng ký; host là người chơi tạo một kèo và quản lý yêu cầu của kèo đó, không phải vai trò quản trị riêng.
+Một tài khoản đã đăng ký có thể tìm hoặc tạo kèo. Người tạo kèo được gọi là host và có quyền quản lý các yêu cầu tham gia kèo đó. Host không phải vai trò quản trị riêng của hệ thống.
 
-- Người chơi đăng ký hồ sơ, đăng nhập, tra cứu sân/kèo theo quận, trình độ, giới tính, lịch và phí.
-- Chủ kèo (host) tạo kèo đơn/đôi với một sân, lịch tương lai cố định dài 60–240 phút và tự có một lượt `ACCEPTED`. Sức chứa là 2/4 người, tính cả host. Người chơi xin tham gia tạo `PENDING`, chưa giữ chỗ; host duyệt hoặc từ chối trước giờ bắt đầu.
-- Khi duyệt phải kiểm lại điều kiện, chỗ và lịch `ACCEPTED`. Hai lịch nối tiếp được phép. Mức phí và giới tính lúc xin được giữ nguyên; đăng ký lại tạo lượt mới. Người chơi rút lượt của mình; host phải hủy cả kèo.
-- Matching gợi ý đủ 2/4 người cùng sân, giờ chính xác và loại kèo; kiểm policy giới tính, ngân sách và chênh trình tối đa 2 bậc. Chưa đủ nhóm thì trả `suggestion=null`; gợi ý không tự giữ chỗ hoặc tạo participation.
+- Người chơi có thể đăng ký hồ sơ, đăng nhập và tìm sân, tìm kèo theo quận, trình độ, giới tính, lịch và phí.
+- Khi tạo kèo, host chọn sân, loại đơn hoặc đôi và một lịch cố định ở tương lai, dài 60–240 phút. Kèo đơn có 2 người, kèo đôi có 4 người, tính cả host. Host tự có một lượt `ACCEPTED`; người xin tham gia được lưu ở trạng thái `PENDING` và chưa giữ chỗ. Host duyệt hoặc từ chối trước giờ bắt đầu.
+- Khi duyệt, hệ thống kiểm lại điều kiện tham gia, số chỗ và lịch `ACCEPTED` hiện tại. Hai lịch nối tiếp được phép. Phí và giới tính được giữ theo thời điểm xin tham gia; nếu đăng ký lại thì tạo lượt mới. Người chơi được rút lượt của mình, còn host phải hủy cả kèo.
+- Matching tìm nhóm đủ 2/4 người có cùng sân, khung giờ chính xác và loại kèo. Nhóm phải đáp ứng policy giới tính, ngân sách và chênh trình tối đa 2 bậc. Nếu chưa đủ nhóm, API trả `suggestion=null`. Kết quả chỉ là gợi ý, không tự giữ chỗ hoặc tạo participation.
 
-Ngoài phạm vi Pha 1: frontend hoàn chỉnh, chat/thông báo đẩy, đặt sân thực tế, thanh toán/hoàn tiền, xác minh trình độ, Elo/AI và danh sách chờ. Mức phí công bố không phải bằng chứng thanh toán.
+Pha 1 chưa có frontend hoàn chỉnh, chat, thông báo đẩy, đặt sân thực tế, thanh toán, hoàn tiền, xác minh trình độ, Elo/AI hoặc danh sách chờ. Mức phí công bố không có nghĩa là người chơi đã thanh toán.
 
 ## Workflow người dùng
 
-Sơ đồ mô tả cách dùng API qua Swagger hoặc một giao diện tích hợp sau này; Pha 1 chưa có frontend hoàn chỉnh. Người chưa đăng nhập vẫn được tra cứu sân/kèo công khai. Các thao tác tạo, xem chi tiết và tham gia cần JWT.
+Luồng dưới đây có thể thử qua Swagger hoặc dùng khi tích hợp giao diện sau này. Người chưa đăng nhập vẫn được tìm sân và kèo công khai. Để tạo kèo, xem chi tiết hoặc xin tham gia, người dùng cần đăng nhập và gửi JWT.
 
 ```mermaid
 flowchart TD
@@ -40,30 +40,30 @@ flowchart TD
     E --> J
 ```
 
-Mở các mục **Workflow chi tiết và mã nguồn** cuối README để xem trường nhập, nhánh lỗi, kết quả và đoạn code tương ứng.
+Phần **Workflow chi tiết và mã nguồn** ở cuối README ghi rõ dữ liệu cần nhập, cách xử lý khi sai và đoạn code của từng bước.
 
 ## Công nghệ và tổ chức mã nguồn
 
-Python 3.11+, FastAPI/Pydantic cho HTTP và schema, SQLAlchemy 2 cho ORM, SQLite cho dữ liệu; PyJWT HS256 và Argon2 cho đăng nhập. CI và Docker dùng Python 3.11.
+Ứng dụng viết bằng Python 3.11+, dùng FastAPI và Pydantic để nhận request và kiểm tra schema. SQLAlchemy 2 là lớp ORM làm việc với SQLite. Đăng nhập dùng PyJWT với HS256; mật khẩu được băm bằng Argon2. CI và Docker dùng Python 3.11.
 
-Luồng xử lý: API → Service → Protocol → Repository → SQLite. Service xử lý nghiệp vụ; Protocol định nghĩa giao diện truy cập dữ liệu; Repository triển khai giao diện đó. Dependency ghép các thành phần tại biên ứng dụng. Domain và contract thuần Python; ORM không được đưa trực tiếp ra response.
+Request đi từ API đến Service, qua giao diện Protocol rồi Repository để truy cập SQLite. Service chứa luật nghiệp vụ; Repository thực hiện việc đọc và ghi theo giao diện mà Protocol quy định. Dependency ghép service với các adapter mà nó cần. Domain và contract dùng Python thuần, còn response trả dữ liệu theo schema thay vì đưa trực tiếp đối tượng ORM ra ngoài.
 
 | Thư mục | Vai trò |
 |---|---|
 | `app/features/auth` | Đăng ký, đăng nhập, JWT middleware |
 | `app/features/discovery` | Tìm sân/kèo, matching |
-| `app/features/sessions` | `session_*` quản lý kèo; `participation_*` xin/duyệt/rút |
-| `app/domain`, `app/db` | Entity, enum, port, luật giờ; model, UTC, UoW và adapter ghi |
-| `app/api`, `app/main.py` | Envelope lỗi, ghép router và dependency |
-| `tests`, `scripts` | Test/fixture/Locust; seed và runner tải |
+| `app/features/sessions` | `session_*` quản lý kèo; `participation_*` xử lý xin tham gia, duyệt và rút lượt |
+| `app/domain`, `app/db` | Domain chứa entity, enum, port và luật thời gian. DB chứa model, xử lý UTC, UoW và adapter ghi |
+| `app/api`, `app/main.py` | Định dạng lỗi chung, đăng ký router và ghép dependency |
+| `tests`, `scripts` | Test, fixture, Locust, seed dữ liệu và script chạy tải |
 
-Dữ liệu gồm 5 bảng: `users`, `venues`, `sessions`, `participations`, `matching_requests`. DB có FK, CHECK và unique lượt hoạt động; không lưu counter sức chứa riêng. UTC được chuẩn hóa khi vào hệ thống, DB lưu TEXT cố định và API trả thời gian có `Z`.
+Dữ liệu nằm trong 5 bảng: `users`, `venues`, `sessions`, `participations`, `matching_requests`. DB có khóa ngoại (FK), CHECK và ràng buộc unique cho lượt đang hoạt động. Số chỗ được tính từ các lượt ACCEPTED, không lưu counter riêng. Thời gian đầu vào được chuẩn hóa về UTC, lưu dưới dạng TEXT cố định trong DB và trả về API với ký hiệu `Z`.
 
-Mỗi thao tác ghi dùng `BEGIN IMMEDIATE` trước khi kiểm dữ liệu, đọc Clock sau khi lấy khóa, dùng chung connection, commit một lần và rollback khi lỗi. APPROVE đóng matching chồng giờ trong cùng transaction. SQLite chờ khóa tối đa 5000 ms mặc định; hết thời gian trả `503 DATABASE_BUSY`, `Retry-After: 1`.
+Thao tác ghi bắt đầu bằng `BEGIN IMMEDIATE`. Sau khi lấy được khóa, service mới đọc Clock và kiểm tra dữ liệu. Các bước dùng chung connection và commit một lần; nếu có lỗi thì rollback. Khi APPROVE, việc đóng matching chồng giờ cũng nằm trong transaction đó. SQLite mặc định chờ khóa tối đa 5000 ms. Hết thời gian chờ, API trả `503 DATABASE_BUSY` cùng `Retry-After: 1`.
 
 ## Chạy ứng dụng và kiểm thử
 
-Từ thư mục repo:
+Chạy các lệnh sau trong thư mục repo:
 
 ```bash
 python3 -m venv .venv
@@ -74,9 +74,9 @@ python -m scripts.seed
 python -m uvicorn app.main:app --reload --no-access-log
 ```
 
-`init_env` tạo `.env` với JWT secret ngẫu nhiên, giữ file nếu đã có; không commit file này. Seed tạo schema và 10 sân demo, không tạo tài khoản/kèo thật. App không tự seed hoặc reset DB khi khởi động.
+`init_env` tạo `.env` với JWT secret ngẫu nhiên. Nếu file đã có thì giữ nguyên; file này không được commit lên Git. Lệnh seed tạo schema và 10 sân demo, không tạo tài khoản hoặc kèo thật. Khi khởi động, app không tự seed hay reset DB.
 
-Runtime đọc `DATABASE_URL` từ environment, mặc định `sqlite:///./app.db`; `SQLITE_BUSY_TIMEOUT_MS` mặc định 5000. Khi đổi DB, seed và app phải nhận cùng environment. Git đồng bộ code/seed, không đồng bộ dữ liệu DB giữa các máy.
+App đọc `DATABASE_URL` từ biến môi trường, mặc định là `sqlite:///./app.db`. Thời gian chờ khóa lấy từ `SQLITE_BUSY_TIMEOUT_MS`, mặc định 5000 ms. Nếu đổi DB, lệnh seed và app phải dùng cùng cấu hình. Git chỉ đồng bộ code và seed; dữ liệu DB vẫn nằm trên từng máy.
 
 ```bash
 python -m ruff check .
@@ -84,19 +84,21 @@ python -m ruff format --check .
 python -m pytest -q
 ```
 
-CI chạy lint, format và test. Test dùng SQLite file tạm riêng, bao phủ JWT/API, rollback, dữ liệu tại thời điểm đăng ký, tính lặp an toàn và sáu ca đồng thời. Khi chạy thêm test workload, cài `requirements-load.txt`. Chi tiết transaction và adapter nằm trong [tài liệu participation](docs/PARTICIPATIONS.md).
+CI chạy lint, kiểm tra format và test. Các test dùng file SQLite tạm riêng để kiểm tra JWT, API, rollback, dữ liệu tại lúc đăng ký, tính lặp an toàn và sáu trường hợp đồng thời. Test workload cần cài thêm `requirements-load.txt`. Cách dùng transaction và adapter được ghi trong [tài liệu participation](docs/PARTICIPATIONS.md).
 
-Demo nghiệp vụ bằng một lệnh, không cần thao tác Swagger:
+Có thể chạy demo tự động thay cho việc gọi từng API trên Swagger:
 
 ```bash
 python -m scripts.demo
 ```
 
-Thêm `--step` để nhấn Enter trước mỗi bước khi trình bày. Script tự mở backend loopback trên cổng trống, seed DB tạm riêng, đăng ký/đăng nhập hai tài khoản, kiểm lỗi nhập giờ, tạo kèo, xin/duyệt, kiểm kèo đầy, rút và hủy. Mỗi bước gọi HTTP thật và kiểm trạng thái trả về; token không in ra màn hình. Server và DB tạm được dọn khi kết thúc, không sửa `app.db` hoặc cần server đang chạy sẵn. Cần cài `requirements-dev.txt` trước khi chạy.
+Thêm `--step` để dừng trước mỗi bước và tiếp tục bằng Enter. Script tự mở backend qua loopback trên một cổng trống, seed DB tạm và đăng ký, đăng nhập hai tài khoản. Sau đó script thử lỗi nhập giờ, tạo kèo, xin tham gia, duyệt, kiểm tra kèo đầy, rút lượt và hủy kèo.
+
+Mỗi bước gọi HTTP thật và kiểm tra trạng thái trả về, không in token. Server được dừng và DB tạm được dọn khi kết thúc. Script không sửa `app.db` và không cần mở server sẵn; chỉ cần cài `requirements-dev.txt` trước khi chạy.
 
 ## API và file đặc tả
 
-Đặc tả API lưu tại **[docs/openapi.json](docs/openapi.json)**, được xuất từ ứng dụng và có thể preview bằng [Swagger Editor](https://editor.swagger.io/). Khi chạy local, dùng [Swagger UI](http://127.0.0.1:8000/docs), [ReDoc](http://127.0.0.1:8000/redoc) hoặc [OpenAPI JSON](http://127.0.0.1:8000/openapi.json).
+File **[docs/openapi.json](docs/openapi.json)** được xuất từ app và có thể mở bằng [Swagger Editor](https://editor.swagger.io/). Khi backend đang chạy trên máy, dùng [Swagger UI](http://127.0.0.1:8000/docs) để gọi thử API, [ReDoc](http://127.0.0.1:8000/redoc) để đọc tài liệu, hoặc xem trực tiếp [OpenAPI JSON](http://127.0.0.1:8000/openapi.json).
 
 | FR | Method | Route | Quyền |
 |---|---|---|---|
@@ -113,13 +115,13 @@ Thêm `--step` để nhấn Enter trước mỗi bước khi trình bày. Script
 | FR-11 | POST | `/matching/requests` | JWT |
 | Kỹ thuật | GET | `/health` | Public, chỉ liveness |
 
-Tạo/xem/hủy kèo trả `SessionDetail`, mở rộng schema `SessionSummary` dùng chung. Ba API participation trả `ParticipationDetail` đầy đủ. Datetime nhận ISO 8601 có timezone; từ chối Unix timestamp và số nguyên vượt miền INTEGER của SQLite bằng 422.
+Các API tạo, xem và hủy kèo trả `SessionDetail`, kế thừa phần dữ liệu chung từ `SessionSummary`. Ba API participation trả đầy đủ `ParticipationDetail`. Thời gian phải theo ISO 8601 và có timezone. Unix timestamp hoặc số nguyên vượt miền INTEGER của SQLite bị từ chối với mã 422.
 
 ## Build, triển khai và lưu ý cho Phase 2
 
-Dockerfile dùng `python:3.11-slim`, chạy non-root, Uvicorn một worker trên `0.0.0.0:8000`. Compose mở `127.0.0.1:8000`, kiểm tra `/health` và lưu DB trong volume `matchmate_data` tại `/app/data`. URL DB là `sqlite:////app/data/matchmate.db`; giữ volume để giữ dữ liệu khi thay container.
+Dockerfile dùng `python:3.11-slim` và chạy Uvicorn một worker tại `0.0.0.0:8000` bằng user không có quyền root. Compose mở `127.0.0.1:8000` trên máy và dùng `/health` làm healthcheck. SQLite được lưu trong volume `matchmate_data`, gắn tại `/app/data`, với URL `sqlite:////app/data/matchmate.db`. Cần giữ volume này để dữ liệu còn nguyên khi thay container.
 
-Sau khi tạo `.env` bằng `python -m scripts.init_env`, build image, seed dữ liệu và khởi động:
+Tạo `.env` bằng `python -m scripts.init_env`, sau đó build image, seed và chạy dịch vụ:
 
 ```bash
 docker compose build
@@ -127,18 +129,19 @@ docker compose run --rm api python -m scripts.seed
 docker compose up -d
 ```
 
-**Đã hoàn thành phần Docker:** Dockerfile và Compose phục vụ build, seed và chạy backend, có healthcheck và volume lưu dữ liệu để bàn giao Phase 2.
+Phần Docker đã hoàn thành, gồm Dockerfile, Compose, healthcheck và volume dữ liệu. Nhóm Phase 2 có thể dùng các lệnh trên để build, seed và chạy backend.
 
-SQLite chỉ có một writer nên tải ghi đồng thời có thể phải chờ hoặc gặp 503. Các thao tác phải kiểm tra và cập nhật dữ liệu trong cùng transaction; kết quả kiểm tải cần đối chiếu thêm các ràng buộc dữ liệu sau chạy.
+SQLite chỉ có một writer tại một thời điểm. Khi nhiều yêu cầu ghi cùng lúc, một số yêu cầu có thể phải chờ hoặc nhận lỗi 503. Vì vậy, việc kiểm tra và cập nhật dữ liệu phải nằm trong cùng transaction. Sau kiểm tải, cần đọc lại DB để kiểm tra các ràng buộc dữ liệu.
 
-Trên Kaggle CPU, **235 test đạt** khi cài thêm `requirements-load.txt`. Kiểm thử tải đo đủ 60 giây cho read 10/50/100 người và lifecycle 10 người, không lỗi request. Lifecycle 50 người gặp 503 khi warm-up, 100 người dừng ở login timeout nên chưa có số đo hợp lệ. Môi trường, số liệu và HTML/CSV/log nằm trong [báo cáo tải](docs/LOAD_TEST_RESULTS.md). Kết quả trên một máy dùng loopback là mốc tham khảo, chưa đại diện cho hệ thống production.
+Trên Kaggle CPU, 235 test đã chạy đạt khi cài thêm `requirements-load.txt`. Các lượt read ở 10/50/100 người và lifecycle ở 10 người đều đo đủ 60 giây, không có lỗi request. Lifecycle ở 50 người gặp 503 trong warm-up; ở 100 người dừng do login timeout, nên hai mức này chưa có số đo hợp lệ.
 
+[Báo cáo tải](docs/LOAD_TEST_RESULTS.md) lưu cấu hình môi trường, số liệu và các file HTML, CSV, log. Phép đo chạy trên một máy qua loopback, chỉ dùng làm mốc tham khảo, chưa đại diện cho hệ thống production.
 
-Các vấn đề chính khi tích hợp Phase 2 là nhiều yêu cầu tranh chỗ cuối, duyệt đồng thời với hủy kèo, lịch chồng nhau và sai lệch múi giờ. Khi bổ sung giao diện hoặc thay tầng dữ liệu, cần giữ ràng buộc sức chứa/lịch, tính nguyên tử của transaction, quy ước UTC và quyền chủ kèo.
+Khi tích hợp Phase 2, cần chú ý các trường hợp tranh chỗ cuối, duyệt cùng lúc với hủy kèo, lịch chồng nhau và khác múi giờ. Dù bổ sung giao diện hay thay tầng dữ liệu, các ràng buộc sức chứa, lịch, quyền chủ kèo, quy ước UTC và tính nguyên tử của transaction vẫn phải được giữ.
 
 ## Workflow chi tiết và mã nguồn
 
-Phần mở rộng đối chiếu với code hiện tại. Đoạn code là trích đoạn từ các file được dẫn, không phải một triển khai khác. Với API bảo vệ, JWT thiếu/sai/hết hạn trả `401 UNAUTHORIZED`; cần đăng nhập lại rồi gửi lại yêu cầu. Lỗi nhập liệu không tự sửa hoặc tạo dữ liệu thay người dùng.
+Các mục dưới đây mô tả từng nhánh xử lý và trích code từ file tương ứng. Với API cần xác thực, token thiếu, sai hoặc hết hạn sẽ nhận `401 UNAUTHORIZED`; người dùng phải đăng nhập lại trước khi gửi lại yêu cầu. Nếu dữ liệu nhập không hợp lệ, API trả lỗi, không tự sửa hay tạo dữ liệu thay người dùng.
 
 <details>
 <summary><strong>1. Đăng ký và đăng nhập — FR-01, FR-02</strong></summary>
@@ -174,7 +177,7 @@ flowchart TD
 
 Thiếu trường, sai kiểu, giá trị enum sai hoặc thừa trường đều trả 422. Đăng nhập chỉ nhận `email`, `password`; thông báo sai thông tin không tiết lộ email có tồn tại hay không.
 
-**Code:** [schema](app/features/auth/schemas.py), `AuthService.register/authenticate/login` trong [service](app/features/auth/service.py), [JWT middleware](app/features/auth/middleware.py).
+Mã nguồn: [schema](app/features/auth/schemas.py), `AuthService.register/authenticate/login` trong [service](app/features/auth/service.py), [JWT middleware](app/features/auth/middleware.py).
 
 ```python
 if self.user_repository.get_by_email(email) is not None:
@@ -183,14 +186,14 @@ if self.user_repository.get_by_email(email) is not None:
 password_hash = self.password_hasher.hash(password)
 ```
 
-**Giải thích:** schema kiểm hình dạng dữ liệu trước; service kiểm email trùng rồi băm mật khẩu. Đăng ký thành công chỉ tạo hồ sơ. Token được cấp sau bước đăng nhập và được middleware kiểm trước API bảo vệ.
+Schema kiểm tra các trường nhập vào. Sau đó service kiểm email trùng và băm mật khẩu trước khi lưu. Đăng ký thành công chỉ tạo hồ sơ; token được cấp khi đăng nhập và được middleware kiểm tra trước các API cần xác thực.
 
 </details>
 
 <details>
 <summary><strong>2. Chọn tạo kèo — nhập gì, nhập sai thì sao — FR-05</strong></summary>
 
-Không chọn tạo kèo thì đi sang tìm kèo hoặc matching ở mục 3 và 5; không phát sinh session hay lượt host mới.
+Người không tạo kèo có thể tìm kèo có sẵn hoặc dùng matching ở mục 3 và 5. Hai nhánh này không tự tạo session hay lượt host mới.
 
 ```mermaid
 flowchart TD
@@ -223,7 +226,7 @@ flowchart TD
 
 ID và phí không vượt miền INTEGER 64 bit của SQLite. `host_user_id`, capacity và trạng thái do hệ thống xác định, không phải trường cho người dùng tự gán. Khi lỗi, transaction rollback; không để lại session thiếu lượt host.
 
-**Code:** [CreateSessionRequest](app/features/sessions/session_schemas.py), `SessionService.create` trong [service](app/features/sessions/session_service.py), `create_with_host` trong [repository](app/features/sessions/session_repository.py), [quy tắc giờ](app/domain/time_rules.py).
+Mã nguồn: [CreateSessionRequest](app/features/sessions/session_schemas.py), `SessionService.create` trong [service](app/features/sessions/session_service.py), `create_with_host` trong [repository](app/features/sessions/session_repository.py), [quy tắc giờ](app/domain/time_rules.py).
 
 ```python
 if self.sessions.has_accepted_overlap(host_id, data.starts_at, data.ends_at):
@@ -234,7 +237,7 @@ self.sessions.close_overlapping(host_id, data.starts_at, data.ends_at, now)
 return session_id
 ```
 
-**Giải thích:** host là tài khoản lấy từ JWT. Sau khi các kiểm tra đạt, repository ghi cả kèo và lượt host trên cùng connection; router trả chi tiết kèo. Client không được coi một lỗi 409 là tạo kèo thành công.
+Tài khoản host được lấy từ JWT. Chỉ khi các kiểm tra đều đạt, repository mới ghi kèo và lượt host trên cùng connection, rồi router trả chi tiết kèo. Nếu nhận lỗi 409, client phải xử lý nguyên nhân xung đột; kèo chưa được tạo thành công.
 
 </details>
 
@@ -268,7 +271,7 @@ flowchart TD
 
 **Xem chi tiết:** trả số chỗ tính từ `ACCEPTED`, lượt của người xem và cờ `can_cancel/can_decide`; host nhận thêm danh sách quản lý. `AVAILABLE/FULL/STARTED/ENDED` là trạng thái hiển thị được tính từ lịch và số người, không phải bốn trạng thái session được ghi vào DB.
 
-**Code:** [schema bộ lọc](app/features/discovery/schemas.py), [DiscoveryService](app/features/discovery/service.py), `SessionService.get_detail` trong [session service](app/features/sessions/session_service.py), `ParticipationService.join` trong [participation service](app/features/sessions/participation_service.py).
+Mã nguồn: [schema bộ lọc](app/features/discovery/schemas.py), [DiscoveryService](app/features/discovery/service.py), `SessionService.get_detail` trong [session service](app/features/sessions/session_service.py), `ParticipationService.join` trong [participation service](app/features/sessions/participation_service.py).
 
 ```python
 with self.uow.write():
@@ -280,7 +283,7 @@ with self.uow.write():
     user = self._eligible_user(actor_user_id, game)
 ```
 
-**Giải thích:** hệ thống kiểm lại dữ liệu khi nhận yêu cầu, không tin số chỗ đã xem trước đó. Xin tham gia chỉ tạo PENDING. Khi nhiều người cùng xin một chỗ, quyết định duyệt vẫn phải kiểm capacity lần nữa.
+Số chỗ người dùng vừa xem có thể đã thay đổi khi yêu cầu được gửi tới server. Vì thế, service phải kiểm lại dữ liệu. Xin tham gia chỉ tạo PENDING; đến lúc duyệt vẫn phải kiểm capacity để tránh nhận quá người.
 
 </details>
 
@@ -318,7 +321,7 @@ flowchart TD
 
 ID không hợp lệ, body quyết định thiếu/sai/thừa trường trả 422. Luồng rút/duyệt cũng trả 404 nếu không tìm thấy lượt hoặc kèo. Mỗi nhánh thành công trả chi tiết hiện tại, không trả lời thành công trước commit.
 
-**Code:** `decide/withdraw` trong [ParticipationService](app/features/sessions/participation_service.py), `cancel` trong [SessionService](app/features/sessions/session_service.py), `cancel_active` trong [repository](app/features/sessions/session_repository.py).
+Mã nguồn: `decide/withdraw` trong [ParticipationService](app/features/sessions/participation_service.py), `cancel` trong [SessionService](app/features/sessions/session_service.py), `cancel_active` trong [repository](app/features/sessions/session_repository.py).
 
 ```python
 self.repository.set_status(part.id, target, now)
@@ -332,7 +335,7 @@ if target == ParticipationStatus.ACCEPTED:
 return self._finish(part.id, actor_user_id, now)
 ```
 
-**Giải thích:** duyệt không chỉ đổi trạng thái; nó xác nhận lịch nên phải đóng matching chồng giờ trong cùng transaction. REJECT không chiếm chỗ. Rút và hủy có thể gọi lặp an toàn; đăng ký lại sau rút/từ chối tạo lượt mới, không sửa lịch sử cũ.
+Khi duyệt, lịch chơi được xác nhận nên các matching chồng giờ phải được đóng trong cùng transaction. REJECT không chiếm chỗ. Rút lượt và hủy kèo có thể gọi lặp an toàn. Nếu xin tham gia lại sau khi rút hoặc bị từ chối, hệ thống tạo lượt mới và giữ lịch sử cũ.
 
 </details>
 
@@ -357,7 +360,7 @@ flowchart TD
 
 Tên trường: `venue_id`, `starts_at`, `ends_at`, `play_type`, `proposed_fee_male_vnd`, `proposed_fee_female_vnd`, `budget_max_vnd`, `gender_policy` (mặc định `ANY`). ID/phí, thời lượng và múi giờ tuân theo giới hạn tương tự tạo kèo. Mức phí của nhóm gợi ý lấy theo đề xuất của người gọi và phải nằm trong ngân sách từng thành viên.
 
-**Code:** `CreateMatchingRequest` trong [schema](app/features/discovery/schemas.py), `create_matching_request/find_group/group_is_valid` trong [service](app/features/discovery/service.py), truy vấn `candidates` trong [repository](app/features/discovery/repository.py).
+Mã nguồn: `CreateMatchingRequest` trong [schema](app/features/discovery/schemas.py), `create_matching_request/find_group/group_is_valid` trong [service](app/features/discovery/service.py), truy vấn `candidates` trong [repository](app/features/discovery/repository.py).
 
 ```python
 for combo in combinations(candidate_members, need):
@@ -368,7 +371,7 @@ for combo in combinations(candidate_members, need):
 return None
 ```
 
-**Giải thích:** matching là gợi ý, không phải một lượt đặt chỗ. Không đủ nhóm là kết quả bình thường `suggestion=null`, không phải lỗi. Yêu cầu mới thay yêu cầu ACTIVE cũ; được xác nhận lịch ở tạo/duyệt kèo sẽ đóng matching liên quan.
+Nếu chưa đủ nhóm, API vẫn trả kết quả bình thường với `suggestion=null`. Yêu cầu mới thay yêu cầu ACTIVE cũ của người gửi. Khi người chơi có lịch được xác nhận qua tạo hoặc duyệt kèo, matching liên quan sẽ được đóng; bản thân gợi ý không giữ chỗ.
 
 </details>
 
@@ -397,7 +400,7 @@ flowchart TD
 
 JWT middleware chạy trước router; thứ tự trả lỗi cụ thể còn phụ thuộc thứ tự kiểm tra trong service. Error envelope có `code`, `message`, `details`, `request_id` trong `error`; không đưa password/token hoặc câu SQL vào lỗi trả cho client.
 
-**Code:** [middleware](app/features/auth/middleware.py), [error handlers](app/api/error_handlers.py), [UnitOfWork](app/db/unit_of_work.py), `_finish` trong [ParticipationService](app/features/sessions/participation_service.py).
+Mã nguồn: [middleware](app/features/auth/middleware.py), [error handlers](app/api/error_handlers.py), [UnitOfWork](app/db/unit_of_work.py), `_finish` trong [ParticipationService](app/features/sessions/participation_service.py).
 
 ```python
 # BEGIN tường minh để cả thao tác đọc cũng có snapshot.
@@ -408,6 +411,6 @@ session.connection().exec_driver_sql(statement)
 yield self
 ```
 
-**Giải thích:** hai host không thể cùng xác nhận chỗ cuối dựa trên một dữ liệu cũ. Thao tác sau lấy được khóa phải kiểm lại số người đã ACCEPTED. Nếu hết thời gian chờ, client nhận 503 rõ ràng; hệ thống không bỏ kiểm tra hoặc tự coi yêu cầu thành công.
+Các yêu cầu duyệt được xử lý lần lượt theo khóa ghi. Yêu cầu lấy khóa sau phải kiểm lại số người đã ACCEPTED, thay vì dùng số chỗ đọc từ trước. Nếu chờ quá hạn, client nhận 503 và yêu cầu chưa được xác nhận thành công.
 
 </details>
