@@ -1,8 +1,8 @@
 # Kết quả tải Kaggle CPU
 
-Chạy ngày **29/10/2026 (giờ Việt Nam)** trên source `859df1345a6d5034d2202823232f219f34f87ab4`. Bản main `ca406f8` chỉ cập nhật README sau source này; mã chạy không đổi.
+Chạy ngày **29/10/2026 (giờ Việt Nam)** trên mã nguồn `859df1345a6d5034d2202823232f219f34f87ab4`. Các số liệu dưới đây thuộc lần chạy này.
 
-**Đạt baseline 10 users ở cả read và lifecycle.** Read 50/100 users cũng đo đủ, không lỗi. Lifecycle 50/100 users dừng trước cửa sổ đo do quá tải; chưa nghiệm thu hai mức ghi này. Không có lượt nào vi phạm bốn invariant khi đọc lại DB.
+Các lượt đọc (`read`) ở mức 10/50/100 người dùng mô phỏng và luồng tạo–xin–duyệt–rút/hủy (`lifecycle`) ở mức 10 người đo đủ 60 giây, không lỗi request. Hai lượt lifecycle 50/100 người dừng trước khi đo. Khi đọc lại DB của cả sáu lượt, không phát hiện vi phạm bốn ràng buộc được kiểm tra.
 
 ## Môi trường và cách đo
 
@@ -27,11 +27,11 @@ Bốn lượt đo đủ có `exit_code=0`, không 4xx/5xx/409/DATABASE_BUSY ho�
 
 ## Giới hạn ở mức ghi cao
 
-- **Lifecycle 50 users:** login đủ 50 cặp, nhưng warm-up có **27 HTTP 503**: tạo kèo 22, xin tham gia 4, duyệt 1. Runner dừng đúng quy tắc trước đo (`measurement_complete=false`, exit 1). CSV/log warm-up có latency nhưng không dùng làm kết quả 60 giây. Đây là giới hạn ghi đồng thời của cấu hình hiện tại; không bỏ lỗi hoặc thêm retry để báo đạt.
+- **Lifecycle 50 users:** login đủ 50 cặp, nhưng warm-up có **27 HTTP 503**: tạo kèo 22, xin tham gia 4, duyệt 1. Runner dừng đúng quy tắc trước đo (`measurement_complete=false`, exit 1). CSV/log warm-up có latency nhưng không dùng làm kết quả 60 giây. Đây là giới hạn ghi đồng thời của cấu hình hiện tại.
 - **Lifecycle 100 users:** mới login đủ 42 cặp thì một request `/auth/login` timeout sau khoảng 20 giây (`HTTP_0` trong log). Runner dừng trước warm-up/đo, exit 1. Log còn có lỗi Locust CSV writer lúc thoát (`I/O operation on closed file`); failures CSV trống không có nghĩa là không lỗi, phải đọc log và metadata.
 - Cả sáu DB sau dừng đều có `over_capacity=0`, `accepted_overlap=0`, `active_in_cancelled=0`, `open_without_host=0`. Với lượt chưa đo, kết quả này chỉ mô tả DB đã kiểm tra, không thay thế kiểm tải đầy đủ.
 
-Không sửa ứng dụng hoặc mở rộng kiến trúc để ép đạt 50/100 users. Phase 2 có thể dùng baseline này để đánh giá phần đăng nhập và giới hạn SQLite một writer. Phần Docker đã hoàn thành. Các số đo trong báo cáo này lấy từ Uvicorn chạy trên Kaggle, không phải phép đo qua container.
+Hai mức ghi 50/100 người chưa có kết quả đo đầy đủ. Phase 2 có thể đối chiếu các lỗi trên khi đánh giá phần đăng nhập và giới hạn ghi của SQLite. Các số đo trong báo cáo lấy từ Uvicorn chạy trực tiếp trên Kaggle.
 
 ## Bằng chứng và chạy lại
 
@@ -41,7 +41,7 @@ Notebook trong repo chỉ được sắp xếp import/format để qua lint chun
 
 SHA-256 gói đầy đủ: `7c1e26d90b1fd23ea913ad24a06f1ee3119ffca1af22ed6a033fb1be594e1ac4`.
 
-Notebook: https://www.kaggle.com/code/datdooo/matchmate-phase-1-load-test/edit (private, tài khoản sở hữu mới xem được). Để chạy online từ repo:
+Để chạy lại từ repo trong môi trường có Internet:
 
 ```bash
 python -m pip install -r requirements-load.txt
@@ -49,4 +49,4 @@ python -m pytest -q
 bash scripts/run_kaggle_load_test.sh --profile full
 ```
 
-Lượt local trước đây dừng do `psutil.NoSuchProcess` trước đo, không dùng làm số đo Kaggle. Gói hiện tại là kết quả từ Kaggle thật, giữ nguyên monitor và quy tắc dừng.
+Một lượt thử local trước đó dừng vì `psutil.NoSuchProcess` trước khi đo và không được tính vào bảng kết quả.
