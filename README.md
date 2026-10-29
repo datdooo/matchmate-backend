@@ -86,6 +86,14 @@ python -m pytest -q
 
 CI chạy lint, format và test. Test dùng SQLite file tạm riêng, bao phủ JWT/API, rollback, dữ liệu tại thời điểm đăng ký, tính lặp an toàn và sáu ca đồng thời. Khi chạy thêm test workload, cài `requirements-load.txt`. Chi tiết transaction và adapter nằm trong [tài liệu participation](docs/PARTICIPATIONS.md).
 
+Demo nghiệp vụ bằng một lệnh, không cần thao tác Swagger:
+
+```bash
+python -m scripts.demo
+```
+
+Thêm `--step` để nhấn Enter trước mỗi bước khi trình bày. Script tự mở backend loopback trên cổng trống, seed DB tạm riêng, đăng ký/đăng nhập hai tài khoản, kiểm lỗi nhập giờ, tạo kèo, xin/duyệt, kiểm kèo đầy, rút và hủy. Mỗi bước gọi HTTP thật và kiểm trạng thái trả về; token không in ra màn hình. Server và DB tạm được dọn khi kết thúc, không sửa `app.db` hoặc cần server đang chạy sẵn. Cần cài `requirements-dev.txt` trước khi chạy.
+
 ## API và file đặc tả
 
 Đặc tả API lưu tại **[docs/openapi.json](docs/openapi.json)**, được xuất từ ứng dụng và có thể preview bằng [Swagger Editor](https://editor.swagger.io/). Khi chạy local, dùng [Swagger UI](http://127.0.0.1:8000/docs), [ReDoc](http://127.0.0.1:8000/redoc) hoặc [OpenAPI JSON](http://127.0.0.1:8000/openapi.json).
