@@ -11,9 +11,9 @@ from app.db.models import (
     VenueModel,
 )
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
+from app.domain.entities import compute_display_status
 from app.domain.enums import (
     CloseReason,
-    DisplayStatus,
     Gender,
     GenderPolicy,
     MatchingStatus,
@@ -69,29 +69,6 @@ def to_matching_record(m: MatchingRequestModel) -> MatchingRequestRecord:
         created_at=m.created_at,
         closed_at=m.closed_at,
     )
-
-
-def compute_display_status(
-    status: SessionStatus,
-    starts_at: datetime,
-    ends_at: datetime,
-    accepted_count: int,
-    capacity: int,
-    now: datetime,
-) -> DisplayStatus:
-    if status == SessionStatus.CANCELLED:
-        return DisplayStatus.CANCELLED
-
-    if now >= ends_at:
-        return DisplayStatus.ENDED
-
-    if now >= starts_at:
-        return DisplayStatus.STARTED
-
-    if accepted_count >= capacity:
-        return DisplayStatus.FULL
-
-    return DisplayStatus.AVAILABLE
 
 
 def to_session_record(

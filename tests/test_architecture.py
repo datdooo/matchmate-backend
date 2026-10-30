@@ -13,13 +13,12 @@ def test_business_modules_do_not_import_web_or_database():
     ]
     for path in paths:
         for node in ast.walk(ast.parse(path.read_text())):
-            names = (
-                [alias.name for alias in node.names]
-                if isinstance(node, ast.Import)
-                else [node.module or ""]
-                if isinstance(node, ast.ImportFrom)
-                else []
-            )
+            if isinstance(node, ast.Import):
+                names = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                names = [node.module or ""]
+            else:
+                continue
             for name in names:
                 assert name.split(".")[0] not in forbidden, (str(path), name)
                 assert not name.startswith("app.db"), (str(path), name)

@@ -1,1 +1,1 @@
-"""Reserved for discovery features owned by Hai."""
+"""Tra cứu sân/kèo theo quận và gợi ý ghép nhóm."""

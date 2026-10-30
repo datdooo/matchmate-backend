@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.models import ParticipationModel, SessionModel, UserModel, VenueModel
-from app.domain.entities import Participation
+from app.domain.entities import Participation, compute_display_status
 from app.domain.entities import Session as Game
 from app.domain.enums import (
     Gender,
@@ -20,7 +20,6 @@ from app.domain.errors import DomainError
 from app.features.auth.contracts import User
 from app.features.auth.repository import SqlAlchemyUserRepository
 from app.features.discovery.contracts import PlayerSummary, SessionRecord, VenueRecord
-from app.features.discovery.repository import compute_display_status
 from app.features.sessions.participation_contracts import (
     CreateParticipationInput,
     ParticipationDetail,

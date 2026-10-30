@@ -1,13 +1,74 @@
 """Các route đã ghép phải chạy qua SQLite thật, không chỉ test mapper/fake service."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import pytest
 from sqlalchemy import select
 
-from app.db.models import MatchingRequestModel, ParticipationModel, UserModel
+from app.db.models import MatchingRequestModel, ParticipationModel, SessionModel, UserModel
+from app.db.unit_of_work import SqlAlchemyUnitOfWork
+from app.features.auth.contracts import DatabaseBusyError
+from app.features.discovery import dependencies as discovery_dependencies
 from app.features.sessions import session_router
+from app.features.sessions.participation_repository import SqlAlchemyParticipationRepository
+
+
+@pytest.mark.parametrize("expected", ["AVAILABLE", "FULL", "STARTED", "ENDED", "CANCELLED"])
+def test_display_status_agrees_across_list_detail_and_participation(
+    client, auth_headers, game_data, db_session_factory, monkeypatch, expected
+):
+    now = datetime(2030, 11, 1, 10, tzinfo=timezone.utc)
+    with db_session_factory() as db:
+        game = db.get(SessionModel, game_data["first"])
+        game.play_type = "SINGLES"
+        # Đủ người cả ở biên bắt đầu/kết thúc để kiểm thứ tự ưu tiên trạng thái.
+        db.add(
+            ParticipationModel(
+                user_id=game_data["player"],
+                session_id=game.id,
+                status="PENDING" if expected == "AVAILABLE" else "ACCEPTED",
+                gender_at_join="FEMALE",
+                quoted_fee_vnd=40000,
+                created_at=now,
+                decided_at=None if expected == "AVAILABLE" else now,
+            )
+        )
+        db.flush()
+        if expected == "STARTED":
+            now = game.starts_at
+        elif expected in ("ENDED", "CANCELLED"):
+            now = game.ends_at
+        if expected == "CANCELLED":
+            game.status = "CANCELLED"
+            game.cancelled_at = game.starts_at - timedelta(minutes=1)
+            for part in db.scalars(
+                select(ParticipationModel).where(ParticipationModel.session_id == game.id)
+            ):
+                part.status, part.cancelled_at = "CANCELLED", game.cancelled_at
+        db.commit()
+        part_id = db.scalar(
+            select(ParticipationModel.id).where(
+                ParticipationModel.session_id == game.id,
+                ParticipationModel.user_id == game_data["player"],
+            )
+        )
+    clock = SimpleNamespace(now=lambda: now)
+    for module in (session_router, discovery_dependencies):
+        monkeypatch.setattr(module, "SystemClock", lambda: clock)
+    host = auth_headers(game_data["host"])
+    listed = client.get("/sessions", params={"host_me": "true"}, headers=host)
+    assert listed.status_code == 200, listed.text
+    item = next(item for item in listed.json()["items"] if item["id"] == game_data["first"])
+    detail = client.get(f"/sessions/{game_data['first']}", headers=host)
+    assert detail.status_code == 200, detail.text
+    uow = SqlAlchemyUnitOfWork(db_session_factory, DatabaseBusyError)
+    with uow.read():
+        part = SqlAlchemyParticipationRepository(lambda: uow.session).detail(
+            part_id, game_data["player"], now
+        )
+    assert item["display_status"] == detail.json()["display_status"] == expected
+    assert part.session.display_status == expected
 
 
 def matching_payload(venue_id):

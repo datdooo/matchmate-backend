@@ -1,1 +1,1 @@
-"""Reserved for account features owned by Chien."""
+"""Đăng ký, đăng nhập và xác thực JWT."""

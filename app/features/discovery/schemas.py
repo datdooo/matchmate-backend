@@ -132,9 +132,6 @@ class CreateMatchingRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_time_window(self):
-        if self.starts_at is None or self.ends_at is None:
-            raise ValueError("starts_at và ends_at là bắt buộc")
-
         duration = (self.ends_at - self.starts_at).total_seconds() / 60
 
         if self.starts_at >= self.ends_at:
