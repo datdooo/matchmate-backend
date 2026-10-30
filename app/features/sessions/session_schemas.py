@@ -9,7 +9,7 @@ from pydantic import (
     field_validator,
 )
 
-from app.domain.enums import SkillLevel
+from app.domain.enums import Gender, SkillLevel
 from app.domain.time_rules import to_utc
 from app.features.sessions.session_contracts import CreateSessionInput
 
@@ -51,3 +51,62 @@ class CreateSessionRequest(BaseModel):
 
     def to_input(self) -> CreateSessionInput:
         return CreateSessionInput(**self.model_dump())
+
+
+class PlayerSummary(BaseModel):
+    id: int
+    display_name: str
+    skill_level: SkillLevel
+    gender: Gender
+
+
+class VenueView(BaseModel):
+    id: int
+    name: str
+    address: str
+    district_code: str
+    distance_km: float | None
+
+
+class ParticipationRecord(BaseModel):
+    id: int
+    user_id: int
+    session_id: int
+    player: PlayerSummary
+    status: Literal["PENDING", "ACCEPTED", "REJECTED", "CANCELLED"]
+    created_at: datetime
+    decided_at: datetime | None
+    cancelled_at: datetime | None
+    can_cancel: bool
+    can_decide: bool
+    gender_at_join: Literal["MALE", "FEMALE"]
+    quoted_fee_vnd: int
+
+
+class Management(BaseModel):
+    participations: list[ParticipationRecord]
+
+
+class SessionDetail(BaseModel):
+    id: int
+    title: str
+    notes: str
+    host: PlayerSummary
+    venue: VenueView
+    starts_at: datetime
+    ends_at: datetime
+    play_type: Literal["SINGLES", "DOUBLES"]
+    capacity: Literal[2, 4]
+    fee_male_vnd: int
+    fee_female_vnd: int
+    min_level: SkillLevel
+    max_level: SkillLevel
+    gender_policy: Literal["ANY", "MALE_ONLY", "FEMALE_ONLY"]
+    status: Literal["OPEN", "CANCELLED"]
+    display_status: Literal["CANCELLED", "ENDED", "STARTED", "FULL", "AVAILABLE"]
+    accepted_count: int
+    remaining_capacity: int
+    created_at: datetime
+    cancelled_at: datetime | None
+    my_participations: list[ParticipationRecord]
+    management: Management | None

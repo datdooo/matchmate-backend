@@ -3,14 +3,13 @@ from datetime import datetime, timezone
 from sqlalchemy import String
 from sqlalchemy.types import TypeDecorator
 
+from app.domain.time_rules import to_utc
+
 DB_UTC_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
 def to_db_utc(value: datetime) -> str:
-    if value.tzinfo is None or value.utcoffset() is None:
-        raise ValueError("datetime must be timezone-aware")
-
-    return value.astimezone(timezone.utc).strftime(DB_UTC_FORMAT)
+    return to_utc(value).strftime(DB_UTC_FORMAT)
 
 
 def from_db_utc(value: str) -> datetime:

@@ -205,7 +205,21 @@ def test_register_login_create_join_approve_withdraw(client, db_session_factory,
     route = f"/participations/{pending.json()['id']}"
     approved = client.post(route + "/decision", json={"decision": "APPROVE"}, headers=tokens[0])
     assert approved.status_code == 200 and approved.json()["session"]["remaining_capacity"] == 0
+
+    detail_route = f"/sessions/{game.json()['id']}"
+    detail = client.get(detail_route, headers=tokens[1])
+    assert detail.status_code == 200, detail.text
+    player_view = detail.json()
+    assert player_view["management"] is None and player_view["accepted_count"] == 2
+    assert len(player_view["my_participations"]) == 1
+    assert player_view["my_participations"][0]["id"] == pending.json()["id"]
+    assert player_view["my_participations"][0]["status"] == "ACCEPTED"
+
     assert client.delete(route, headers=tokens[1]).status_code == 200
+    after = client.get(detail_route, headers=tokens[1]).json()
+    assert after["accepted_count"] == 1
+    assert after["my_participations"][0]["status"] == "CANCELLED"
+    assert after["my_participations"][0]["quoted_fee_vnd"] == 40000
 
 
 def test_check_failure_rolls_back_approval_and_matching(

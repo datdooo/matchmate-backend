@@ -12,6 +12,7 @@ from app.db.models import (
     VenueModel,
 )
 from app.db.session import create_session_factory, engine
+from app.features.auth.security import Argon2PasswordHasher
 
 N_SINGLES = 9
 N_DOUBLES = 21
@@ -36,22 +37,21 @@ DAYS_AHEAD = 7  # rải kèo vào 1..7 ngày tới
 FEE_PAIRS = [
     (50_000, 50_000),
     (60_000, 40_000),
-    (80_000, 80_000),
+    (0, 0),
     (70_000, 50_000),
     (40_000, 60_000),
 ]
 GENDER_POLICIES = ["ANY", "ANY", "MALE_ONLY", "ANY", "FEMALE_ONLY"]
 
 
-# sau khi có code của Chiến thì sửa lại
 def hash_password(password: str) -> str:
-    return f"temp_hash_{password}"
+    return Argon2PasswordHasher().hash(password)
 
 
-def build_user_specs() -> list[dict]:
+def build_user_specs(extra_users: int = N_EXTRA_USERS) -> list[dict]:
     specs = []
 
-    for i in range(N_SESSIONS + N_EXTRA_USERS):
+    for i in range(N_SESSIONS + extra_users):
         n = i + 1
         specs.append(
             {
@@ -257,7 +257,7 @@ def main() -> None:
         create_sessions(db, session_specs, venues, hosts, now)
         db.commit()
 
-    print_summary(db)
+        print_summary(db)
 
 
 if __name__ == "__main__":

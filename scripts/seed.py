@@ -47,27 +47,15 @@ def seed_venue(db) -> tuple[int, int]:
 
 
 def main() -> None:
-    session_factory = create_session_factory(engine)
-
-    Base.metadata.create_all(engine)
-
-    with session_factory() as db:
-        try:
-            # Tạo bảng
-            Base.metadata.create_all(bind=engine)
-
-            # Tạo session và seed dữ liệu
-            with session_factory() as db:
-                try:
-                    added, skipped = seed_venue(db)
-                    db.commit()
-                except Exception:
-                    db.rollback()
-                    raise
-
-            print(f"Seed xong: thêm {added} sân, bỏ qua {skipped} sân đã có.")
-        finally:
-            engine.dispose()
+    try:
+        Base.metadata.create_all(engine)
+        session_factory = create_session_factory(engine)
+        # begin() commit khi thành công, rollback khi lỗi; không cần Session lồng nhau.
+        with session_factory.begin() as db:
+            added, skipped = seed_venue(db)
+        print(f"Seed xong: thêm {added} sân, bỏ qua {skipped} sân đã có.")
+    finally:
+        engine.dispose()
 
 
 if __name__ == "__main__":

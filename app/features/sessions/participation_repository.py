@@ -1,6 +1,5 @@
 import sqlite3
 from collections.abc import Callable
-from dataclasses import asdict
 from datetime import datetime
 
 from sqlalchemy import exists, func, select, update
@@ -11,7 +10,6 @@ from app.db.models import ParticipationModel, SessionModel, UserModel, VenueMode
 from app.domain.entities import Participation
 from app.domain.entities import Session as Game
 from app.domain.enums import (
-    DisplayStatus,
     Gender,
     GenderPolicy,
     ParticipationStatus,
@@ -22,6 +20,7 @@ from app.domain.errors import DomainError
 from app.features.auth.contracts import User
 from app.features.auth.repository import SqlAlchemyUserRepository
 from app.features.discovery.contracts import PlayerSummary, SessionRecord, VenueRecord
+from app.features.discovery.repository import compute_display_status
 from app.features.sessions.participation_contracts import (
     CreateParticipationInput,
     ParticipationDetail,
@@ -189,16 +188,6 @@ class SqlAlchemyParticipationRepository:
         host = session.get(UserModel, game.host_user_id)
         venue = session.get(VenueModel, game.venue_id)
         accepted = self.count_accepted(game.id)
-        if game.status == SessionStatus.CANCELLED:
-            display = DisplayStatus.CANCELLED
-        elif now >= game.ends_at:
-            display = DisplayStatus.ENDED
-        elif now >= game.starts_at:
-            display = DisplayStatus.STARTED
-        elif accepted >= game.capacity:
-            display = DisplayStatus.FULL
-        else:
-            display = DisplayStatus.AVAILABLE
         summary = SessionRecord(
             id=game.id,
             host=to_player(host),
@@ -219,18 +208,14 @@ class SqlAlchemyParticipationRepository:
             capacity=game.capacity,
             accepted_count=accepted,
             remaining_capacity=game.capacity - accepted,
-            display_status=display,
+            # Dùng chung luật hiển thị; phần query/mapping vẫn thuộc participation.
+            display_status=compute_display_status(
+                game.status, game.starts_at, game.ends_at, accepted, game.capacity, now
+            ),
         )
         record = to_participation_record(part, game, to_player(user), actor_user_id, now)
-        # asdict(record) chuyển player thành dict; giữ DTO player thuần để các caller dùng lại.
-        values = asdict(part)
-        return ParticipationDetail(
-            **values,
-            player=record.player,
-            can_cancel=record.can_cancel,
-            can_decide=record.can_decide,
-            session=summary,
-        )
+        # vars giữ DTO player nguyên dạng; asdict sẽ đổi DTO lồng thành dict.
+        return ParticipationDetail(**vars(record), session=summary)
 
 
 def to_participation(model: ParticipationModel) -> Participation:

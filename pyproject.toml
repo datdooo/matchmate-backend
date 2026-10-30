@@ -1,7 +1,7 @@
 [project]
 name = "matchmate-backend"
 version = "0.0.1"
-description = "Minimal technical skeleton for MatchMate Phase 1"
+description = "MatchMate Phase 1 badminton session backend"
 requires-python = ">=3.11"
 
 [tool.ruff]
