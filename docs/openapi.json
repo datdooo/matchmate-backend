@@ -137,22 +137,347 @@
         }
       }
     },
+    "/venues": {
+      "get": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "Tìm sân",
+        "operationId": "list_venues_venues_get",
+        "parameters": [
+          {
+            "name": "district_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 50
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "District Code"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResult_VenueView_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR hoặc INVALID_TIME_WINDOW",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DATABASE_BUSY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/sessions": {
+      "get": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "Tìm kèo (host_me=true cần JWT)",
+        "operationId": "list_sessions_sessions_get",
+        "parameters": [
+          {
+            "name": "district_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 50
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "District Code"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "venue_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9223372036854775807,
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Venue Id"
+            }
+          },
+          {
+            "name": "play_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PlayType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Play Type"
+            }
+          },
+          {
+            "name": "available_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Available From"
+            }
+          },
+          {
+            "name": "available_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Available To"
+            }
+          },
+          {
+            "name": "skill_level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SkillLevel"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Skill Level"
+            }
+          },
+          {
+            "name": "gender",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Gender"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Gender"
+            }
+          },
+          {
+            "name": "max_fee_vnd",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9223372036854775807,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Max Fee Vnd"
+            }
+          },
+          {
+            "name": "only_available",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Only Available"
+            }
+          },
+          {
+            "name": "host_me",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Host Me"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResult_SessionSummary_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: thiếu hoặc sai token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR hoặc INVALID_TIME_WINDOW",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DATABASE_BUSY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
       "post": {
         "tags": [
           "Sessions"
         ],
         "summary": "Create Session",
         "operationId": "create_session_sessions_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateSessionRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -197,6 +522,73 @@
           },
           "422": {
             "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DATABASE_BUSY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matching/requests": {
+      "post": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "Đăng nhu cầu và nhận gợi ý nhóm",
+        "operationId": "create_matching_request_matching_requests_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMatchingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchingResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: thiếu hoặc sai token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND"
+          },
+          "409": {
+            "description": "VENUE_INACTIVE, TIME_CONFLICT, ELIGIBILITY_MISMATCH, PROFILE_INCOMPLETE"
+          },
+          "422": {
+            "description": "VALIDATION_ERROR hoặc INVALID_TIME_WINDOW",
             "content": {
               "application/json": {
                 "schema": {
@@ -271,6 +663,103 @@
           },
           "404": {
             "description": "SESSION_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DATABASE_BUSY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Cancel Session",
+        "operationId": "cancel_session_sessions__session_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "exclusiveMinimum": 0,
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "SESSION_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SESSION_ALREADY_STARTED",
             "content": {
               "application/json": {
                 "schema": {
@@ -664,10 +1153,77 @@
   },
   "components": {
     "schemas": {
+      "CloseReason": {
+        "type": "string",
+        "enum": [
+          "REPLACED",
+          "CONFIRMED",
+          "CANCELLED"
+        ],
+        "title": "CloseReason"
+      },
+      "CreateMatchingRequest": {
+        "properties": {
+          "venue_id": {
+            "type": "integer",
+            "maximum": 9.223372036854776e+18,
+            "exclusiveMinimum": 0.0,
+            "title": "Venue Id"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ends At"
+          },
+          "play_type": {
+            "$ref": "#/components/schemas/PlayType"
+          },
+          "proposed_fee_male_vnd": {
+            "type": "integer",
+            "maximum": 9.223372036854776e+18,
+            "minimum": 0.0,
+            "title": "Proposed Fee Male Vnd"
+          },
+          "proposed_fee_female_vnd": {
+            "type": "integer",
+            "maximum": 9.223372036854776e+18,
+            "minimum": 0.0,
+            "title": "Proposed Fee Female Vnd"
+          },
+          "budget_max_vnd": {
+            "type": "integer",
+            "maximum": 9.223372036854776e+18,
+            "minimum": 0.0,
+            "title": "Budget Max Vnd"
+          },
+          "gender_policy": {
+            "$ref": "#/components/schemas/GenderPolicy",
+            "default": "ANY"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "venue_id",
+          "starts_at",
+          "ends_at",
+          "play_type",
+          "proposed_fee_male_vnd",
+          "proposed_fee_female_vnd",
+          "budget_max_vnd"
+        ],
+        "title": "CreateMatchingRequest"
+      },
       "CreateSessionRequest": {
         "properties": {
           "venue_id": {
             "type": "integer",
+            "maximum": 9.223372036854776e+18,
             "exclusiveMinimum": 0.0,
             "title": "Venue Id"
           },
@@ -703,11 +1259,13 @@
           },
           "fee_male_vnd": {
             "type": "integer",
+            "maximum": 9.223372036854776e+18,
             "minimum": 0.0,
             "title": "Fee Male Vnd"
           },
           "fee_female_vnd": {
             "type": "integer",
+            "maximum": 9.223372036854776e+18,
             "minimum": 0.0,
             "title": "Fee Female Vnd"
           },
@@ -771,6 +1329,15 @@
           "AVAILABLE"
         ],
         "title": "DisplayStatus"
+      },
+      "EffectiveStatus": {
+        "type": "string",
+        "enum": [
+          "ACTIVE",
+          "CLOSED",
+          "EXPIRED"
+        ],
+        "title": "EffectiveStatus"
       },
       "ErrorPayload": {
         "properties": {
@@ -882,6 +1449,252 @@
           "participations"
         ],
         "title": "Management"
+      },
+      "MatchingRequestSelf": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "venue_id": {
+            "type": "integer",
+            "title": "Venue Id"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ends At"
+          },
+          "play_type": {
+            "$ref": "#/components/schemas/PlayType"
+          },
+          "proposed_fee_male_vnd": {
+            "type": "integer",
+            "title": "Proposed Fee Male Vnd"
+          },
+          "proposed_fee_female_vnd": {
+            "type": "integer",
+            "title": "Proposed Fee Female Vnd"
+          },
+          "budget_max_vnd": {
+            "type": "integer",
+            "title": "Budget Max Vnd"
+          },
+          "gender_policy": {
+            "$ref": "#/components/schemas/GenderPolicy"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MatchingStatus"
+          },
+          "closed_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CloseReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effective_status": {
+            "$ref": "#/components/schemas/EffectiveStatus"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "venue_id",
+          "starts_at",
+          "ends_at",
+          "play_type",
+          "proposed_fee_male_vnd",
+          "proposed_fee_female_vnd",
+          "budget_max_vnd",
+          "gender_policy",
+          "status",
+          "closed_reason",
+          "effective_status",
+          "created_at",
+          "closed_at"
+        ],
+        "title": "MatchingRequestSelf"
+      },
+      "MatchingResult": {
+        "properties": {
+          "request": {
+            "$ref": "#/components/schemas/MatchingRequestSelf"
+          },
+          "suggestion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MatchingSuggestion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "request",
+          "suggestion"
+        ],
+        "title": "MatchingResult"
+      },
+      "MatchingStatus": {
+        "type": "string",
+        "enum": [
+          "ACTIVE",
+          "CLOSED"
+        ],
+        "title": "MatchingStatus"
+      },
+      "MatchingSuggestion": {
+        "properties": {
+          "venue_id": {
+            "type": "integer",
+            "title": "Venue Id"
+          },
+          "play_type": {
+            "$ref": "#/components/schemas/PlayType"
+          },
+          "capacity": {
+            "type": "integer",
+            "enum": [
+              2,
+              4
+            ],
+            "title": "Capacity"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ends At"
+          },
+          "proposed_fee_male_vnd": {
+            "type": "integer",
+            "title": "Proposed Fee Male Vnd"
+          },
+          "proposed_fee_female_vnd": {
+            "type": "integer",
+            "title": "Proposed Fee Female Vnd"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/SuggestedMember"
+            },
+            "type": "array",
+            "title": "Members"
+          },
+          "requires_confirmation": {
+            "type": "boolean",
+            "const": true,
+            "title": "Requires Confirmation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "venue_id",
+          "play_type",
+          "capacity",
+          "starts_at",
+          "ends_at",
+          "proposed_fee_male_vnd",
+          "proposed_fee_female_vnd",
+          "members",
+          "requires_confirmation"
+        ],
+        "title": "MatchingSuggestion"
+      },
+      "PageResult_SessionSummary_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SessionSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "PageResult[SessionSummary]"
+      },
+      "PageResult_VenueView_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VenueView"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "PageResult[VenueView]"
       },
       "ParticipationDetailResponse": {
         "properties": {
@@ -1159,15 +1972,11 @@
             "type": "string",
             "title": "Title"
           },
-          "notes": {
-            "type": "string",
-            "title": "Notes"
-          },
           "host": {
             "$ref": "#/components/schemas/PlayerSummary"
           },
           "venue": {
-            "$ref": "#/components/schemas/app__features__sessions__session_schemas__VenueView"
+            "$ref": "#/components/schemas/VenueView"
           },
           "starts_at": {
             "type": "string",
@@ -1180,19 +1989,10 @@
             "title": "Ends At"
           },
           "play_type": {
-            "type": "string",
-            "enum": [
-              "SINGLES",
-              "DOUBLES"
-            ],
-            "title": "Play Type"
+            "$ref": "#/components/schemas/PlayType"
           },
           "capacity": {
             "type": "integer",
-            "enum": [
-              2,
-              4
-            ],
             "title": "Capacity"
           },
           "fee_male_vnd": {
@@ -1210,32 +2010,13 @@
             "$ref": "#/components/schemas/SkillLevel"
           },
           "gender_policy": {
-            "type": "string",
-            "enum": [
-              "ANY",
-              "MALE_ONLY",
-              "FEMALE_ONLY"
-            ],
-            "title": "Gender Policy"
+            "$ref": "#/components/schemas/GenderPolicy"
           },
           "status": {
-            "type": "string",
-            "enum": [
-              "OPEN",
-              "CANCELLED"
-            ],
-            "title": "Status"
+            "$ref": "#/components/schemas/SessionStatus"
           },
           "display_status": {
-            "type": "string",
-            "enum": [
-              "CANCELLED",
-              "ENDED",
-              "STARTED",
-              "FULL",
-              "AVAILABLE"
-            ],
-            "title": "Display Status"
+            "$ref": "#/components/schemas/DisplayStatus"
           },
           "accepted_count": {
             "type": "integer",
@@ -1244,6 +2025,10 @@
           "remaining_capacity": {
             "type": "integer",
             "title": "Remaining Capacity"
+          },
+          "notes": {
+            "type": "string",
+            "title": "Notes"
           },
           "created_at": {
             "type": "string",
@@ -1284,7 +2069,6 @@
         "required": [
           "id",
           "title",
-          "notes",
           "host",
           "venue",
           "starts_at",
@@ -1300,6 +2084,7 @@
           "display_status",
           "accepted_count",
           "remaining_capacity",
+          "notes",
           "created_at",
           "cancelled_at",
           "my_participations",
@@ -1329,7 +2114,7 @@
             "$ref": "#/components/schemas/PlayerSummary"
           },
           "venue": {
-            "$ref": "#/components/schemas/app__features__discovery__schemas__VenueView"
+            "$ref": "#/components/schemas/VenueView"
           },
           "starts_at": {
             "type": "string",
@@ -1427,6 +2212,37 @@
         ],
         "title": "SkillLevel"
       },
+      "SuggestedMember": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "skill_level": {
+            "$ref": "#/components/schemas/SkillLevel"
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          },
+          "estimated_fee_vnd": {
+            "type": "integer",
+            "title": "Estimated Fee Vnd"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "skill_level",
+          "gender",
+          "estimated_fee_vnd"
+        ],
+        "title": "SuggestedMember"
+      },
       "TokenData": {
         "properties": {
           "access_token": {
@@ -1473,6 +2289,16 @@
           },
           "gender": {
             "$ref": "#/components/schemas/Gender"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
           }
         },
         "type": "object",
@@ -1481,11 +2307,13 @@
           "email",
           "display_name",
           "skill_level",
-          "gender"
+          "gender",
+          "created_at",
+          "updated_at"
         ],
         "title": "UserSelf"
       },
-      "app__features__discovery__schemas__VenueView": {
+      "VenueView": {
         "properties": {
           "id": {
             "type": "integer",
@@ -1515,46 +2343,6 @@
           "address",
           "district_code",
           "is_active"
-        ],
-        "title": "VenueView"
-      },
-      "app__features__sessions__session_schemas__VenueView": {
-        "properties": {
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "address": {
-            "type": "string",
-            "title": "Address"
-          },
-          "district_code": {
-            "type": "string",
-            "title": "District Code"
-          },
-          "distance_km": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Distance Km"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "address",
-          "district_code",
-          "distance_km"
         ],
         "title": "VenueView"
       }

@@ -1,31 +1,52 @@
 # Kết quả tải Kaggle CPU
 
-Chưa chạy tải Kaggle; chưa có số đo RPS hoặc latency để nghiệm thu.
+Chạy ngày **29/10/2026 (giờ Việt Nam)** trên mã nguồn `859df1345a6d5034d2202823232f219f34f87ab4`. Các số liệu dưới đây thuộc lần chạy này.
 
-Runner hiện dừng trước khi seed/phát tải nếu app chưa có đủ 11 API nghiệp vụ. Các route còn thiếu: `GET /venues`, `GET /sessions`, `DELETE /sessions/{session_id}`, `POST /matching/requests`.
+Các lượt đọc (`read`) ở mức 10/50/100 người dùng mô phỏng và luồng tạo–xin–duyệt–rút/hủy (`lifecycle`) ở mức 10 người đo đủ 60 giây, không lỗi request. Hai lượt lifecycle 50/100 người dừng trước khi đo. Khi đọc lại DB của cả sáu lượt, không phát hiện vi phạm bốn ràng buộc được kiểm tra.
 
-Tạo/xem kèo đã trả `SessionDetail`. Workload kiểm các field response cần dùng và dừng trước đo nếu warm-up có lỗi; đủ tên route chưa thay thế kiểm thử hành vi.
+## Môi trường và cách đo
 
-Các điểm cần nối trước lượt đo:
+Kaggle CPU, 4 vCPU (cgroup `400000 100000`), RAM giới hạn 30 GiB, Python 3.13.15, SQLite 3.45.1. Một Uvicorn worker và Locust dùng chung máy, gọi loopback; không phải số đo qua Internet hoặc cam kết tải production. Internet OFF, accelerator None; source git bundle và wheel được gắn bằng private input, kiểm SHA-256 trước cài. Phiên bản dependency thực tế có trong metadata từng lượt.
 
-| Phần | Việc còn lại |
-|---|---|
-| Hải | Nối route tìm sân, tìm kèo, matching; sửa `provide_current_user_id` đang gọi đệ quy chính nó. Kiểm lại mapper matching đang có `record \| None` lúc runtime và mapper session đang trả ID thay vì đủ host/venue. |
-| Chiến | Nối hủy kèo và hủy các lượt hoạt động trong cùng transaction; kiểm Docker/wiring. |
-| Đạt | Sau tích hợp: chạy lại test toàn luồng, chạy hai profile trên Kaggle CPU và thay trạng thái này bằng số đo cùng artifacts. |
+Lint/format đạt và **235 test chức năng pass ngay trên Kaggle** trước khi chạy `python -m scripts.run_kaggle_load_test --profile full`. Mỗi lượt dùng DB tạm mới, 10 sân/30 kèo seed; random seed 42, spawn 2/5/10 users mỗi giây. Đợi login đủ (tối đa 120 giây), warm-up 15 giây rồi reset stats và đo 60 giây. Lifecycle dùng cặp host/player riêng mỗi virtual user, rút hoặc hủy 50/50 và chờ 1–2 giây giữa vòng.
 
-Sau khi nhóm tích hợp đủ và test hành vi đạt, chạy trên notebook Kaggle CPU từ thư mục repo:
+## Số đo hợp lệ
+
+Latency tính bằng ms; RPS làm tròn hai chữ số từ metadata `aggregate`/stats CSV. CSV có thể ghi trước phần log tổng kết cuối cùng vài request; bảng dùng cùng snapshot trong metadata, không trộn hai thời điểm.
+
+| Profile | Users | Đủ 60s | Requests | RPS | p50 | p95 | p99 | Lỗi request |
+|---|---:|---|---:|---:|---:|---:|---:|---:|
+| read | 10 | Có | 393 | 6.59 | 11 | 14 | 34 | 0 |
+| read | 50 | Có | 1963 | 32.91 | 13 | 32 | 54 | 0 |
+| read | 100 | Có | 3864 | 65.25 | 24 | 100 | 180 | 0 |
+| lifecycle | 10 | Có | 1719 | 28.79 | 31 | 120 | 270 | 0 |
+| lifecycle | 50 | Không | n/a | n/a | n/a | n/a | n/a | n/a |
+| lifecycle | 100 | Không | n/a | n/a | n/a | n/a | n/a | n/a |
+
+Bốn lượt đo đủ có `exit_code=0`, không 4xx/5xx/409/DATABASE_BUSY hoặc lỗi kiểm contract trong cửa sổ đo. Read đạt p95 tham khảo < 1 giây; các request ghi ở mức 10 users đạt p95 < 2 giây (chi tiết từng API trong stats CSV/HTML).
+
+## Giới hạn ở mức ghi cao
+
+- **Lifecycle 50 users:** login đủ 50 cặp, nhưng warm-up có **27 HTTP 503**: tạo kèo 22, xin tham gia 4, duyệt 1. Runner dừng đúng quy tắc trước đo (`measurement_complete=false`, exit 1). CSV/log warm-up có latency nhưng không dùng làm kết quả 60 giây. Đây là giới hạn ghi đồng thời của cấu hình hiện tại.
+- **Lifecycle 100 users:** mới login đủ 42 cặp thì một request `/auth/login` timeout sau khoảng 20 giây (`HTTP_0` trong log). Runner dừng trước warm-up/đo, exit 1. Log còn có lỗi Locust CSV writer lúc thoát (`I/O operation on closed file`); failures CSV trống không có nghĩa là không lỗi, phải đọc log và metadata.
+- Cả sáu DB sau dừng đều có `over_capacity=0`, `accepted_overlap=0`, `active_in_cancelled=0`, `open_without_host=0`. Với lượt chưa đo, kết quả này chỉ mô tả DB đã kiểm tra, không thay thế kiểm tải đầy đủ.
+
+Hai mức ghi 50/100 người chưa có kết quả đo đầy đủ. Phase 2 có thể đối chiếu các lỗi trên khi đánh giá phần đăng nhập và giới hạn ghi của SQLite. Các số đo trong báo cáo lấy từ Uvicorn chạy trực tiếp trên Kaggle.
+
+## Bằng chứng và chạy lại
+
+[Notebook đã chạy, giữ cả output lỗi](load/kaggle-2026-10-29/matchmate-phase-1-load-test.ipynb), [metadata tổng hợp](load/kaggle-2026-10-29/run-summary.json), [môi trường](load/kaggle-2026-10-29/kaggle-environment.json) và CSV/log từng lượt nằm trong [thư mục kết quả](load/kaggle-2026-10-29). [Gói đầy đủ](load/kaggle-2026-10-29/matchmate-kaggle-results.zip) giữ nguyên HTML, CSV, log, metadata và báo cáo runner (bao gồm lượt không đạt).
+
+Notebook trong repo chỉ được sắp xếp import/format để qua lint chung; output, số đo và lỗi giữ nguyên như bản tải từ Kaggle.
+
+SHA-256 gói đầy đủ: `7c1e26d90b1fd23ea913ad24a06f1ee3119ffca1af22ed6a033fb1be594e1ac4`.
+
+Để chạy lại từ repo trong môi trường có Internet:
 
 ```bash
 python -m pip install -r requirements-load.txt
-python -m pytest tests/load/test_workloads.py -q
+python -m pytest -q
 bash scripts/run_kaggle_load_test.sh --profile full
 ```
 
-Runner dùng một Uvicorn worker và Locust headless qua loopback. Mỗi profile read/lifecycle chạy riêng ở 10/50/100 virtual users, spawn 2/5/10 users mỗi giây. Đợi login tối đa 120 giây, warm-up 15 giây, reset stats rồi đo 60 giây. Read dùng quận theo tỷ lệ 70/20/10; lifecycle có cặp host/player riêng, rút hoặc hủy 50/50, chờ 1–2 giây giữa các vòng.
-
-Mỗi lượt tạo DB tạm mới, tái sử dụng seed của Hải và bổ sung đủ actor. DB local/demo được giữ nguyên. Artifacts gồm HTML, CSV, metadata và log; metadata giữ commit, môi trường, dataset hash, base_time, random seed, số actor, mã lỗi và invariant sau chạy. File actors có thông tin đăng nhập giả lập chỉ nằm trong thư mục tạm.
-
-Workload lifecycle kiểm trạng thái, đúng session/id, quote và giới tính snapshot sau xin/duyệt/rút; kiểm số ACCEPTED sau tạo/xem/hủy. Invariant đọc lại DB gồm quá chỗ, lịch ACCEPTED chồng nhau, lượt hoạt động trong kèo đã hủy và kèo OPEN thiếu host ACCEPTED. Test workload dùng response giả để kiểm cả hai nhánh rút/hủy và phát hiện response sai; đây không phải kết quả tải.
-
-Chỉ dùng lượt có `measurement_complete=true` làm số đo. Mọi 4xx/503 đều được ghi nhận là lỗi trong hai profile thường; contention đã được kiểm riêng bằng test đồng thời. Nghiệm thu phải đối chiếu invariant, 500 ngoài dự kiến ở 10 users và từng failure CSV; không suy chất lượng từ RPS hoặc số users. p95 tham khảo ở 10 users: GET dưới 1 giây, ghi dưới 2 giây; 50/100 users dùng để ghi nhận giới hạn.
+Một lượt thử local trước đó dừng vì `psutil.NoSuchProcess` trước khi đo và không được tính vào bảng kết quả.

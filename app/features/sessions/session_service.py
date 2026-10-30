@@ -122,3 +122,21 @@ class SessionService:
             management={"participations": records} if is_host else None,
         )
         return data
+
+    def cancel(self, session_id: int, actor_id: int) -> dict[str, Any]:
+        snapshot = self.sessions.get_detail_data(session_id)
+        if snapshot is None:
+            raise SessionError("SESSION_NOT_FOUND", "Không tìm thấy kèo")
+
+        if snapshot["host_user_id"] != actor_id:
+            raise SessionError("FORBIDDEN", "Chỉ host được hủy kèo")
+
+        if snapshot["session"]["status"] == "CANCELLED":
+            return self.get_detail(session_id, actor_id)
+
+        now = self.clock.now()
+        if now >= snapshot["session"]["starts_at"]:
+            raise SessionError("SESSION_ALREADY_STARTED", "Kèo đã bắt đầu")
+
+        self.sessions.cancel_active(session_id, now)
+        return self.get_detail(session_id, actor_id)

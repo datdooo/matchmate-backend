@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.db.matching_request_writer import SqlAlchemyMatchingRequestWriter
@@ -140,7 +140,7 @@ class SqlAlchemySessionRepository:
                 "name": venue.name,
                 "address": venue.address,
                 "district_code": venue.district_code,
-                "distance_km": None,
+                "is_active": venue.is_active,
             },
             min_level=rank_to_skill(model.min_level),
             max_level=rank_to_skill(model.max_level),
@@ -179,3 +179,19 @@ class SqlAlchemySessionRepository:
             "host_user_id": model.host_user_id,
             "participations": records,
         }
+
+    def cancel_active(self, session_id: int, now: datetime) -> None:
+        self.session.execute(
+            update(SessionModel)
+            .where(SessionModel.id == session_id)
+            .values(status="CANCELLED", cancelled_at=now)
+        )
+
+        self.session.execute(
+            update(ParticipationModel)
+            .where(
+                ParticipationModel.session_id == session_id,
+                ParticipationModel.status.in_(("PENDING", "ACCEPTED")),
+            )
+            .values(status="CANCELLED", cancelled_at=now)
+        )

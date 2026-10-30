@@ -306,16 +306,22 @@ def main():
         "Số đo lấy từ artifacts của từng lượt; latency tính bằng ms.",
         "Nghiệm thu Kaggle CPU dùng các lượt environment=kaggle trong metadata.",
         "",
-        "| Profile | Users | Đủ 60s | RPS | p50 | p95 | p99 | 5xx | BUSY | 409 | Invariant |",
-        "|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---|",
+        "| Profile | Môi trường | Users | Đủ 60s | RPS | p50 | p95 | p99 | "
+        "5xx | BUSY | 409 | Invariant |",
+        "|---|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---|",
     ]
     for item in results:
         stats, errors = item["aggregate"], item["errors"]
+        error_counts = [
+            errors.get(code, 0) if item["measurement_complete"] else "n/a"
+            for code in ("5xx", "DATABASE_BUSY", "409")
+        ]
         rows.append(
-            f"| {item['profile']} | {item['virtual_users']} | {item['measurement_complete']} | "
+            f"| {item['profile']} | {item['environment']} | {item['virtual_users']} | "
+            f"{item['measurement_complete']} | "
             f"{stats.get('Requests/s', 'n/a')} | {stats.get('50%', 'n/a')} | "
-            f"{stats.get('95%', 'n/a')} | {stats.get('99%', 'n/a')} | {errors.get('5xx', 0)} | "
-            f"{errors.get('DATABASE_BUSY', 0)} | {errors.get('409', 0)} | {item['invariants']} |"
+            f"{stats.get('95%', 'n/a')} | {stats.get('99%', 'n/a')} | "
+            f"{' | '.join(map(str, error_counts))} | {item['invariants']} |"
         )
     Path("docs/LOAD_TEST_RESULTS.md").write_text("\n".join(rows) + "\n")
     return int(
