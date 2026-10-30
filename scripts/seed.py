@@ -8,7 +8,7 @@ DEMO_TAG = "DEMO"
 
 
 # id:int, name:str, address:str, district_code:str
-VENNUES = [
+VENUES = [
     (1, "Sân Cầu Giấy", "Số 1 Trần Thái Tông, Cầu Giấy", "CAU_GIAY"),
     (2, "Sân Đống Đa", "Số 10 Tây Sơn, Đống Đa", "DONG_DA"),
     (3, "Sân Ba Đình", "Số 5 Liễu Giai, Ba Đình", "BA_DINH"),
@@ -24,24 +24,23 @@ VENNUES = [
 
 def seed_venue(db) -> tuple[int, int]:
     added = skipped = 0
-    for id, name, address, district_code in VENNUES:
+    for id, name, address, district_code in VENUES:
         full_name = f"{name} {DEMO_TAG}"
         exists = db.scalar(select(VenueModel.id).where(VenueModel.name == full_name))
 
         if exists:
             skipped += 1
             continue
-        else:
-            db.add(
-                VenueModel(
-                    id=id,
-                    name=full_name,
-                    address=f"{address} (demo)",
-                    district_code=district_code,
-                    is_active=True,
-                )
+        db.add(
+            VenueModel(
+                id=id,
+                name=full_name,
+                address=f"{address} (demo)",
+                district_code=district_code,
+                is_active=True,
             )
-            added += 1
+        )
+        added += 1
 
     return added, skipped
 

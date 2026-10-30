@@ -1,11 +1,10 @@
-from datetime import datetime, timezone
-
 from fastapi import Depends, Request
 
 from app.db.session import create_session_factory, engine
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.domain.errors import DomainError
 from app.domain.ports import Clock
+from app.domain.time_rules import SystemClock
 from app.features.auth.contracts import DatabaseBusyError
 from app.features.discovery.repository import (
     SqlAlchemyDiscoveryRepository,
@@ -14,11 +13,6 @@ from app.features.discovery.repository import (
 from app.features.discovery.service import DiscoveryService
 
 _session_factory = create_session_factory(engine)
-
-
-class SystemClock:
-    def now(self) -> datetime:
-        return datetime.now(timezone.utc)
 
 
 def provide_clock() -> Clock:

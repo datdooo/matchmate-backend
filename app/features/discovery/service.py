@@ -8,6 +8,7 @@ from app.domain.time_rules import is_valid_time_window
 from app.features.discovery.contracts import (
     CreateMatchingInput,
     DiscoveryRepository,
+    MatchingCandidate,
     MatchingFilter,
     MatchingRepository,
     MatchingRequestRecord,
@@ -74,7 +75,7 @@ def group_is_valid(
 def find_group(
     caller: PlayerSummary,
     caller_request: MatchingRequestRecord,
-    candidates: list[tuple[PlayerSummary, MatchingRequestRecord]],
+    candidates: list[MatchingCandidate],
 ) -> MatchingSuggestion | None:
     capacity = CAPACITY[caller_request.play_type]
     need = capacity - 1

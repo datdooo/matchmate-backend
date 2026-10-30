@@ -13,6 +13,7 @@ from app.db.models import (
 )
 from app.domain.enums import Gender, rank_to_skill, skill_to_rank
 from app.features.auth.contracts import User
+from app.features.sessions.participation_repository import SqlAlchemyParticipationRepository
 from app.features.sessions.session_contracts import CreateSessionInput
 
 
@@ -187,11 +188,7 @@ class SqlAlchemySessionRepository:
             .values(status="CANCELLED", cancelled_at=now)
         )
 
-        self.session.execute(
-            update(ParticipationModel)
-            .where(
-                ParticipationModel.session_id == session_id,
-                ParticipationModel.status.in_(("PENDING", "ACCEPTED")),
-            )
-            .values(status="CANCELLED", cancelled_at=now)
+        # Cùng Session với UPDATE kèo; caller commit cả hai bước một lần.
+        SqlAlchemyParticipationRepository(lambda: self.session).cancel_active_for_session(
+            session_id, now
         )

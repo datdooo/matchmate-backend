@@ -1,5 +1,7 @@
 # MatchMate Backend
 
+![MatchMate — cầu lông và ghép kèo](docs/assets/matchmate-cover.png)
+
 ## TL;DR
 
 MatchMate hỗ trợ người chơi cầu lông tìm kèo phù hợp và chủ kèo tuyển thêm người. Người chơi tra cứu sân/kèo theo quận, gửi yêu cầu tham gia và chờ host duyệt; cũng có thể tạo kèo hoặc tìm nhóm qua matching. Pha 1 cung cấp backend REST API, chưa có frontend hoàn chỉnh và không dùng GPS.

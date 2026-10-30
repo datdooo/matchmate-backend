@@ -12,7 +12,9 @@ from app.db.session import create_db_engine, create_session_factory
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.domain.errors import DomainError
 from app.features.auth.contracts import DatabaseBusyError
-from app.features.sessions.participation_repository import SqlAlchemyParticipationRepository
+from app.features.auth.repository import SqlAlchemyUserRepository
+from app.features.sessions.session_repository import SqlAlchemySessionRepository
+from app.features.sessions.session_service import SessionService
 
 
 def outcome(operation):
@@ -121,14 +123,14 @@ def test_approval_against_session_cancellation(
     pending = service.join(game_data["player"], game_data["first"])
 
     def cancel():
-        # FR-07 router thuộc Chiến. Ca này kiểm transaction tích hợp với adapter hủy lượt.
+        # Dùng luồng hủy thật, với connection riêng đối đầu thao tác duyệt.
         uow = SqlAlchemyUnitOfWork(db_session_factory, DatabaseBusyError)
-        repo = SqlAlchemyParticipationRepository(lambda: uow.session)
         with uow.write():
-            now = clock.now()
-            game = uow.session.get(SessionModel, game_data["first"])
-            game.status, game.cancelled_at = "CANCELLED", now
-            repo.cancel_active_for_session(game.id, now)
+            SessionService(
+                SqlAlchemySessionRepository(uow.session),
+                SqlAlchemyUserRepository(uow.session),
+                clock,
+            ).cancel(game_data["first"], game_data["host"])
             uow.commit()
 
     approved, cancelled = run_pair(

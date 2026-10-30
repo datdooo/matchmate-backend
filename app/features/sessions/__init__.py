@@ -1,1 +1,1 @@
-"""Session and participation features; see file ownership in README."""
+"""Tạo, xem, hủy kèo và xử lý lượt tham gia."""

@@ -1,6 +1,5 @@
 # Luồng nghiệp vụ chi tiết
 
-
 Với API bảo vệ, JWT thiếu/sai/hết hạn trả `401 UNAUTHORIZED`; cần đăng nhập lại rồi gửi lại yêu cầu. Lỗi nhập liệu không tự sửa hoặc tạo dữ liệu thay người dùng.
 
 <details>
@@ -39,14 +38,12 @@ Thiếu trường, sai kiểu, giá trị enum sai hoặc thừa trường đề
 
 - Schema kiểm hình dạng dữ liệu trước; service kiểm email trùng rồi băm mật khẩu. Đăng ký thành công chỉ tạo hồ sơ. Token được cấp sau bước đăng nhập và được middleware kiểm trước API bảo vệ.
 
-Xử lý tại [auth/schemas.py](../app/features/auth/schemas.py), [auth/service.py](../app/features/auth/service.py) và [auth/middleware.py](../app/features/auth/middleware.py).
-
 </details>
 
 <details>
 <summary><strong>2. Chọn tạo kèo — nhập gì, nhập sai thì sao — FR-05</strong></summary>
 
-Không chọn tạo kèo thì đi sang tìm kèo hoặc matching ở mục 3 và 5; không phát sinh session hay lượt host mới.
+Không chọn tạo kèo thì đi sang tìm kèo hoặc matching ở mục 3 và 5.
 
 ```mermaid
 flowchart TD
@@ -77,11 +74,9 @@ flowchart TD
 | `min_level`, `max_level` | Mã trình hợp lệ, min không cao hơn max; host nằm trong khoảng |
 | `gender_policy` | `ANY` mặc định, hoặc `MALE_ONLY`/`FEMALE_ONLY`; host cũng phải phù hợp |
 
-ID và phí không vượt miền INTEGER 64 bit của SQLite. `host_user_id`, capacity và trạng thái do hệ thống xác định, không phải trường cho người dùng tự gán. Khi lỗi, transaction rollback; không để lại session thiếu lượt host.
+ID và phí không vượt miền INTEGER 64 bit của SQLite. `host_user_id`, capacity và trạng thái do hệ thống xác định. Khi lỗi, transaction rollback; không để lại session thiếu lượt host.
 
 - Host là tài khoản lấy từ JWT. Sau khi các kiểm tra đạt, repository ghi cả kèo và lượt host trên cùng connection; router trả chi tiết kèo. Client không được coi một lỗi 409 là tạo kèo thành công.
-
-Xử lý tại [session_router.py](../app/features/sessions/session_router.py), [session_service.py](../app/features/sessions/session_service.py) và [session_repository.py](../app/features/sessions/session_repository.py).
 
 </details>
 
@@ -116,8 +111,6 @@ flowchart TD
 **Detail:** trả số chỗ tính từ `ACCEPTED`, lượt của người xem và cờ `can_cancel/can_decide`; host nhận thêm danh sách quản lý. `AVAILABLE/FULL/STARTED/ENDED` là trạng thái hiển thị được tính từ lịch và số người, không phải bốn trạng thái session được ghi vào DB.
 
 - Hệ thống kiểm lại dữ liệu khi nhận yêu cầu, không tin số chỗ đã xem trước đó. Xin tham gia chỉ tạo PENDING. Khi nhiều người cùng xin một chỗ, quyết định duyệt vẫn phải kiểm capacity lần nữa.
-
-Tra cứu tại [discovery/service.py](../app/features/discovery/service.py); xin tham gia tại [participation_service.py](../app/features/sessions/participation_service.py).
 
 </details>
 
@@ -157,8 +150,6 @@ ID không hợp lệ, body quyết định thiếu/sai/thừa trường trả 42
 
 - Duyệt không chỉ đổi trạng thái; nó xác nhận lịch nên phải đóng matching chồng giờ trong cùng transaction. REJECT không chiếm chỗ. Rút và hủy có thể gọi lặp an toàn; đăng ký lại sau rút/từ chối tạo lượt mới, không sửa lịch sử cũ.
 
-Quyết định/rút tại [participation_service.py](../app/features/sessions/participation_service.py); hủy kèo tại [session_service.py](../app/features/sessions/session_service.py).
-
 </details>
 
 <details>
@@ -182,9 +173,7 @@ flowchart TD
 
 Tên trường: `venue_id`, `starts_at`, `ends_at`, `play_type`, `proposed_fee_male_vnd`, `proposed_fee_female_vnd`, `budget_max_vnd`, `gender_policy` (mặc định `ANY`). ID/phí, thời lượng và múi giờ tuân theo giới hạn tương tự tạo kèo. Mức phí của nhóm gợi ý lấy theo đề xuất của người gọi và phải nằm trong ngân sách từng thành viên.
 
-- Matching là gợi ý, không phải một lượt đặt chỗ. Không đủ nhóm là kết quả bình thường `suggestion=null`, không phải lỗi. Yêu cầu mới thay yêu cầu ACTIVE cũ; được xác nhận lịch ở tạo/duyệt kèo sẽ đóng matching liên quan.
-
-Xử lý tại [discovery/service.py](../app/features/discovery/service.py) và [discovery/repository.py](../app/features/discovery/repository.py).
+- Matching là gợi ý, không phải một lượt đặt chỗ. Không đủ nhóm là kết quả bình thường `suggestion=null`. Yêu cầu mới thay yêu cầu ACTIVE cũ; được xác nhận lịch ở tạo/duyệt kèo sẽ đóng matching liên quan.
 
 </details>
 
@@ -214,7 +203,5 @@ flowchart TD
 - JWT middleware chạy trước router; thứ tự trả lỗi cụ thể còn phụ thuộc thứ tự kiểm tra trong service. Error envelope có `code`, `message`, `details`, `request_id` trong `error`; không đưa password/token hoặc câu SQL vào lỗi trả cho client.
 
 - Hai yêu cầu duyệt không thể cùng xác nhận chỗ cuối dựa trên một dữ liệu cũ. Thao tác sau lấy được khóa phải kiểm lại số người đã ACCEPTED. Nếu hết thời gian chờ, client nhận 503 rõ ràng; hệ thống không bỏ kiểm tra hoặc tự coi yêu cầu thành công.
-
-Xử lý chung tại [middleware JWT](../app/features/auth/middleware.py), [error_handlers.py](../app/api/error_handlers.py) và [unit_of_work.py](../app/db/unit_of_work.py).
 
 </details>

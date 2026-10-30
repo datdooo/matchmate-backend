@@ -13,8 +13,6 @@ docker compose up -d
 
 `init_env` dùng thư viện chuẩn Python, tạo `.env` với JWT secret ngẫu nhiên và không ghi đè file có sẵn. Python của ứng dụng và các dependency chạy trong container.
 
-Mở [Swagger UI](http://127.0.0.1:8000/docs). Compose dùng một Uvicorn worker, healthcheck tại `/health` và volume `matchmate_data` lưu DB tại `/app/data/matchmate.db`.
-
 | Việc | Lệnh |
 |---|---|
 | Xem log | `docker compose logs -f api` |
@@ -37,9 +35,11 @@ python -m scripts.seed
 python -m uvicorn app.main:app --reload --no-access-log
 ```
 
-Đây là lệnh kích hoạt môi trường cho macOS/Linux. Trên PowerShell dùng `.venv\Scripts\Activate.ps1`.
+Trên PowerShell dùng `.venv\Scripts\Activate.ps1`.
 
-Ứng dụng mặc định dùng `sqlite:///./app.db`. Khi đổi `DATABASE_URL`, seed và app phải nhận cùng giá trị từ environment. `SQLITE_BUSY_TIMEOUT_MS` mặc định 5000 ms. App không tự seed hay reset DB lúc khởi động. Không commit `.env` hoặc file DB; Git chỉ đồng bộ code và dữ liệu seed giữa các máy.
+Ứng dụng dùng `sqlite:///./app.db`. Khi đổi `DATABASE_URL`, seed và app phải nhận cùng giá trị từ environment. `SQLITE_BUSY_TIMEOUT_MS` mặc định là 5000 ms. App không tự seed hay reset DB lúc khởi động.
+
+Mở [Swagger UI](http://127.0.0.1:8000/docs) để thử API. Compose lưu DB trong volume `matchmate_data`.
 
 ## Demo và kiểm thử
 
@@ -49,7 +49,7 @@ Sau khi cài `requirements-dev.txt`:
 python -m scripts.demo --step
 ```
 
-Script tự chạy server với DB tạm riêng và secret ngẫu nhiên; không cần mở backend trước. Mỗi bước gọi HTTP thật và kiểm tra dữ liệu trả về. Các phản hồi 422 khi tạo lịch sai và 409 khi kèo đầy là tình huống thử có chủ ý. Nhấn Enter để tiếp tục; script dừng server và dọn DB khi kết thúc.
+Script tự chạy server với DB tạm riêng và secret ngẫu nhiên. Mỗi bước gọi HTTP thật và kiểm tra dữ liệu trả về. Các phản hồi 422 khi tạo lịch sai và 409 khi kèo đầy là tình huống để thử. Script sẽ dừng server và dọn DB khi kết thúc.
 
 ```bash
 python -m ruff check .
@@ -57,4 +57,4 @@ python -m ruff format --check .
 python -m pytest -q
 ```
 
-CI chạy lint, format và pytest. Test dùng DB tạm, kiểm API/JWT, rollback, lịch, sức chứa và các thao tác đồng thời. Muốn chạy thêm các test workload, cài `requirements-load.txt`; cách đo và kết quả nằm trong [báo cáo tải](LOAD_TEST_RESULTS.md).
+Muốn chạy đủ các test workload, cài `requirements-load.txt`. Cách đo và kết quả nằm trong [báo cáo tải](LOAD_TEST_RESULTS.md).

@@ -11,7 +11,7 @@ from app.db.unit_of_work import SqlAlchemyUnitOfWork
 
 
 class FakeDatabaseBusy(Exception):
-    """Lỗi giả chỉ dùng trong test, không thay lỗi domain của Chiến."""
+    """Lỗi giả để kiểm UoW báo hết thời gian chờ khóa."""
 
 
 @pytest.fixture
