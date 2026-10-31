@@ -1,4 +1,0 @@
-Method,Name,Error,Occurrences,First Seen,Last Seen
-POST,/participations,CatchResponseError('HTTP_503'),4,2026-10-28T17:29:01Z,2026-10-28T17:29:01Z
-POST,/participations/{id}/decision,CatchResponseError('HTTP_503'),1,2026-10-28T17:29:01Z,2026-10-28T17:29:01Z
-POST,/sessions,CatchResponseError('HTTP_503'),22,2026-10-28T17:28:55Z,2026-10-28T17:29:01Z
