@@ -15,16 +15,16 @@ Tuần 2 thêm bốn luồng vào năm luồng của [tuần 1](../tuan-1-nen-ta
 
 ```mermaid
 flowchart TD
-    A["GET /venues hoặc GET /sessions"] --> B{"Bộ lọc hợp lệ?"}
-    B -->|Không| C["422 VALIDATION_ERROR"]
-    B -->|Có| D{"host_me=true?"}
-    D -->|Có, thiếu JWT| E["401 UNAUTHORIZED"]
-    D -->|Không, hoặc có JWT| F{"Có kết quả?"}
+    A["GET /venues hoặc GET /sessions"] --> B{"host_me=true và thiếu JWT?"}
+    B -->|Có| C["401 UNAUTHORIZED"]
+    B -->|Không| D{"Bộ lọc hợp lệ?"}
+    D -->|Không| E["422 VALIDATION_ERROR"]
+    D -->|Có| F{"Có kết quả?"}
     F -->|Không| G["200 với items rỗng"]
     F -->|Có| H["200 với items và total"]
 ```
 
-Hai API này công khai, trừ `host_me=true`. Chúng không ghi dữ liệu.
+Hai API này công khai, trừ `host_me=true`. Chúng không ghi dữ liệu. JWT được kiểm trước bộ lọc, nên `host_me=true` thiếu token trả 401 dù bộ lọc cũng sai.
 
 **`GET /venues`** lọc theo `district_code` và phân trang (`limit`, `offset`).
 

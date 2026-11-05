@@ -10,7 +10,7 @@ MatchMate là backend REST API giúp người chơi cầu lông tìm kèo phù h
 
 - **Tài khoản:** đăng ký, đăng nhập bằng JWT. Host là người tạo kèo, không phải vai trò quản trị riêng.
 - **Tìm sân và kèo:** lọc theo quận, trình độ, giới tính, lịch và mức phí. Tra cứu công khai, không cần đăng nhập.
-- **Quản lý kèo:** tạo kèo đơn (2 người) hoặc đôi (4 người), tính cả host. Xem chi tiết và hủy trước giờ bắt đầu. Mỗi kèo dài 60–240 phút.
+- **Quản lý kèo:** tạo kèo đơn (2 người) hoặc đôi (4 người), tính cả host. Xem chi tiết và hủy trước giờ bắt đầu. Mỗi kèo dài 60-240 phút.
 - **Tham gia:** xin vào kèo, host duyệt hoặc từ chối, người chơi rút lượt. Lượt đang chờ chưa giữ chỗ. Khi duyệt, hệ thống kiểm lại điều kiện, số chỗ và lịch.
 - **Matching:** gợi ý nhóm đủ 2 hoặc 4 người cùng sân, cùng giờ, cùng loại kèo, hợp giới tính và ngân sách, chênh trình tối đa 2 bậc. Gợi ý không tự tạo kèo hay giữ chỗ. Chưa đủ người thì trả `suggestion=null`.
 
@@ -62,4 +62,4 @@ Lần đo ngày 29/10/2026 trên Kaggle CPU (một worker, 235 test đạt ở t
 - Tải đọc với 10, 50 và 100 người, và tải ghi (lifecycle) với 10 người: đo đủ 60 giây, không lỗi request.
 - Tải ghi với 50 và 100 người: dừng trước khi đo, do lỗi 503 hoặc đăng nhập quá thời gian chờ. Chưa có kết quả.
 
-Chi tiết và giới hạn ở [báo cáo tải](docs/tuan-3-kiem-thu-va-ban-giao/bao-cao-tai.md). Notebook đã chạy và dữ liệu thô nằm ở [mốc Pha 1](https://github.com/datdooo/matchmate-backend/tree/5b9be9f939de41965eb1f6b290be2b60ea4d28c/docs/load/kaggle-2026-10-29).
+Chi tiết và giới hạn ở [báo cáo tải](docs/tuan-3-kiem-thu-va-ban-giao/bao-cao-tai.md). Notebook đã chạy và dữ liệu thô nằm ở [mốc Pha 1](https://github.com/datdooo/matchmate-backend/tree/5b9be9fb939de41965eb1f6b290be2b60ea4d28c/docs/load/kaggle-2026-10-29).

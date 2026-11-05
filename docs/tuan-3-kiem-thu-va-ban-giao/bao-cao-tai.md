@@ -39,8 +39,8 @@ Mức ghi 50 và 100 người chưa có số đo. Khi làm Pha 2, hai lỗi trê
 
 Báo cáo đầy đủ, notebook đã chạy, CSV, log và metadata nằm ở commit `5b9be9f`, đã gỡ khỏi nhánh chính để repo gọn:
 
-- [Báo cáo tại mốc `5b9be9f`](https://github.com/datdooo/matchmate-backend/blob/5b9be9f939de41965eb1f6b290be2b60ea4d28c/docs/LOAD_TEST_RESULTS.md)
-- [Dữ liệu đo gốc](https://github.com/datdooo/matchmate-backend/tree/5b9be9f939de41965eb1f6b290be2b60ea4d28c/docs/load/kaggle-2026-10-29)
+- [Báo cáo tại mốc `5b9be9f`](https://github.com/datdooo/matchmate-backend/blob/5b9be9fb939de41965eb1f6b290be2b60ea4d28c/docs/LOAD_TEST_RESULTS.md)
+- [Dữ liệu đo gốc](https://github.com/datdooo/matchmate-backend/tree/5b9be9fb939de41965eb1f6b290be2b60ea4d28c/docs/load/kaggle-2026-10-29)
 
 ## Chạy lại
 

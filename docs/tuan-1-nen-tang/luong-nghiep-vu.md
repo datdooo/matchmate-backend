@@ -1,6 +1,6 @@
 # Tuần 1: Tài khoản, tạo kèo, xin và duyệt
 
-Mốc cuối tuần 1 theo đặc tả: Docker, `/health` và Swagger chạy; đăng nhập và các API có bảo vệ hoạt động; chuỗi tạo kèo → xin tham gia → host duyệt chạy được trên SQLite thật.
+Mốc cuối tuần 1 theo đặc tả: Docker, `/health` và Swagger chạy; đăng nhập và các API có bảo vệ hoạt động; chuỗi tạo kèo, xin tham gia, host duyệt chạy được trên SQLite thật.
 
 Tài liệu này mô tả năm luồng của tuần 1. Quy tắc chung và cấu trúc code ở [thiết kế](thiet-ke.md). Các luồng còn lại ở [tuần 2](../tuan-2-hoan-thien-api/luong-nghiep-vu.md).
 
@@ -37,8 +37,8 @@ flowchart TD
 | Trường đăng ký | Ràng buộc |
 |---|---|
 | `email` | Email hợp lệ. Bỏ khoảng trắng hai đầu, chuyển chữ thường |
-| `password` | 8–128 ký tự. Chỉ lưu bản băm |
-| `display_name` | Sau khi cắt khoảng trắng còn 1–80 ký tự |
+| `password` | 8-128 ký tự. Chỉ lưu bản băm |
+| `display_name` | Sau khi cắt khoảng trắng còn 1-80 ký tự |
 | `skill_level` | Một trong 19 mã của `SkillLevel` |
 | `gender` | `MALE` hoặc `FEMALE` |
 
@@ -53,7 +53,7 @@ flowchart TD
     A["POST /sessions với JWT"] --> B{"Đúng kiểu, trường bắt buộc, enum, múi giờ?"}
     B -->|Không| C["422 VALIDATION_ERROR"]
     B -->|Có| D["Mở transaction ghi, đọc giờ sau khi có khóa"]
-    D --> E{"Lịch ở tương lai, dài 60–240 phút, min_level ≤ max_level?"}
+    D --> E{"Lịch ở tương lai, dài 60-240 phút, min_level ≤ max_level?"}
     E -->|Không| F["422 INVALID_TIME_WINDOW hoặc VALIDATION_ERROR"]
     E -->|Có| G{"Sân tồn tại và đang hoạt động?"}
     G -->|Không tồn tại| H["404 VENUE_NOT_FOUND"]
@@ -67,8 +67,8 @@ flowchart TD
 | Dữ liệu | Ràng buộc |
 |---|---|
 | `venue_id` | Số nguyên dương, sân tồn tại và đang hoạt động |
-| `title`, `notes` | Tiêu đề 1–120 ký tự sau khi cắt khoảng trắng. Ghi chú không bắt buộc, tối đa 1000 ký tự |
-| `starts_at`, `ends_at` | ISO 8601 có múi giờ. Bắt đầu ở tương lai, thời lượng 60–240 phút |
+| `title`, `notes` | Tiêu đề 1-120 ký tự sau khi cắt khoảng trắng. Ghi chú không bắt buộc, tối đa 1000 ký tự |
+| `starts_at`, `ends_at` | ISO 8601 có múi giờ. Bắt đầu ở tương lai, thời lượng 60-240 phút |
 | `play_type` | `SINGLES` là 2 người, `DOUBLES` là 4 người, đều tính host |
 | `fee_male_vnd`, `fee_female_vnd` | Số nguyên VND không âm |
 | `min_level`, `max_level` | Mã trình hợp lệ, min không cao hơn max, host phải nằm trong khoảng |

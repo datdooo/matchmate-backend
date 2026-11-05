@@ -4,7 +4,7 @@
 
 | Tuần | Mốc theo đặc tả | Tài liệu |
 |---|---|---|
-| 1. Nền tảng | Docker, `/health`, Swagger chạy. Đăng nhập và API có bảo vệ hoạt động. Tạo kèo → xin → duyệt chạy trên SQLite thật | [thiết kế](tuan-1-nen-tang/thiet-ke.md), [luồng tài khoản, tạo kèo, xin, duyệt](tuan-1-nen-tang/luong-nghiep-vu.md) |
+| 1. Nền tảng | Docker, `/health`, Swagger chạy. Đăng nhập và API có bảo vệ hoạt động. Tạo kèo, xin tham gia và duyệt chạy trên SQLite thật | [thiết kế](tuan-1-nen-tang/thiet-ke.md), [luồng tài khoản, tạo kèo, xin, duyệt](tuan-1-nen-tang/luong-nghiep-vu.md) |
 | 2. Hoàn thiện API | Đủ 11 API theo contract. Toàn luồng và matching hoạt động | [luồng tìm kiếm, rút, hủy, matching](tuan-2-hoan-thien-api/luong-nghiep-vu.md) |
 | 3. Kiểm thử và bàn giao | Test toàn luồng và đồng thời, Docker, báo cáo tải Kaggle, README, demo | [từ HTTP đến DB](tuan-3-kiem-thu-va-ban-giao/tu-http-den-db.md), [cài đặt và kiểm thử](tuan-3-kiem-thu-va-ban-giao/cai-dat-va-kiem-thu.md), [báo cáo tải](tuan-3-kiem-thu-va-ban-giao/bao-cao-tai.md) |
 

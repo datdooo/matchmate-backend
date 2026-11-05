@@ -21,7 +21,9 @@ flowchart TD
     N -->|Lỗi kỹ thuật| P["Rollback, 500 INTERNAL_ERROR, không lộ SQL hay exception"]
 ```
 
-JWT middleware chạy trước router. Nếu một request vừa sai JWT vừa sai schema thì 401 đến trước. Với các lỗi nghiệp vụ, mã lỗi trả về phụ thuộc thứ tự các bước kiểm trong service.
+JWT middleware chạy trước router. Nếu một request vừa sai JWT vừa sai schema thì 401 đến trước.
+
+Có một ngoại lệ với sơ đồ trên: đăng ký và tạo kèo mở transaction ghi ngay trong dependency, trước khi Pydantic kiểm body. Body sai vẫn không ghi gì, nhưng khi DB đang bận thì client nhận 503 thay vì 422. Với các lỗi nghiệp vụ, mã lỗi trả về phụ thuộc thứ tự các bước kiểm trong service.
 
 ## Giải quyết tranh chấp
 

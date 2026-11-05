@@ -31,7 +31,7 @@ Pha 1 giữ ba module này. Hai nhóm file `session_*` và `participation_*` n�
 
 Mỗi module có cùng các loại file: router, `schemas` (dữ liệu vào/ra HTTP), `service` (nghiệp vụ), `contracts` (kiểu dữ liệu và `Protocol` mà service dùng), `repository` (truy cập DB) và `dependencies` (lắp ghép các thành phần). Trong `auth` và `discovery` tên file là `router.py`, `service.py`... Trong `sessions` có tiền tố, ví dụ `session_service.py` và `participation_service.py`. Phần lắp ghép của kèo nằm trong `session_router.py`. `auth` có thêm middleware, băm mật khẩu và phát token.
 
-Một request đi theo đường: router → service → repository → DB. Service chỉ biết `Protocol` trong `contracts.py`, không biết SQLAlchemy.
+Một request đi theo đường: router, service, repository, rồi DB. Service chỉ biết `Protocol` trong `contracts.py`, không biết SQLAlchemy.
 
 ### Luật phụ thuộc
 
@@ -127,7 +127,7 @@ Số chỗ của kèo không lưu thành cột. Nó được đếm từ các l�
 ## Quy tắc nghiệp vụ
 
 - Kèo đơn có 2 người, kèo đôi có 4 người, tính cả host.
-- Lịch ở tương lai, dài 60–240 phút.
+- Lịch ở tương lai, dài 60-240 phút.
 - Tạo kèo ghi luôn lượt của host với trạng thái `ACCEPTED`.
 - Xin tham gia tạo lượt `PENDING`. Lượt này chưa giữ chỗ.
 - Duyệt lượt kiểm lại quyền host, trạng thái kèo và lượt, điều kiện tuyển, sức chứa và lịch `ACCEPTED` của người chơi.
