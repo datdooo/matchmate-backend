@@ -6,7 +6,7 @@ Tài liệu này chốt những thứ không đổi trong suốt Pha 1: cách ch
 
 MatchMate là backend REST API cho người chơi cầu lông. Người chơi tìm sân và kèo theo quận, tạo kèo, xin vào kèo, và gửi nhu cầu để được gợi ý nhóm.
 
-Pha 1 chưa có: frontend hoàn chỉnh, chat hay thông báo, đặt sân thật, thanh toán hoàn tiền, xác minh trình độ, Elo/AI, danh sách chờ. Tìm kiếm theo GPS có trong đặc tả nhưng chưa làm; tra cứu hiện theo quận (`district_code`).
+Pha 1 chưa có: frontend hoàn chỉnh, chat hay thông báo, đặt sân thật, thanh toán hoàn tiền, xác minh trình độ, Elo/AI, danh sách chờ. GPS đã bị nhóm bỏ khỏi Pha 1; tra cứu theo quận (`district_code`).
 
 ## Công nghệ
 

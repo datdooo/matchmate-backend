@@ -37,7 +37,7 @@ Hai API này công khai, trừ `host_me=true`. Chúng không ghi dữ liệu.
 
 Kết quả luôn là một trang `items` kèm `total`. Không có kết quả là trường hợp bình thường (`items` rỗng), không phải lỗi.
 
-**Khác với đặc tả:** FR-03 và FR-04 trong đặc tả còn có lọc theo tọa độ (`latitude`, `longitude`, `radius_km`) và trả `distance_km`. Pha 1 chưa làm phần GPS này. Tra cứu chỉ theo quận (`district_code`).
+**Không có GPS:** nhóm đã quyết bỏ lọc theo tọa độ (`latitude`, `longitude`, `radius_km`, `distance_km`) khỏi Pha 1. Tra cứu chỉ theo quận (`district_code`). Đặc tả cũ vẫn còn mô tả phần này.
 
 ## 2. Người chơi rút lượt (FR-10)
 

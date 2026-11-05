@@ -20,7 +20,7 @@
 
 ## Khác biệt giữa đặc tả và code hiện tại
 
-- **GPS:** đặc tả cho FR-03 và FR-04 lọc theo `latitude`, `longitude`, `radius_km` và trả `distance_km`, kèm trang demo GPS. Code chưa có phần này. Tra cứu hiện chỉ theo quận (`district_code`), và bảng `venues` không có cột tọa độ.
+- **GPS:** nhóm đã quyết bỏ GPS khỏi Pha 1. Đặc tả còn mô tả lọc theo `latitude`, `longitude`, `radius_km`, trả `distance_km` và trang demo GPS ở FR-03, FR-04. Code theo quyết định mới: tra cứu chỉ theo quận (`district_code`) và bảng `venues` không có cột tọa độ. Cần sửa đặc tả cho khớp.
 - **Cấu trúc thư mục:** đặc tả liệt kê `app/core/` và `app/api/authentication_middleware.py`. Code đặt cấu hình ở `app/config.py` và middleware ở `app/features/auth/middleware.py`.
 
-Hai điểm này cần nhóm quyết định: sửa đặc tả cho khớp code, hoặc bổ sung code cho khớp đặc tả.
+Cấu trúc thư mục cần nhóm chọn: sửa đặc tả cho khớp code, hoặc chuyển code cho khớp đặc tả.
