@@ -11,7 +11,10 @@ def to_utc(value: datetime) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
         raise ValueError("datetime must be timezone-aware")
 
-    return value.astimezone(timezone.utc)
+    try:
+        return value.astimezone(timezone.utc)
+    except OverflowError as error:
+        raise ValueError("datetime is out of the supported range") from error
 
 
 def overlaps(

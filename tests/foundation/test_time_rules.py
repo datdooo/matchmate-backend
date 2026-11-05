@@ -16,6 +16,13 @@ def test_rejects_naive_datetime() -> None:
         to_utc(datetime(2026, 11, 1, 19))
 
 
+def test_rejects_datetime_that_overflows_when_converted() -> None:
+    near_max = datetime(9999, 12, 31, 23, tzinfo=timezone(timedelta(hours=-5)))
+
+    with pytest.raises(ValueError):
+        to_utc(near_max)
+
+
 @pytest.mark.parametrize(
     ("start_minutes", "end_minutes", "expected"),
     [

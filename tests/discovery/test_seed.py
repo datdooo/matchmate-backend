@@ -48,3 +48,15 @@ def test_load_seed_is_idempotent_and_uses_real_auth_hash(tmp_path):
         assert connection.execute("SELECT COUNT(*) FROM participations").fetchone()[0] == 30
         password_hash = connection.execute("SELECT password_hash FROM users LIMIT 1").fetchone()[0]
     assert Argon2PasswordHasher().verify(TEST_PASSWORD, password_hash)
+
+
+def test_demo_seed_does_not_depend_on_fixed_ids(db_session_factory):
+    from app.db.models import VenueModel
+    from scripts.seed import seed_venue
+
+    with db_session_factory() as db:
+        db.add(VenueModel(id=1, name="Sân khác", address="x", district_code="X", is_active=True))
+        db.commit()
+
+        assert seed_venue(db) == (10, 0)
+        db.commit()

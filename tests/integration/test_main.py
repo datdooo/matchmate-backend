@@ -289,3 +289,25 @@ def test_doubles_matching_checks_all_four_members(
         assert {member["id"] for member in suggestion["members"]} == set(actors)
     else:
         assert suggestion is None
+
+
+def test_invalid_datetime_returns_422_without_echoing_input(client):
+    response = client.get(
+        "/sessions",
+        params={"available_from": "SECRET-MARKER", "available_to": "2030-01-01T00:00:00Z"},
+    )
+
+    assert response.status_code == 422
+    assert "SECRET-MARKER" not in response.text
+
+
+def test_out_of_range_datetime_returns_422(client):
+    response = client.get(
+        "/sessions",
+        params={
+            "available_from": "9999-12-31T22:00:00-05:00",
+            "available_to": "9999-12-31T23:00:00-05:00",
+        },
+    )
+
+    assert response.status_code == 422
