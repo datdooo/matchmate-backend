@@ -90,3 +90,33 @@ def test_invariant_detector_catches_open_game_without_host(
         host.status, host.cancelled_at = "CANCELLED", host.created_at
         session.commit()
     assert check_invariants(db_engine)["open_without_host"] == 1
+
+
+def test_runner_writes_summary_to_artifacts_not_docs(monkeypatch, tmp_path):
+    import importlib.util
+    import sys
+
+    from scripts import run_kaggle_load_test as runner
+
+    fake = {
+        "profile": "read",
+        "environment": "test",
+        "virtual_users": 10,
+        "measurement_complete": True,
+        "aggregate": {"Requests/s": "6.5", "50%": "11", "95%": "14", "99%": "34"},
+        "errors": {},
+        "invariants": {"over_capacity": 0},
+        "exit_code": 0,
+    }
+    # find_spec không import locust; import thật sẽ vá gevent và làm treo các test sau.
+    if importlib.util.find_spec("locust") is None:
+        pytest.skip("cần requirements-load.txt")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["run", "--profile", "read", "--users", "10"])
+    monkeypatch.setattr(runner, "run_case", lambda *args: fake)
+
+    assert runner.main() == 0
+
+    summary = (tmp_path / "artifacts" / "summary.md").read_text()
+    assert "| read | test | 10 | True | 6.5 | 11 | 14 | 34 |" in summary
+    assert not (tmp_path / "docs").exists()

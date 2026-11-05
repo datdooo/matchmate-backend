@@ -58,7 +58,7 @@ python -m ruff format --check .
 python -m pytest -q
 ```
 
-CI chạy ba lệnh này trên Python 3.11. Thư mục `tests/` chia theo module: `auth/`, `discovery/`, `sessions/` (gồm test hai yêu cầu chạy đồng thời), `foundation/` (DB, UnitOfWork, thời gian, xử lý lỗi), `integration/`, `load/`, và `test_architecture.py`. Test tải cần cài thêm `requirements-load.txt`.
+CI chạy ba lệnh này trên Python 3.11, đã cài cả `requirements-load.txt` nên test tải cũng chạy. Một job riêng build Docker image, seed và chạy thử API bằng Compose. Thư mục `tests/` chia theo module: `auth/`, `discovery/`, `sessions/` (gồm test hai yêu cầu chạy đồng thời), `foundation/` (DB, UnitOfWork, thời gian, xử lý lỗi), `integration/`, `load/`, và `test_architecture.py`. Muốn chạy test tải ở máy mình, cài thêm `requirements-load.txt`.
 
 ## Kiểm thử tải trên Kaggle CPU
 
