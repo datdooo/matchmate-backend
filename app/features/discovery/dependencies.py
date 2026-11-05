@@ -2,10 +2,9 @@ from fastapi import Depends, Request
 
 from app.db.session import create_session_factory, engine
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
-from app.domain.errors import DomainError
+from app.domain.errors import DatabaseBusyError, DomainError
 from app.domain.ports import Clock
 from app.domain.time_rules import SystemClock
-from app.features.auth.contracts import DatabaseBusyError
 from app.features.discovery.repository import (
     SqlAlchemyDiscoveryRepository,
     SqlAlchemyMatchingRepository,

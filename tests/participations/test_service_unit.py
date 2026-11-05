@@ -7,8 +7,8 @@ import pytest
 
 from app.domain.errors import DomainError
 from app.domain.ports import MatchingRequestWriter
-from app.features.sessions.participation_contracts import ParticipationRepository
-from app.features.sessions.participation_service import ParticipationService
+from app.features.participations.contracts import ParticipationRepository
+from app.features.participations.service import ParticipationService
 
 
 def test_missing_session_rolls_back_before_any_mutation():

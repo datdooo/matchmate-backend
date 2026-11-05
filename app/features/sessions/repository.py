@@ -13,8 +13,8 @@ from app.db.models import (
 )
 from app.domain.enums import Gender, rank_to_skill, skill_to_rank
 from app.features.auth.contracts import User
-from app.features.sessions.participation_repository import SqlAlchemyParticipationRepository
-from app.features.sessions.session_contracts import CreateSessionInput
+from app.features.participations.repository import SqlAlchemyParticipationRepository
+from app.features.sessions.contracts import CreateSessionInput
 
 
 class SqlAlchemySessionRepository:

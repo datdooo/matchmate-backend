@@ -1,10 +1,10 @@
 from app.db.matching_request_writer import SqlAlchemyMatchingRequestWriter
 from app.db.session import create_session_factory, engine
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
+from app.domain.errors import DatabaseBusyError
 from app.domain.time_rules import SystemClock
-from app.features.auth.contracts import DatabaseBusyError
-from app.features.sessions.participation_repository import SqlAlchemyParticipationRepository
-from app.features.sessions.participation_service import ParticipationService
+from app.features.participations.repository import SqlAlchemyParticipationRepository
+from app.features.participations.service import ParticipationService
 
 _session_factory = create_session_factory(engine)
 

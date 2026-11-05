@@ -20,12 +20,12 @@ from app.domain.errors import DomainError
 from app.features.auth.contracts import User
 from app.features.auth.repository import SqlAlchemyUserRepository
 from app.features.discovery.contracts import PlayerSummary, SessionRecord, VenueRecord
-from app.features.sessions.participation_contracts import (
+from app.features.participations.contracts import (
     CreateParticipationInput,
     ParticipationDetail,
     ParticipationRecord,
 )
-from app.features.sessions.participation_mapper import to_participation_record
+from app.features.participations.mapper import to_participation_record
 
 
 class SqlAlchemyParticipationRepository:

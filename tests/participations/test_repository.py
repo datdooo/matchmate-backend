@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.models import ParticipationModel
-from app.features.sessions.participation_repository import SqlAlchemyParticipationRepository
+from app.features.participations.repository import SqlAlchemyParticipationRepository
 
 START = datetime(2030, 11, 1, 12, tzinfo=timezone.utc)
 

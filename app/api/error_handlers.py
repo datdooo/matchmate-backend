@@ -7,13 +7,12 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app.domain.errors import DomainError
+from app.domain.errors import DatabaseBusyError, DomainError
 from app.features.auth.contracts import (
-    DatabaseBusyError,
     EmailAlreadyExistsError,
     InvalidCredentialsError,
 )
-from app.features.sessions.session_contracts import SessionError
+from app.features.sessions.contracts import SessionError
 
 _HTTP_STATUS = {
     "UNAUTHORIZED": 401,

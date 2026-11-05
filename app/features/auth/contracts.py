@@ -57,10 +57,6 @@ class PasswordHasher(Protocol):
     def verify(self, password: str, password_hash: str) -> bool: ...
 
 
-class DatabaseBusyError(Exception):
-    """Không lấy được khóa ghi DB trong thời gian cho phép."""
-
-
 class InvalidCredentialsError(Exception):
     """Email hoặc mật khẩu không đúng."""
 

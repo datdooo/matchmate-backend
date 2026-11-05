@@ -5,7 +5,7 @@ from app.domain.enums import Gender, SessionStatus, skill_to_rank
 from app.domain.ports import Clock
 from app.domain.time_rules import is_valid_time_window
 from app.features.auth.contracts import UserRepository
-from app.features.sessions.session_contracts import (
+from app.features.sessions.contracts import (
     CreateSessionInput,
     SessionError,
     SessionRepository,

@@ -4,7 +4,7 @@ from datetime import datetime
 from app.domain.entities import Participation, Session
 from app.domain.enums import ParticipationStatus, SessionStatus
 from app.features.discovery.contracts import PlayerSummary
-from app.features.sessions.participation_contracts import ParticipationRecord
+from app.features.participations.contracts import ParticipationRecord
 
 
 def to_participation_record(

@@ -10,7 +10,7 @@ from pydantic import (
 from app.api.schemas import UtcDatetime
 from app.domain.enums import SkillLevel
 from app.features.discovery.schemas import PlayerSummary, SessionSummary
-from app.features.sessions.session_contracts import CreateSessionInput
+from app.features.sessions.contracts import CreateSessionInput
 
 
 class CreateSessionRequest(BaseModel):

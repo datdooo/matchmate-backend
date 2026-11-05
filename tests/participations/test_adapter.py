@@ -9,8 +9,8 @@ from app.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.domain.entities import Participation
 from app.domain.enums import Gender, ParticipationStatus
 from app.domain.errors import DomainError
-from app.features.sessions.participation_contracts import CreateParticipationInput
-from app.features.sessions.participation_repository import SqlAlchemyParticipationRepository
+from app.features.participations.contracts import CreateParticipationInput
+from app.features.participations.repository import SqlAlchemyParticipationRepository
 
 NOW = datetime(2030, 11, 1, 10, tzinfo=timezone.utc)
 

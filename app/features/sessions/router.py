@@ -7,12 +7,12 @@ from fastapi.security import HTTPBearer
 from app.api.schemas import ErrorResponse
 from app.db.session import create_session_factory, engine
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
+from app.domain.errors import DatabaseBusyError
 from app.domain.time_rules import SystemClock
-from app.features.auth.contracts import DatabaseBusyError
 from app.features.auth.repository import SqlAlchemyUserRepository
-from app.features.sessions.session_repository import SqlAlchemySessionRepository
-from app.features.sessions.session_schemas import CreateSessionRequest, SessionDetail
-from app.features.sessions.session_service import SessionService
+from app.features.sessions.repository import SqlAlchemySessionRepository
+from app.features.sessions.schemas import CreateSessionRequest, SessionDetail
+from app.features.sessions.service import SessionService
 
 router = APIRouter(tags=["Sessions"])
 _bearer = HTTPBearer(auto_error=False)

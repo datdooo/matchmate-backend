@@ -4,13 +4,13 @@ from fastapi import APIRouter, Depends, Path, Request
 from fastapi.security import HTTPBearer
 
 from app.api.schemas import ErrorResponse
-from app.features.sessions.participation_dependencies import provide_participation_service
-from app.features.sessions.participation_schemas import (
+from app.features.participations.dependencies import provide_participation_service
+from app.features.participations.schemas import (
     DecisionRequest,
     JoinSessionRequest,
     ParticipationDetailResponse,
 )
-from app.features.sessions.participation_service import ParticipationService
+from app.features.participations.service import ParticipationService
 
 router = APIRouter(tags=["Participations"], dependencies=[Depends(HTTPBearer(auto_error=False))])
 Service = Annotated[ParticipationService, Depends(provide_participation_service)]

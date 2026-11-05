@@ -9,7 +9,7 @@ from starlette.responses import Response
 
 from app.api.error_handlers import make_error_response
 from app.config import load_settings
-from app.features.auth.contracts import DatabaseBusyError
+from app.domain.errors import DatabaseBusyError
 from app.features.auth.dependencies import lookup_authenticated_user
 
 

@@ -8,10 +8,10 @@ from sqlalchemy import select
 
 from app.db.models import MatchingRequestModel, ParticipationModel, SessionModel, UserModel
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
-from app.features.auth.contracts import DatabaseBusyError
+from app.domain.errors import DatabaseBusyError
 from app.features.discovery import dependencies as discovery_dependencies
-from app.features.sessions import session_router
-from app.features.sessions.participation_repository import SqlAlchemyParticipationRepository
+from app.features.participations.repository import SqlAlchemyParticipationRepository
+from app.features.sessions import router as session_router
 
 
 @pytest.mark.parametrize("expected", ["AVAILABLE", "FULL", "STARTED", "ENDED", "CANCELLED"])
