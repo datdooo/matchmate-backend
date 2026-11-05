@@ -30,3 +30,39 @@ jobs:
         run: python -m ruff format --check .
       - name: Foundation tests
         run: python -m pytest -q
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create .env
+        run: python3 -m scripts.init_env
+      - name: Build image
+        run: docker compose build
+      - name: Seed database
+        run: docker compose run --rm api python -m scripts.seed
+      - name: Start API
+        run: docker compose up -d
+      - name: Wait for health
+        run: |
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8000/health && exit 0
+            sleep 2
+          done
+          exit 1
+      - name: Smoke test
+        run: |
+          api=http://127.0.0.1:8000
+          curl -fsS -X POST $api/auth/register -H 'Content-Type: application/json' \
+            -d '{"email":"ci@example.com","password":"password123","display_name":"CI","skill_level":"TB","gender":"MALE"}'
+          token=$(curl -fsS -X POST $api/auth/login -H 'Content-Type: application/json' \
+            -d '{"email":"ci@example.com","password":"password123"}' \
+            | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+          curl -fsS $api/venues | python3 -c 'import sys, json; assert json.load(sys.stdin)["total"] == 10'
+          curl -fsS -H "Authorization: Bearer $token" "$api/sessions?host_me=true" > /dev/null
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs api
+      - name: Stop
+        if: always()
+        run: docker compose down -v
