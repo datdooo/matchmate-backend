@@ -10,7 +10,7 @@ from scripts.seed_load_data import TEST_PASSWORD
 
 
 def run_seed(module, directory):
-    project = Path(__file__).resolve().parents[1]
+    project = Path(__file__).resolve().parents[2]
     return subprocess.run(
         [sys.executable, "-m", module],
         cwd=directory,

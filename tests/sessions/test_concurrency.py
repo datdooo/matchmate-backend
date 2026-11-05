@@ -12,8 +12,8 @@ from app.db.session import create_db_engine, create_session_factory
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.domain.errors import DatabaseBusyError, DomainError
 from app.features.auth.repository import SqlAlchemyUserRepository
-from app.features.sessions.repository import SqlAlchemySessionRepository
-from app.features.sessions.service import SessionService
+from app.features.sessions.session_repository import SqlAlchemySessionRepository
+from app.features.sessions.session_service import SessionService
 
 
 def outcome(operation):

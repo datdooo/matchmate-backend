@@ -8,7 +8,7 @@ from app.domain.enums import Gender, GenderPolicy, ParticipationStatus, SessionS
 from app.domain.errors import DomainError
 from app.domain.ports import Clock, MatchingRequestWriter, UnitOfWork
 from app.features.auth.contracts import User
-from app.features.participations.contracts import (
+from app.features.sessions.participation_contracts import (
     CreateParticipationInput,
     ParticipationDetail,
     ParticipationRepository,

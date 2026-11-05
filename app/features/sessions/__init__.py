@@ -1,1 +1,1 @@
-"""Tạo, xem và hủy kèo."""
+"""Tạo, xem, hủy kèo và xử lý lượt tham gia."""

@@ -12,8 +12,7 @@ from app.db.session import create_db_engine, create_session_factory
 from app.features.auth import dependencies as auth_dependencies
 from app.features.auth.tokens import JwtTokenIssuer
 from app.features.discovery import dependencies as discovery_dependencies
-from app.features.participations import dependencies as participation_dependencies
-from app.features.sessions import router as session_router
+from app.features.sessions import participation_dependencies, session_router
 from app.main import app
 
 TEST_SECRET = "matchmate-tests-only-secret-32-bytes"

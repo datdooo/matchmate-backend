@@ -4,7 +4,7 @@ from sqlalchemy import select
 from app.db.matching_request_writer import SqlAlchemyMatchingRequestWriter
 from app.db.models import MatchingRequestModel, ParticipationModel, SessionModel
 from app.db.session import create_db_engine, create_session_factory
-from app.features.participations.dependencies import provide_participation_service
+from app.features.sessions.participation_dependencies import provide_participation_service
 from app.main import app
 
 

@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 
 from app.api.error_handlers import register_error_handlers
 from app.domain.errors import DomainError
-from app.features.sessions.contracts import SessionError
+from app.features.sessions.session_contracts import SessionError
 
 
 @pytest.mark.parametrize("error_type", [DomainError, SessionError])

@@ -12,7 +12,7 @@ from app.features.auth.contracts import (
     EmailAlreadyExistsError,
     InvalidCredentialsError,
 )
-from app.features.sessions.contracts import SessionError
+from app.features.sessions.session_contracts import SessionError
 
 _HTTP_STATUS = {
     "UNAUTHORIZED": 401,

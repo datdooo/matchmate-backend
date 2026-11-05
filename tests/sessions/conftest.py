@@ -5,9 +5,9 @@ import pytest
 from app.db.matching_request_writer import SqlAlchemyMatchingRequestWriter
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.domain.errors import DatabaseBusyError
-from app.features.participations import dependencies as participation_dependencies
-from app.features.participations.repository import SqlAlchemyParticipationRepository
-from app.features.participations.service import ParticipationService
+from app.features.sessions import participation_dependencies
+from app.features.sessions.participation_repository import SqlAlchemyParticipationRepository
+from app.features.sessions.participation_service import ParticipationService
 from app.main import app
 
 NOW = datetime(2030, 11, 1, 10, tzinfo=timezone.utc)

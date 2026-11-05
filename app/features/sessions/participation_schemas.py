@@ -5,7 +5,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from app.domain.enums import Gender, ParticipationStatus, rank_to_skill
 from app.features.discovery.schemas import PlayerSummary, SessionSummary
-from app.features.participations.contracts import ParticipationDetail
+from app.features.sessions.participation_contracts import ParticipationDetail
 
 
 class JoinSessionRequest(BaseModel):
