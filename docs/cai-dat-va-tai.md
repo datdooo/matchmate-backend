@@ -62,25 +62,7 @@ CI chạy ba lệnh này trên Python 3.11, đã cài cả `requirements-load.tx
 
 ## Kiểm thử tải trên Kaggle CPU
 
-Đo ngày 29/10/2026 trên commit `859df1345a6d5034d2202823232f219f34f87ab4`. Môi trường: Kaggle CPU 4 vCPU, RAM 30 GiB, Python 3.13.15, SQLite 3.45.1, một worker Uvicorn, Locust chạy cùng máy qua loopback. Số liệu không phản ánh độ trễ qua Internet.
-
-| Kịch bản | Người dùng | Request | RPS | p50 (ms) | p95 (ms) | p99 (ms) | Lỗi |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| read | 10 | 393 | 6,59 | 11 | 14 | 34 | 0 |
-| read | 50 | 1963 | 32,91 | 13 | 32 | 54 | 0 |
-| read | 100 | 3864 | 65,25 | 24 | 100 | 180 | 0 |
-| lifecycle | 10 | 1719 | 28,79 | 31 | 120 | 270 | 0 |
-
-`read` chỉ gọi API đọc. Mỗi vòng `lifecycle` tạo kèo, xin tham gia, duyệt, xem chi tiết, rồi rút lượt hoặc hủy kèo.
-
-Hai lượt `lifecycle` còn lại chưa đo được:
-
-- **50 người:** đăng nhập đủ, nhưng giai đoạn warm-up có 27 lỗi 503 (22 ở tạo kèo, 4 ở xin tham gia, 1 ở duyệt). Runner dừng đúng quy tắc. Đây là giới hạn ghi đồng thời của SQLite với một worker.
-- **100 người:** mới đăng nhập được 42 cặp thì một request `/auth/login` quá 20 giây và hết thời gian chờ. Runner dừng trước warm-up.
-
-Sau cả sáu lượt, bốn chỉ số kiểm tra DB đều bằng 0: `over_capacity`, `accepted_overlap`, `active_in_cancelled`, `open_without_host`.
-
-Báo cáo đầy đủ, notebook và dữ liệu thô nằm ở [commit `5b9be9f`](https://github.com/datdooo/matchmate-backend/tree/5b9be9fb939de41965eb1f6b290be2b60ea4d28c/docs/load/kaggle-2026-10-29).
+Kết quả đo (Locust, 10/50/100 người, notebook đã chạy và dữ liệu thô) nằm ở [commit `5b9be9f`](https://github.com/datdooo/matchmate-backend/tree/5b9be9fb939de41965eb1f6b290be2b60ea4d28c/docs/load/kaggle-2026-10-29). Tải ghi (`lifecycle`) với 50 và 100 người chưa đo được, lý do ghi trong báo cáo ở commit đó.
 
 Chạy lại (cần Internet):
 
