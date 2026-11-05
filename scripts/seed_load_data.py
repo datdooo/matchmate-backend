@@ -12,7 +12,7 @@ from app.db.models import (
     VenueModel,
 )
 from app.db.session import create_session_factory, engine
-from app.features.auth.security import Argon2PasswordHasher
+from app.features.auth.security import hash_password
 
 N_SINGLES = 9
 N_DOUBLES = 21
@@ -42,10 +42,6 @@ FEE_PAIRS = [
     (40_000, 60_000),
 ]
 GENDER_POLICIES = ["ANY", "ANY", "MALE_ONLY", "ANY", "FEMALE_ONLY"]
-
-
-def hash_password(password: str) -> str:
-    return Argon2PasswordHasher().hash(password)
 
 
 def build_user_specs(extra_users: int = N_EXTRA_USERS) -> list[dict]:

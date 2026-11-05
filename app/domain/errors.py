@@ -7,3 +7,7 @@ class DomainError(Exception):
         self.code = code
         self.message = message
         self.details = details or {}
+
+
+class DatabaseBusyError(Exception):
+    """Không lấy được khóa ghi DB trong thời gian cho phép."""

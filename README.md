@@ -1,31 +1,41 @@
 # MatchMate Backend
 
-## TL;DR
+Backend REST API cho người chơi cầu lông. Người chơi tìm sân và kèo theo quận, xin vào kèo và chờ host duyệt. Ai chưa chọn được kèo gửi nhu cầu để nhận gợi ý nhóm 2 hoặc 4 người.
 
-MatchMate hỗ trợ người chơi cầu lông tìm kèo phù hợp và chủ kèo tuyển thêm người. Người chơi tra cứu sân/kèo theo quận, gửi yêu cầu tham gia và chờ host duyệt; cũng có thể tạo kèo hoặc tìm nhóm qua matching. Pha 1 cung cấp backend REST API, chưa có frontend hoàn chỉnh và không dùng GPS.
+Pha 1 của bài tập lớn môn Kiến trúc phần mềm (UET): backend cơ bản, không có frontend. Python 3.11+, FastAPI, Pydantic, SQLAlchemy 2, SQLite, Docker.
 
-Backend sử dụng **FastAPI, Pydantic, SQLAlchemy, SQLite và Docker**.
+## API
 
-## Chức năng chính
+Đặc tả đầy đủ ở [docs/openapi.json](docs/openapi.json), hoặc `/docs` (Swagger) khi chạy ứng dụng. Quy tắc nghiệp vụ và lỗi từng endpoint ở [docs/dac-ta.md](docs/dac-ta.md).
 
-- **Tài khoản:** đăng ký hồ sơ và đăng nhập bằng JWT. Host là người tạo kèo, không phải vai trò quản trị riêng.
-- **Tìm sân và kèo:** tra cứu theo quận, trình độ, giới tính, lịch và mức phí; xem số chỗ và điều kiện tham gia.
-- **Quản lý kèo:** tạo kèo đơn/đôi, xem chi tiết và hủy trước giờ bắt đầu. Kèo có 2/4 người tính cả host, thời lượng 60–240 phút.
-- **Tham gia:** xin vào kèo, host duyệt/từ chối và người chơi rút lượt. Yêu cầu đang chờ chưa giữ chỗ; khi duyệt phải kiểm lại điều kiện, số chỗ và lịch.
-- **Matching:** gợi ý nhóm cùng sân, giờ và loại kèo, phù hợp giới tính, ngân sách và chênh trình tối đa 2 bậc. Gợi ý chưa tự tạo kèo hoặc giữ chỗ.
+| Endpoint | Chức năng | Quyền |
+|---|---|---|
+| `POST /auth/register` | Đăng ký | Công khai |
+| `POST /auth/login` | Đăng nhập, nhận JWT | Công khai |
+| `GET /venues` | Tìm sân | Công khai |
+| `GET /sessions` | Tìm kèo (`host_me=true` cần JWT) | Công khai |
+| `POST /sessions` | Tạo kèo | JWT |
+| `GET /sessions/{session_id}` | Xem chi tiết kèo | JWT |
+| `DELETE /sessions/{session_id}` | Hủy kèo | Host |
+| `POST /participations` | Xin tham gia | JWT |
+| `POST /participations/{participation_id}/decision` | Duyệt hoặc từ chối | Host |
+| `DELETE /participations/{participation_id}` | Rút lượt của mình | Chủ lượt |
+| `POST /matching/requests` | Gợi ý ghép nhóm | JWT |
+| `GET /health` | Kiểm tra tiến trình | Công khai |
 
-## Luồng sử dụng
+## Kiến trúc
 
-1. **Đăng ký và đăng nhập:** tạo hồ sơ gồm email, mật khẩu, tên hiển thị, trình độ và giới tính; đăng nhập để lấy JWT.
-2. **Tìm sân và kèo:** lọc kèo phù hợp rồi xem lịch, phí và số chỗ. Tra cứu công khai không cần đăng nhập; xem chi tiết cần JWT.
-3. **Tạo kèo hoặc xin tham gia:** host nhập sân, lịch, loại kèo, phí và điều kiện tuyển. Người chơi khác xin tham gia để tạo lượt `PENDING`.
-4. **Host duyệt hoặc từ chối:** duyệt chuyển lượt sang `ACCEPTED` khi còn chỗ và không trùng lịch đã xác nhận; từ chối chuyển sang `REJECTED`.
-5. **Rút lượt hoặc hủy kèo:** người chơi rút lượt của mình trước giờ bắt đầu; host hủy cả kèo và các lượt đang hoạt động.
-6. **Tìm nhóm qua matching:** nếu chưa chọn được kèo, gửi nhu cầu để nhận gợi ý đủ 2/4 người. Chưa đủ nhóm thì trả `suggestion=null`.
+Ba tầng: router (API), service (nghiệp vụ), repository (truy cập dữ liệu), chia thành ba module `auth`, `discovery`, `sessions` trong `app/features/`.
 
-## Chạy nhanh
+- Service, domain và contracts không import FastAPI, Pydantic hay SQLAlchemy (`tests/test_architecture.py` kiểm).
+- Repository dùng SQLAlchemy ORM. JWT được kiểm một lần ở middleware.
+- Thao tác ghi dùng `BEGIN IMMEDIATE` và commit một lần. Chờ khóa quá 5 giây thì trả `503 DATABASE_BUSY`.
 
-Cần Docker, Docker Compose và Python 3 để tạo cấu hình. Chạy tại thư mục gốc:
+Chi tiết ở [docs/kien-truc.md](docs/kien-truc.md).
+
+## Chạy
+
+Cần Docker, Docker Compose và Python 3 (để tạo file cấu hình):
 
 ```bash
 python3 -m scripts.init_env
@@ -34,29 +44,9 @@ docker compose run --rm api python -m scripts.seed
 docker compose up -d
 ```
 
-Mở [Swagger UI](http://localhost:8000/docs) để thử API. Seed tạo bảng và 10 sân mẫu. Dừng bằng `docker compose down`; dữ liệu được giữ trong volume. Cách chạy không dùng Docker nằm trong [hướng dẫn cài đặt](docs/INSTALLATION.md).
-
-## Demo đơn giản test API
-
-Sau khi cài môi trường Python theo hướng dẫn cài đặt, chạy:
+Swagger ở http://localhost:8000/docs. Chạy không dùng Docker, demo và kiểm thử tải ở [docs/cai-dat-va-tai.md](docs/cai-dat-va-tai.md).
 
 ```bash
-python -m scripts.demo --step
+python -m scripts.demo --step   # demo toàn luồng bằng HTTP thật
+python -m pytest -q             # kiểm thử
 ```
-
-Script tự mở server và DB tạm, đăng ký/đăng nhập hai tài khoản rồi lần lượt tạo kèo, xin tham gia, duyệt, rút và hủy. Nhấn Enter để đi tiếp. Các bước nhập lịch sai hoặc xin khi kèo đầy dùng để kiểm tra phản hồi lỗi; mỗi bước đều gọi HTTP thật và kiểm kết quả.
-
-## Tài liệu
-
-- [Cài đặt, chạy project và kiểm thử](docs/INSTALLATION.md)
-- [Kiến trúc, nghiệp vụ và API](docs/ARCHITECTURE.md)
-- [Đặc tả API — OpenAPI JSON](docs/openapi.json)
-- [Luồng chi tiết: dữ liệu nhập, nhánh lỗi và mã nguồn](docs/WORKFLOWS.md)
-- [Xin, duyệt và rút lượt tham gia](docs/PARTICIPATIONS.md)
-- [Kiểm thử tải Kaggle CPU](docs/LOAD_TEST_RESULTS.md)
-
-## Kiểm thử tải trên Kaggle CPU
-
-[Báo cáo tải](docs/LOAD_TEST_RESULTS.md) ghi môi trường, số đo và các giới hạn. 235 test đạt; tải đọc 10/50/100 người dùng mô phỏng và luồng ghi 10 người đo đủ 60 giây, không lỗi request. Luồng ghi 50/100 người dừng trước khi đo do 503 hoặc đăng nhập quá thời gian chờ, chưa có kết quả đầy đủ.
-
-[Notebook đã chạy](docs/load/kaggle-2026-10-29/matchmate-phase-1-load-test.ipynb) và [CSV/log](docs/load/kaggle-2026-10-29) được lưu để đối chiếu. Kết quả đo trên một máy là số liệu tham khảo cho cấu hình hiện tại.

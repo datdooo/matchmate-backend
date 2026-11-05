@@ -1,12 +1,20 @@
 from datetime import datetime, timedelta, timezone
 
 
+class SystemClock:
+    def now(self) -> datetime:
+        return datetime.now(timezone.utc)
+
+
 def to_utc(value: datetime) -> datetime:
     """Chuẩn hóa datetime có múi giờ về UTC."""
     if value.tzinfo is None or value.utcoffset() is None:
         raise ValueError("datetime must be timezone-aware")
 
-    return value.astimezone(timezone.utc)
+    try:
+        return value.astimezone(timezone.utc)
+    except OverflowError as error:
+        raise ValueError("datetime is out of the supported range") from error
 
 
 def overlaps(

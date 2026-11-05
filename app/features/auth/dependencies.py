@@ -3,7 +3,8 @@ from collections.abc import Iterator
 from app.config import load_settings
 from app.db.session import create_session_factory, engine
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
-from app.features.auth.contracts import DatabaseBusyError, User
+from app.domain.errors import DatabaseBusyError
+from app.features.auth.contracts import User
 from app.features.auth.repository import SqlAlchemyUserRepository
 from app.features.auth.security import Argon2PasswordHasher
 from app.features.auth.service import AuthService

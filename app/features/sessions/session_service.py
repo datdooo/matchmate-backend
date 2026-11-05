@@ -1,7 +1,7 @@
-from datetime import datetime, timezone
 from typing import Any
 
-from app.domain.enums import Gender, skill_to_rank
+from app.domain.entities import compute_display_status
+from app.domain.enums import Gender, SessionStatus, skill_to_rank
 from app.domain.ports import Clock
 from app.domain.time_rules import is_valid_time_window
 from app.features.auth.contracts import UserRepository
@@ -10,11 +10,6 @@ from app.features.sessions.session_contracts import (
     SessionError,
     SessionRepository,
 )
-
-
-class SystemClock:
-    def now(self) -> datetime:
-        return datetime.now(timezone.utc)
 
 
 class SessionService:
@@ -102,22 +97,18 @@ class SessionService:
                 available_for_changes and is_host and record["status"] == "PENDING"
             )
 
-        if data["status"] == "CANCELLED":
-            display_status = "CANCELLED"
-        elif now >= data["ends_at"]:
-            display_status = "ENDED"
-        elif now >= data["starts_at"]:
-            display_status = "STARTED"
-        elif accepted_count >= capacity:
-            display_status = "FULL"
-        else:
-            display_status = "AVAILABLE"
-
         data.update(
             capacity=capacity,
             accepted_count=accepted_count,
             remaining_capacity=capacity - accepted_count,
-            display_status=display_status,
+            display_status=compute_display_status(
+                SessionStatus(data["status"]),
+                data["starts_at"],
+                data["ends_at"],
+                accepted_count,
+                capacity,
+                now,
+            ),
             my_participations=[record for record in records if record["user_id"] == viewer_id],
             management={"participations": records} if is_host else None,
         )

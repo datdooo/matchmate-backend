@@ -323,7 +323,7 @@ def main():
             f"{stats.get('95%', 'n/a')} | {stats.get('99%', 'n/a')} | "
             f"{' | '.join(map(str, error_counts))} | {item['invariants']} |"
         )
-    Path("docs/LOAD_TEST_RESULTS.md").write_text("\n".join(rows) + "\n")
+    (output / "summary.md").write_text("\n".join(rows) + "\n")
     return int(
         any(
             not item["measurement_complete"]

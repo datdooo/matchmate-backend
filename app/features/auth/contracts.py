@@ -27,7 +27,7 @@ class NewUser:
 
 
 class EmailAlreadyExistsError(Exception):
-    """Email da dc dang ki"""
+    """Email đã được đăng ký."""
 
 
 @dataclass(frozen=True)
@@ -42,7 +42,7 @@ class UserRepository(Protocol):
     def get_by_email(self, email: str) -> User | None: ...
 
     def create(self, data: NewUser) -> User:
-        """Luu user, raise EmailAlreadyExistsError neu email trung"""
+        """Lưu user; báo EmailAlreadyExistsError nếu email trùng."""
         ...
 
     def get_credentials_by_email(
@@ -55,10 +55,6 @@ class PasswordHasher(Protocol):
     def hash(self, password: str) -> str: ...
 
     def verify(self, password: str, password_hash: str) -> bool: ...
-
-
-class DatabaseBusyError(Exception):
-    """Không lấy được khóa ghi DB trong thời gian cho phép."""
 
 
 class InvalidCredentialsError(Exception):

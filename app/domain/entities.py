@@ -3,7 +3,34 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from app.domain.enums import Gender, GenderPolicy, ParticipationStatus, PlayType, SessionStatus
+from app.domain.enums import (
+    DisplayStatus,
+    Gender,
+    GenderPolicy,
+    ParticipationStatus,
+    PlayType,
+    SessionStatus,
+)
+
+
+def compute_display_status(
+    status: SessionStatus,
+    starts_at: datetime,
+    ends_at: datetime,
+    accepted_count: int,
+    capacity: int,
+    now: datetime,
+) -> DisplayStatus:
+    """Trạng thái hiển thị dùng chung cho tìm kèo, chi tiết và lượt tham gia."""
+    if status == SessionStatus.CANCELLED:
+        return DisplayStatus.CANCELLED
+    if now >= ends_at:
+        return DisplayStatus.ENDED
+    if now >= starts_at:
+        return DisplayStatus.STARTED
+    if accepted_count >= capacity:
+        return DisplayStatus.FULL
+    return DisplayStatus.AVAILABLE
 
 
 @dataclass(frozen=True)

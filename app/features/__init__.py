@@ -1,1 +1,1 @@
-"""Feature packages; no business implementation in this baseline."""
+"""Các chức năng tài khoản, tìm kèo và quản lý lượt tham gia."""
