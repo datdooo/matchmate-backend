@@ -53,12 +53,11 @@ Script tự mở server và DB tạm, đăng ký/đăng nhập hai tài khoản 
 - [Cài đặt, chạy project và kiểm thử](docs/INSTALLATION.md)
 - [Kiến trúc, nghiệp vụ và API](docs/ARCHITECTURE.md)
 - [Đặc tả API — OpenAPI JSON](docs/openapi.json)
-- [Luồng chi tiết: dữ liệu nhập, nhánh lỗi và mã nguồn](docs/WORKFLOWS.md)
-- [Xin, duyệt và rút lượt tham gia](docs/PARTICIPATIONS.md)
+- [Luồng chi tiết, gồm xin, duyệt và rút lượt tham gia](docs/WORKFLOWS.md)
 - [Kiểm thử tải Kaggle CPU](docs/LOAD_TEST_RESULTS.md)
 
 ## Kiểm thử tải trên Kaggle CPU
 
 [Báo cáo tải](docs/LOAD_TEST_RESULTS.md) ghi môi trường, số đo và các giới hạn. 235 test đạt; tải đọc 10/50/100 người dùng mô phỏng và luồng ghi 10 người đo đủ 60 giây, không lỗi request. Luồng ghi 50/100 người dừng trước khi đo do 503 hoặc đăng nhập quá thời gian chờ, chưa có kết quả đầy đủ.
 
-[Notebook đã chạy](docs/load/kaggle-2026-10-29/matchmate-phase-1-load-test.ipynb) và [CSV/log](docs/load/kaggle-2026-10-29) được lưu để đối chiếu. Kết quả đo trên một máy là số liệu tham khảo cho cấu hình hiện tại.
+Kết quả đo trên một máy là số liệu tham khảo cho cấu hình hiện tại. Bản lưu tại mốc Pha 1 có [notebook đã chạy](https://github.com/datdooo/matchmate-backend/blob/5b9be9fb939de41965eb1f6b290be2b60ea4d28c/docs/load/kaggle-2026-10-29/matchmate-phase-1-load-test.ipynb) và [CSV/log](https://github.com/datdooo/matchmate-backend/tree/5b9be9fb939de41965eb1f6b290be2b60ea4d28c/docs/load/kaggle-2026-10-29).

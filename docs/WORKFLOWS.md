@@ -36,7 +36,7 @@ flowchart TD
 
 Thiếu trường, sai kiểu, giá trị enum sai hoặc thừa trường đều trả 422. Đăng nhập chỉ nhận `email`, `password`; thông báo sai thông tin không tiết lộ email có tồn tại hay không.
 
-- Schema kiểm hình dạng dữ liệu trước; service kiểm email trùng rồi băm mật khẩu. Đăng ký thành công chỉ tạo hồ sơ. Token được cấp sau bước đăng nhập và được middleware kiểm trước API bảo vệ.
+- Schema kiểm hình dạng dữ liệu trước. Service kiểm email trùng rồi băm mật khẩu. Đăng ký thành công chỉ tạo hồ sơ. Token được cấp sau bước đăng nhập và được middleware kiểm trước API bảo vệ.
 
 </details>
 

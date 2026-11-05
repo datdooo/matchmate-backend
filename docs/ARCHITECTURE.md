@@ -12,14 +12,14 @@ DB có 5 bảng: `users`, `venues`, `sessions`, `participations`, `matching_requ
 
 Router nhận `POST /participations/{participation_id}/decision`; JWT sẽ xác định người đang thao tác. Schema kiểm quyết định `APPROVE` hoặc `REJECT`, rồi chuyển cho service.
 
-Service mở transaction ghi, kiểm người thao tác là host, lượt đang `PENDING` và kèo chưa bắt đầu. Với `APPROVE`, service kiểm tra lại hồ sơ, số chỗ và lịch đã xác nhận. Repository sẽ đổi trạng thái lượt và writer đóng matching chồng giờ trên cùng connection. Nếu hoàn tất thì commit còn lỗi thì rollback.
+Service mở transaction ghi rồi kiểm quyền host, trạng thái `PENDING` của lượt và giờ bắt đầu kèo. Với `APPROVE`, service kiểm lại hồ sơ, sức chứa và lịch đã xác nhận. Repository đổi trạng thái lượt, còn writer đóng matching chồng giờ trên cùng connection. Service commit khi các bước thành công và rollback khi có lỗi.
 
 ## Quy tắc dữ liệu và tích hợp Phase 2
 
 - Kèo đơn/đôi có 2/4 người, tính cả host; chỉ lượt `ACCEPTED` mới tính vào số chỗ.
 - Khi có người xin tham gia tạo `PENDING`. Khi duyệt phải kiểm lại sức chứa.
-- Lịch ở tương lai, dài 60–240 phút và không chồng lịch `ACCEPTED`; hai lịch nối tiếp được phép.
-- Phí và giới tính được lưu tại thời điểm xin, giữ nguyên sau duyệt/rút/hủy. Hủy kèo thì phải hủy cả các lượt đang hoạt động trong cùng transaction.
+- Lịch ở tương lai, dài 60–240 phút và không chồng lịch `ACCEPTED`. Hai lịch nối tiếp được phép.
+- Hệ thống lưu phí và giới tính tại lúc xin tham gia. Duyệt, rút và hủy đều dùng bản ghi đó. Khi host hủy kèo, các lượt đang hoạt động được hủy trong cùng transaction.
 - Dữ liệu đầu vào phải có múi giờ được DB lưu UTC dưới dạng TEXT cố định và API phải trả thời gian có `Z`.
 - SQLite chỉ có một writer. Khi hết thời gian chờ khóa phải trả `503 DATABASE_BUSY`.
 - Các cờ quyền trong response dùng để phục vụ giao diện. Khi nhận thao tác ghi Service phải kiểm tra lại quyền.
@@ -30,7 +30,7 @@ Pha 1 chưa triển khai frontend hoàn chỉnh, chat/thông báo, đặt sân t
 
 ## API
 
-Đặc tả: [openapi.json](openapi.json). Khi chạy ứng dụng, mở `/docs` để thử API hoặc `/redoc` để đọc.
+Đặc tả API nằm trong [openapi.json](openapi.json). Khi chạy ứng dụng, mở `/docs` để thử API hoặc `/redoc` để đọc.
 
 | FR | API | Chức năng và quyền |
 |---|---|---|
