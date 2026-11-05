@@ -1,8 +1,8 @@
-# Cài đặt và chạy
+# Tuần 3: Cài đặt, chạy và kiểm thử
 
-## Docker
+## Chạy bằng Docker
 
-Cần Docker, Docker Compose và Python 3 để tạo file cấu hình. Chạy tại thư mục gốc:
+Cần Docker, Docker Compose và Python 3 (chỉ để tạo file cấu hình). Chạy tại thư mục gốc của repo:
 
 ```bash
 python3 -m scripts.init_env
@@ -11,7 +11,9 @@ docker compose run --rm api python -m scripts.seed
 docker compose up -d
 ```
 
-`init_env` dùng thư viện chuẩn Python, tạo `.env` với JWT secret ngẫu nhiên và không ghi đè file có sẵn. Python của ứng dụng và các dependency chạy trong container.
+`init_env` chỉ dùng thư viện chuẩn của Python. Nó tạo `.env` với JWT secret ngẫu nhiên và không ghi đè file có sẵn. Ứng dụng và dependency chạy trong container.
+
+Mở [Swagger UI](http://127.0.0.1:8000/docs) để thử API. Compose chạy một worker và lưu DB trong volume `matchmate_data`.
 
 | Việc | Lệnh |
 |---|---|
@@ -19,8 +21,9 @@ docker compose up -d
 | Chạy lại | `docker compose up -d` |
 | Build lại sau khi sửa code hoặc dependency | `docker compose up --build -d` |
 | Dừng, giữ dữ liệu | `docker compose down` |
+| Dừng và xóa dữ liệu | `docker compose down -v` |
 
-Container không tự reload code. Seed tạo bảng và 10 sân mẫu, không reset DB. Seed không cập nhật cấu trúc bảng đã tồn tại; thay schema cần xử lý dữ liệu cũ trước. `docker compose down -v` xóa volume dữ liệu.
+Container không tự nạp lại code, nên sửa code xong phải build lại. Seed tạo bảng và 10 sân mẫu, không reset DB, và không cập nhật cấu trúc bảng đã có. Nếu đổi schema, phải xử lý dữ liệu cũ trước.
 
 ## Chạy bằng Python
 
@@ -35,21 +38,26 @@ python -m scripts.seed
 python -m uvicorn app.main:app --reload --no-access-log
 ```
 
-Trên PowerShell dùng `.venv\Scripts\Activate.ps1`.
+Trên PowerShell, kích hoạt môi trường bằng `.venv\Scripts\Activate.ps1`.
 
-Ứng dụng dùng `sqlite:///./app.db`. Khi đổi `DATABASE_URL`, seed và app phải nhận cùng giá trị từ environment. `SQLITE_BUSY_TIMEOUT_MS` mặc định là 5000 ms. App không tự seed hay reset DB lúc khởi động.
+Mặc định app dùng `sqlite:///./app.db`. Muốn đổi, đặt `DATABASE_URL` và dùng cùng giá trị khi seed và khi chạy app. App không tự seed hay reset DB lúc khởi động.
 
-Mở [Swagger UI](http://127.0.0.1:8000/docs) để thử API. Compose lưu DB trong volume `matchmate_data`.
+| Biến môi trường | Mặc định | Ý nghĩa |
+|---|---|---|
+| `DATABASE_URL` | `sqlite:///./app.db` | Đường dẫn DB |
+| `JWT_SECRET_KEY` | không có | Bắt buộc, ít nhất 32 byte. `init_env` tạo giúp |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | 60 | Thời hạn token |
+| `SQLITE_BUSY_TIMEOUT_MS` | 5000 | Thời gian chờ khóa ghi |
 
-## Demo và kiểm thử
-
-Sau khi cài `requirements-dev.txt`:
+## Demo
 
 ```bash
 python -m scripts.demo --step
 ```
 
-Script tự chạy server với DB tạm riêng và secret ngẫu nhiên. Mỗi bước gọi HTTP thật và kiểm tra dữ liệu trả về. Các phản hồi 422 khi tạo lịch sai và 409 khi kèo đầy là tình huống để thử. Script sẽ dừng server và dọn DB khi kết thúc.
+Script tự mở server với DB tạm và secret ngẫu nhiên, rồi đi qua 9 bước: đăng ký, đăng nhập hai tài khoản, tạo kèo, xin tham gia, duyệt, rút lượt và hủy kèo. Bỏ `--step` để chạy một mạch. Nhấn Enter để sang bước tiếp theo. Mỗi bước gọi HTTP thật và kiểm dữ liệu trả về. Hai bước nhập lịch sai (422) và xin vào kèo đã đầy (409) là tình huống cố ý để xem phản hồi lỗi. Cuối cùng script tắt server và xóa DB tạm.
+
+## Kiểm thử
 
 ```bash
 python -m ruff check .
@@ -57,4 +65,18 @@ python -m ruff format --check .
 python -m pytest -q
 ```
 
-Muốn chạy đủ các test workload, cài `requirements-load.txt`. Cách đo và kết quả nằm trong [báo cáo tải](LOAD_TEST_RESULTS.md).
+CI chạy đúng ba lệnh này trên Python 3.11 (`.github/workflows/`).
+
+Thư mục `tests/` theo cùng cách chia với `app/`:
+
+| Thư mục | Nội dung |
+|---|---|
+| `tests/auth/` | Đăng ký, đăng nhập, JWT |
+| `tests/db/` | Model, ràng buộc, session, UnitOfWork, ghi đóng matching |
+| `tests/domain/` | Luật thời gian |
+| `tests/discovery/` | Tìm sân, tìm kèo, matching |
+| `tests/participations/` | Xin, duyệt, rút lượt, kể cả hai yêu cầu chạy đồng thời |
+| `tests/load/` | Kịch bản Locust và test kiểm kịch bản |
+| `tests/` (gốc) | Kiểm luật kiến trúc, xử lý lỗi, tích hợp qua `app.main`, seed |
+
+Muốn chạy cả test workload, cài thêm `requirements-load.txt`. Cách đo tải và kết quả ở [báo cáo tải](bao-cao-tai.md).

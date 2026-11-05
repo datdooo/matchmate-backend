@@ -1,33 +1,31 @@
 # MatchMate Backend
 
-![MatchMate — cầu lông và ghép kèo](docs/assets/matchmate-cover.png)
+![MatchMate: cầu lông và ghép kèo](docs/assets/matchmate-cover.png)
 
-## TL;DR
+MatchMate là backend REST API giúp người chơi cầu lông tìm kèo phù hợp và giúp chủ kèo tuyển thêm người. Người chơi tra cứu sân và kèo theo quận, gửi yêu cầu tham gia rồi chờ host duyệt. Ai chưa chọn được kèo có thể gửi nhu cầu để hệ thống gợi ý nhóm.
 
-MatchMate hỗ trợ người chơi cầu lông tìm kèo phù hợp và chủ kèo tuyển thêm người. Người chơi tra cứu sân/kèo theo quận, gửi yêu cầu tham gia và chờ host duyệt; cũng có thể tạo kèo hoặc tìm nhóm qua matching. Pha 1 cung cấp backend REST API, chưa có frontend hoàn chỉnh và không dùng GPS.
+Đây là Pha 1 của bài tập lớn môn Kiến trúc phần mềm (UET). Pha 1 chỉ có backend: chưa có frontend hoàn chỉnh và không dùng GPS. Công nghệ: FastAPI, Pydantic, SQLAlchemy 2, SQLite, Docker.
 
-Backend sử dụng **FastAPI, Pydantic, SQLAlchemy, SQLite và Docker**.
+## Chức năng
 
-## Chức năng chính
+- **Tài khoản:** đăng ký, đăng nhập bằng JWT. Host là người tạo kèo, không phải vai trò quản trị riêng.
+- **Tìm sân và kèo:** lọc theo quận, trình độ, giới tính, lịch và mức phí. Tra cứu công khai, không cần đăng nhập.
+- **Quản lý kèo:** tạo kèo đơn (2 người) hoặc đôi (4 người), tính cả host. Xem chi tiết và hủy trước giờ bắt đầu. Mỗi kèo dài 60–240 phút.
+- **Tham gia:** xin vào kèo, host duyệt hoặc từ chối, người chơi rút lượt. Lượt đang chờ chưa giữ chỗ. Khi duyệt, hệ thống kiểm lại điều kiện, số chỗ và lịch.
+- **Matching:** gợi ý nhóm đủ 2 hoặc 4 người cùng sân, cùng giờ, cùng loại kèo, hợp giới tính và ngân sách, chênh trình tối đa 2 bậc. Gợi ý không tự tạo kèo hay giữ chỗ. Chưa đủ người thì trả `suggestion=null`.
 
-- **Tài khoản:** đăng ký hồ sơ và đăng nhập bằng JWT. Host là người tạo kèo, không phải vai trò quản trị riêng.
-- **Tìm sân và kèo:** tra cứu theo quận, trình độ, giới tính, lịch và mức phí; xem số chỗ và điều kiện tham gia.
-- **Quản lý kèo:** tạo kèo đơn/đôi, xem chi tiết và hủy trước giờ bắt đầu. Kèo có 2/4 người tính cả host, thời lượng 60–240 phút.
-- **Tham gia:** xin vào kèo, host duyệt/từ chối và người chơi rút lượt. Yêu cầu đang chờ chưa giữ chỗ; khi duyệt phải kiểm lại điều kiện, số chỗ và lịch.
-- **Matching:** gợi ý nhóm cùng sân, giờ và loại kèo, phù hợp giới tính, ngân sách và chênh trình tối đa 2 bậc. Gợi ý chưa tự tạo kèo hoặc giữ chỗ.
+## Cách dùng
 
-## Luồng sử dụng
-
-1. **Đăng ký và đăng nhập:** tạo hồ sơ gồm email, mật khẩu, tên hiển thị, trình độ và giới tính; đăng nhập để lấy JWT.
-2. **Tìm sân và kèo:** lọc kèo phù hợp rồi xem lịch, phí và số chỗ. Tra cứu công khai không cần đăng nhập; xem chi tiết cần JWT.
-3. **Tạo kèo hoặc xin tham gia:** host nhập sân, lịch, loại kèo, phí và điều kiện tuyển. Người chơi khác xin tham gia để tạo lượt `PENDING`.
-4. **Host duyệt hoặc từ chối:** duyệt chuyển lượt sang `ACCEPTED` khi còn chỗ và không trùng lịch đã xác nhận; từ chối chuyển sang `REJECTED`.
-5. **Rút lượt hoặc hủy kèo:** người chơi rút lượt của mình trước giờ bắt đầu; host hủy cả kèo và các lượt đang hoạt động.
-6. **Tìm nhóm qua matching:** nếu chưa chọn được kèo, gửi nhu cầu để nhận gợi ý đủ 2/4 người. Chưa đủ nhóm thì trả `suggestion=null`.
+1. Đăng ký rồi đăng nhập để lấy JWT.
+2. Tìm sân và kèo. Muốn xem chi tiết thì cần JWT.
+3. Host tạo kèo. Người chơi khác xin tham gia và tạo lượt `PENDING`.
+4. Host duyệt (`ACCEPTED`) hoặc từ chối (`REJECTED`). Duyệt chỉ thành công khi còn chỗ và không trùng lịch đã xác nhận.
+5. Người chơi rút lượt trước giờ bắt đầu. Host hủy kèo thì mọi lượt đang hoạt động bị hủy theo.
+6. Chưa chọn được kèo thì gửi yêu cầu matching.
 
 ## Chạy nhanh
 
-Cần Docker, Docker Compose và Python 3 để tạo cấu hình. Chạy tại thư mục gốc:
+Cần Docker, Docker Compose và Python 3 (để tạo file cấu hình). Tại thư mục gốc:
 
 ```bash
 python3 -m scripts.init_env
@@ -36,28 +34,32 @@ docker compose run --rm api python -m scripts.seed
 docker compose up -d
 ```
 
-Mở [Swagger UI](http://localhost:8000/docs) để thử API. Seed tạo bảng và 10 sân mẫu. Dừng bằng `docker compose down`; dữ liệu được giữ trong volume. Cách chạy không dùng Docker nằm trong [hướng dẫn cài đặt](docs/INSTALLATION.md).
+Mở [Swagger UI](http://localhost:8000/docs) để thử API. Seed tạo bảng và 10 sân mẫu. Dừng bằng `docker compose down`, dữ liệu vẫn nằm trong volume. Cách chạy không dùng Docker ở [hướng dẫn cài đặt](docs/tuan-3-hoan-thien/cai-dat-va-kiem-thu.md).
 
-## Demo đơn giản test API
+## Demo
 
-Sau khi cài môi trường Python theo hướng dẫn cài đặt, chạy:
+Sau khi cài môi trường Python theo hướng dẫn cài đặt:
 
 ```bash
 python -m scripts.demo --step
 ```
 
-Script tự mở server và DB tạm, đăng ký/đăng nhập hai tài khoản rồi lần lượt tạo kèo, xin tham gia, duyệt, rút và hủy. Nhấn Enter để đi tiếp. Các bước nhập lịch sai hoặc xin khi kèo đầy dùng để kiểm tra phản hồi lỗi; mỗi bước đều gọi HTTP thật và kiểm kết quả.
+Script tự mở server với DB tạm, đăng ký và đăng nhập hai tài khoản, rồi lần lượt tạo kèo, xin tham gia, duyệt, rút và hủy. Nhấn Enter để sang bước tiếp theo. Mỗi bước gọi HTTP thật và kiểm dữ liệu trả về. Hai bước nhập lịch sai (422) và xin vào kèo đã đầy (409) là tình huống cố ý.
 
 ## Tài liệu
 
-- [Cài đặt, chạy project và kiểm thử](docs/INSTALLATION.md)
-- [Kiến trúc, nghiệp vụ và API](docs/ARCHITECTURE.md)
-- [Đặc tả API — OpenAPI JSON](docs/openapi.json)
-- [Luồng chi tiết, gồm xin, duyệt và rút lượt tham gia](docs/WORKFLOWS.md)
-- [Kiểm thử tải Kaggle CPU](docs/LOAD_TEST_RESULTS.md)
+Tài liệu chia theo tuần, mục lục ở [docs/README.md](docs/README.md).
 
-## Kiểm thử tải trên Kaggle CPU
+- Tuần 1: [thiết kế, dữ liệu và danh sách API](docs/tuan-1-thiet-ke/thiet-ke.md)
+- Tuần 2: [luồng nghiệp vụ chi tiết](docs/tuan-2-xay-dung/luong-nghiep-vu.md)
+- Tuần 3: [cài đặt, chạy và kiểm thử](docs/tuan-3-hoan-thien/cai-dat-va-kiem-thu.md), [báo cáo tải](docs/tuan-3-hoan-thien/bao-cao-tai.md)
+- [Đặc tả API (OpenAPI JSON)](docs/openapi.json)
 
-[Báo cáo tải](docs/LOAD_TEST_RESULTS.md) ghi môi trường, số đo và các giới hạn. 235 test đạt; tải đọc 10/50/100 người dùng mô phỏng và luồng ghi 10 người đo đủ 60 giây, không lỗi request. Luồng ghi 50/100 người dừng trước khi đo do 503 hoặc đăng nhập quá thời gian chờ, chưa có kết quả đầy đủ.
+## Kiểm thử tải
 
-Kết quả đo trên một máy là số liệu tham khảo cho cấu hình hiện tại. Bản lưu tại mốc Pha 1 có [notebook đã chạy](https://github.com/datdooo/matchmate-backend/blob/5b9be9fb939de41965eb1f6b290be2b60ea4d28c/docs/load/kaggle-2026-10-29/matchmate-phase-1-load-test.ipynb) và [CSV/log](https://github.com/datdooo/matchmate-backend/tree/5b9be9fb939de41965eb1f6b290be2b60ea4d28c/docs/load/kaggle-2026-10-29).
+Lần đo ngày 29/10/2026 trên Kaggle CPU (một worker, 235 test đạt ở thời điểm đó):
+
+- Tải đọc với 10, 50 và 100 người, và tải ghi (lifecycle) với 10 người: đo đủ 60 giây, không lỗi request.
+- Tải ghi với 50 và 100 người: dừng trước khi đo, do lỗi 503 hoặc đăng nhập quá thời gian chờ. Chưa có kết quả.
+
+Chi tiết và giới hạn ở [báo cáo tải](docs/tuan-3-hoan-thien/bao-cao-tai.md). Notebook đã chạy và dữ liệu thô nằm ở [mốc Pha 1](https://github.com/datdooo/matchmate-backend/tree/5b9be9f939de41965eb1f6b290be2b60ea4d28c/docs/load/kaggle-2026-10-29).
