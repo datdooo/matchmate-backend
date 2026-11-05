@@ -21,9 +21,10 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             requirements-dev.txt
+            requirements-load.txt
             constraints.txt
       - name: Install dependencies
-        run: python -m pip install -r requirements-dev.txt
+        run: python -m pip install -r requirements-load.txt
       - name: Lint
         run: python -m ruff check .
       - name: Formatting
