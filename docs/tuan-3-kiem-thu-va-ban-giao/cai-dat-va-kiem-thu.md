@@ -1,5 +1,7 @@
 # Tuần 3: Cài đặt, chạy và kiểm thử
 
+Tuần 3 theo đặc tả gồm test toàn luồng và test đồng thời, Docker, Kaggle, sửa lỗi và demo. Các bước dưới đây dùng để chạy lại từ một bản clone sạch.
+
 ## Chạy bằng Docker
 
 Cần Docker, Docker Compose và Python 3 (chỉ để tạo file cấu hình). Chạy tại thư mục gốc của repo:
@@ -67,16 +69,16 @@ python -m pytest -q
 
 CI chạy đúng ba lệnh này trên Python 3.11 (`.github/workflows/`).
 
-Thư mục `tests/` theo cùng cách chia với `app/`:
+Thư mục `tests/` chia theo module và theo loại test:
 
 | Thư mục | Nội dung |
 |---|---|
 | `tests/auth/` | Đăng ký, đăng nhập, JWT |
-| `tests/db/` | Model, ràng buộc, session, UnitOfWork, ghi đóng matching |
-| `tests/domain/` | Luật thời gian |
-| `tests/discovery/` | Tìm sân, tìm kèo, matching |
-| `tests/participations/` | Xin, duyệt, rút lượt, kể cả hai yêu cầu chạy đồng thời |
+| `tests/discovery/` | Tìm sân, tìm kèo, matching, seed |
+| `tests/sessions/` | Tạo, hủy kèo; xin, duyệt, rút lượt; test đồng thời |
+| `tests/foundation/` | Nền tảng dùng chung: model và ràng buộc DB, session, UnitOfWork, luật thời gian, xử lý lỗi, `/health` |
+| `tests/integration/` | Chạy cả ứng dụng qua `app.main` |
 | `tests/load/` | Kịch bản Locust và test kiểm kịch bản |
-| `tests/` (gốc) | Kiểm luật kiến trúc, xử lý lỗi, tích hợp qua `app.main`, seed |
+| `tests/test_architecture.py` | Kiểm service, domain và contracts không import web hoặc DB |
 
 Muốn chạy cả test workload, cài thêm `requirements-load.txt`. Cách đo tải và kết quả ở [báo cáo tải](bao-cao-tai.md).

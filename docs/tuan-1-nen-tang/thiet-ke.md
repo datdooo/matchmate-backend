@@ -1,12 +1,12 @@
-# Tuần 1: Thiết kế
+# Tuần 1: Nền tảng và thiết kế
 
-Tài liệu này chốt những thứ không đổi trong suốt Pha 1: cách chia lớp code, dữ liệu trong DB và danh sách API.
+Tài liệu này chốt những thứ không đổi trong suốt Pha 1: cách chia lớp code, dữ liệu trong DB và danh sách API. Đây là phần nền của tuần 1: ứng dụng, DB, UnitOfWork, JWT và Docker phải chạy trước khi làm nghiệp vụ.
 
 ## Phạm vi
 
 MatchMate là backend REST API cho người chơi cầu lông. Người chơi tìm sân và kèo theo quận, tạo kèo, xin vào kèo, và gửi nhu cầu để được gợi ý nhóm.
 
-Pha 1 chưa có: frontend hoàn chỉnh, chat hay thông báo, đặt sân thật, thanh toán hoàn tiền, xác minh trình độ, Elo/AI, danh sách chờ, GPS.
+Pha 1 chưa có: frontend hoàn chỉnh, chat hay thông báo, đặt sân thật, thanh toán hoàn tiền, xác minh trình độ, Elo/AI, danh sách chờ. Tìm kiếm theo GPS có trong đặc tả nhưng chưa làm; tra cứu hiện theo quận (`district_code`).
 
 ## Công nghệ
 
@@ -24,11 +24,12 @@ app/
 └── features/
     ├── auth/          đăng ký, đăng nhập, JWT middleware
     ├── discovery/     tìm sân, tìm kèo, matching
-    ├── sessions/      tạo, xem, hủy kèo
-    └── participations/ xin, duyệt, rút lượt tham gia
+    └── sessions/      kèo (session_*) và lượt tham gia (participation_*)
 ```
 
-Mỗi feature đặt tên file giống nhau: `router.py`, `schemas.py` (dữ liệu vào/ra HTTP), `service.py` (nghiệp vụ), `contracts.py` (kiểu dữ liệu và `Protocol` mà service dùng), `repository.py` (truy cập DB) và `dependencies.py` (lắp ghép các thành phần). Riêng `sessions` đặt phần lắp ghép trong `router.py`. `auth` có thêm middleware, băm mật khẩu và phát token.
+Pha 1 giữ ba module này. Hai nhóm file `session_*` và `participation_*` nằm chung trong `sessions/` vì tạo kèo, xin, duyệt và hủy dùng chung một transaction.
+
+Mỗi module có cùng các loại file: router, `schemas` (dữ liệu vào/ra HTTP), `service` (nghiệp vụ), `contracts` (kiểu dữ liệu và `Protocol` mà service dùng), `repository` (truy cập DB) và `dependencies` (lắp ghép các thành phần). Trong `auth` và `discovery` tên file là `router.py`, `service.py`... Trong `sessions` có tiền tố, ví dụ `session_service.py` và `participation_service.py`. Phần lắp ghép của kèo nằm trong `session_router.py`. `auth` có thêm middleware, băm mật khẩu và phát token.
 
 Một request đi theo đường: router → service → repository → DB. Service chỉ biết `Protocol` trong `contracts.py`, không biết SQLAlchemy.
 
@@ -153,19 +154,19 @@ DB chỉ lưu `OPEN` hoặc `CANCELLED`. Khi trả về, hệ thống tính thê
 
 Đặc tả đầy đủ nằm ở [openapi.json](../openapi.json). Khi chạy ứng dụng, mở `/docs` để thử API hoặc `/redoc` để đọc.
 
-| FR | Method và đường dẫn | Chức năng | Quyền |
-|---|---|---|---|
-| 01 | `POST /auth/register` | Đăng ký | Công khai |
-| 02 | `POST /auth/login` | Đăng nhập | Công khai |
-| 03 | `GET /venues` | Tìm sân | Công khai |
-| 04 | `GET /sessions` | Tìm kèo (`host_me=true` cần JWT) | Công khai |
-| 05 | `POST /sessions` | Tạo kèo | JWT |
-| 06 | `GET /sessions/{session_id}` | Xem chi tiết kèo | JWT |
-| 07 | `DELETE /sessions/{session_id}` | Hủy kèo | Chỉ host |
-| 08 | `POST /participations` | Xin tham gia | JWT |
-| 09 | `POST /participations/{participation_id}/decision` | Duyệt hoặc từ chối | Chỉ host |
-| 10 | `DELETE /participations/{participation_id}` | Rút lượt của mình | Chủ lượt |
-| 11 | `POST /matching/requests` | Gợi ý ghép nhóm | JWT |
+| FR | Method và đường dẫn | Chức năng | Quyền | Tuần |
+|---|---|---|---|---|
+| 01 | `POST /auth/register` | Đăng ký | Công khai | 1 |
+| 02 | `POST /auth/login` | Đăng nhập | Công khai | 1 |
+| 03 | `GET /venues` | Tìm sân | Công khai | 2 |
+| 04 | `GET /sessions` | Tìm kèo (`host_me=true` cần JWT) | Công khai | 2 |
+| 05 | `POST /sessions` | Tạo kèo | JWT | 1 |
+| 06 | `GET /sessions/{session_id}` | Xem chi tiết kèo | JWT | 1 |
+| 07 | `DELETE /sessions/{session_id}` | Hủy kèo | Chỉ host | 2 |
+| 08 | `POST /participations` | Xin tham gia | JWT | 1 |
+| 09 | `POST /participations/{participation_id}/decision` | Duyệt hoặc từ chối | Chỉ host | 1 |
+| 10 | `DELETE /participations/{participation_id}` | Rút lượt của mình | Chủ lượt | 2 |
+| 11 | `POST /matching/requests` | Gợi ý ghép nhóm | JWT | 2 |
 
 `GET /health` chỉ cho biết tiến trình đang chạy, không kiểm tra DB.
 

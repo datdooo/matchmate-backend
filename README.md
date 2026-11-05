@@ -34,7 +34,7 @@ docker compose run --rm api python -m scripts.seed
 docker compose up -d
 ```
 
-Mở [Swagger UI](http://localhost:8000/docs) để thử API. Seed tạo bảng và 10 sân mẫu. Dừng bằng `docker compose down`, dữ liệu vẫn nằm trong volume. Cách chạy không dùng Docker ở [hướng dẫn cài đặt](docs/tuan-3-hoan-thien/cai-dat-va-kiem-thu.md).
+Mở [Swagger UI](http://localhost:8000/docs) để thử API. Seed tạo bảng và 10 sân mẫu. Dừng bằng `docker compose down`, dữ liệu vẫn nằm trong volume. Cách chạy không dùng Docker ở [hướng dẫn cài đặt](docs/tuan-3-kiem-thu-va-ban-giao/cai-dat-va-kiem-thu.md).
 
 ## Demo
 
@@ -48,11 +48,11 @@ Script tự mở server với DB tạm, đăng ký và đăng nhập hai tài kh
 
 ## Tài liệu
 
-Tài liệu chia theo tuần, mục lục ở [docs/README.md](docs/README.md).
+Tài liệu chia theo ba tuần của kế hoạch Pha 1, mục lục ở [docs/README.md](docs/README.md).
 
-- Tuần 1: [thiết kế, dữ liệu và danh sách API](docs/tuan-1-thiet-ke/thiet-ke.md)
-- Tuần 2: [luồng nghiệp vụ chi tiết](docs/tuan-2-xay-dung/luong-nghiep-vu.md)
-- Tuần 3: [cài đặt, chạy và kiểm thử](docs/tuan-3-hoan-thien/cai-dat-va-kiem-thu.md), [báo cáo tải](docs/tuan-3-hoan-thien/bao-cao-tai.md)
+- Tuần 1, nền tảng: [thiết kế, dữ liệu và danh sách API](docs/tuan-1-nen-tang/thiet-ke.md), [luồng tài khoản, tạo kèo, xin và duyệt](docs/tuan-1-nen-tang/luong-nghiep-vu.md)
+- Tuần 2, hoàn thiện API: [luồng tìm kiếm, rút, hủy và matching](docs/tuan-2-hoan-thien-api/luong-nghiep-vu.md)
+- Tuần 3, kiểm thử và bàn giao: [từ HTTP đến DB](docs/tuan-3-kiem-thu-va-ban-giao/tu-http-den-db.md), [cài đặt và kiểm thử](docs/tuan-3-kiem-thu-va-ban-giao/cai-dat-va-kiem-thu.md), [báo cáo tải](docs/tuan-3-kiem-thu-va-ban-giao/bao-cao-tai.md)
 - [Đặc tả API (OpenAPI JSON)](docs/openapi.json)
 
 ## Kiểm thử tải
@@ -62,4 +62,4 @@ Lần đo ngày 29/10/2026 trên Kaggle CPU (một worker, 235 test đạt ở t
 - Tải đọc với 10, 50 và 100 người, và tải ghi (lifecycle) với 10 người: đo đủ 60 giây, không lỗi request.
 - Tải ghi với 50 và 100 người: dừng trước khi đo, do lỗi 503 hoặc đăng nhập quá thời gian chờ. Chưa có kết quả.
 
-Chi tiết và giới hạn ở [báo cáo tải](docs/tuan-3-hoan-thien/bao-cao-tai.md). Notebook đã chạy và dữ liệu thô nằm ở [mốc Pha 1](https://github.com/datdooo/matchmate-backend/tree/5b9be9f939de41965eb1f6b290be2b60ea4d28c/docs/load/kaggle-2026-10-29).
+Chi tiết và giới hạn ở [báo cáo tải](docs/tuan-3-kiem-thu-va-ban-giao/bao-cao-tai.md). Notebook đã chạy và dữ liệu thô nằm ở [mốc Pha 1](https://github.com/datdooo/matchmate-backend/tree/5b9be9f939de41965eb1f6b290be2b60ea4d28c/docs/load/kaggle-2026-10-29).
