@@ -1,8 +1,20 @@
-# Phase 1 · Thành viên 3 · Đề xuất hợp đồng giao tiếp với thành viên 1 và 2
+# Phase 1 · Thành viên 3 · Yêu cầu, xác nhận hợp đồng và bàn giao
 
 Ngày lập: **19/11/2026**.
 
 Người phụ trách: **Member 3 — Catalog, Matching và Discovery**.
+
+**Phạm vi hiện tại: chỉ Phase 1. Member 3 chưa bắt đầu Phase 2.** Tài liệu ghi
+yêu cầu, khảo sát, xác nhận thiết kế và đầu ra bàn giao. Chữ ký/đường dẫn/tiêu chí
+triển khai không phải bằng chứng đã tạo port, adapter, wiring, instrumentation
+hoặc kiểm thử mới. Việc xây các thành phần đó thuộc kế hoạch giai đoạn sau.
+
+**Trạng thái mới nhất tại checkout `7475ef9`:** Member 1 đã chính thức xác nhận
+năm nhóm hợp đồng tại mục 1.2 của [báo cáo mới](phase1-member1.md), bản `e9c696e`;
+Member 2 đã ghi nhận tại mục 11 của [báo cáo Member 2](phase1-member2.md).
+Không còn chờ Member 1 xác nhận thiết kế. Mục 11–12 bên dưới là trạng thái hiện
+hành, thay các câu “chờ xác nhận/công bố” trong lịch sử mục 9–10. Công bố code
+thuộc giai đoạn sau, không phải điều kiện đóng hợp đồng Phase 1.
 
 Tài liệu này đề xuất các hợp đồng để ba thành viên triển khai độc lập và tích hợp
 đúng trách nhiệm. Tham chiếu [bàn giao của Member 1](phase1-member1.md),
@@ -14,9 +26,8 @@ Tài liệu này đề xuất các hợp đồng để ba thành viên triển k
 [Member 2, mục 2 và 9](phase1-member2.md), tại checkout commit `abfc916`.
 Đối chiếu tiếp Member 1 tại `7c9a400` và Member 2 tại `7ceb404`; xác nhận bổ sung
 phía Member 3 ở mục 10. Các kết luận mới thay trạng thái còn mở tương ứng ở mục 9.
-Member 3 chấp nhận các lựa chọn ghi ở mục 9–10 bên dưới. Member 1 hiện mới ghi nhận
-đề nghị của các bên, chưa công bố toàn bộ port/error contract; không coi đây là
-đồng thuận đầy đủ hoặc bằng chứng adapter/kiểm thử đã hoàn thành.
+Member 3 chấp nhận các lựa chọn ghi ở mục 9–10 bên dưới. Đây là lịch sử đối chiếu;
+trạng thái xác nhận hiện hành đã được cập nhật ở đầu tài liệu và mục 11–12.
 
 ## 1. Hiện trạng đã đọc
 
@@ -86,8 +97,9 @@ Không tạo bảng chuyển đổi khác, không thay thứ tự enum trong ph�
 
 Member 3 chấp nhận phương án đọc theo lô ở mục 9.3 của Member 2:
 `PlayerProfilesReader.get_by_ids(user_ids: list[int]) -> dict[int, PlayerProfile]`,
-do Identity công bố tại `app/features/auth/contracts.py`. Member 1 còn cần xác
-nhận/công bố port; quy tắc chi tiết tại mục 9.2 bên dưới. Join trực tiếp xuyên
+do Identity sở hữu tại đường dẫn đích `app/features/auth/contracts.py`.
+Member 1 đã xác nhận thiết kế, công bố code thuộc giai đoạn sau; quy tắc chi tiết
+tại mục 9.2 bên dưới. Join trực tiếp xuyên
 module chỉ xem xét sau đo kiểm và khi Identity công bố projection tương ứng.
 
 - Không gọi `get_by_id()` riêng cho từng ứng viên gây thêm một truy vấn mỗi người.
@@ -145,7 +157,8 @@ class MatchingRequestWriter(Protocol):
 - Member 3 chấp nhận vị trí đích
   `app/features/matching/infrastructure/matching_request_writer.py`, lớp
   `SqlAlchemyMatchingRequestWriter`, theo mục 9.4 của Member 2.
-  Member 1 còn cần xác nhận wiring vào tạo phiên chơi và phê duyệt.
+  Member 1 đã xác nhận thiết kế wiring vào tạo phiên chơi và phê duyệt;
+  việc chuyển/lắp adapter thuộc giai đoạn triển khai sau.
   Member 2 hỗ trợ persistence và xác minh dùng chung transaction.
 
 Phân biệt: `close_active_for_user(..., REPLACED, ...)` khi tạo lại Matching đóng
@@ -167,9 +180,12 @@ lịch chỉ đóng yêu cầu chồng giờ. Không gộp hai hành vi này.
   thiết lập trước SELECT đầu tiên; `write()` dùng READ COMMITTED và khóa hàng.
 - Member 3 ghi nhận/chấp nhận timeout và thiết kế fixture connection độc lập của
   Member 2 để chuẩn bị tích hợp; chưa coi fixture/adapter đã được bàn giao chạy đạt.
-  Các mã lỗi mới còn chờ Member 1 công bố, chi tiết tại mục 9.4.
+  Member 1 đã xác nhận hợp đồng lỗi; công bố code thuộc giai đoạn sau.
 
-## 6. Phạm vi Member 3 triển khai sau khi chốt
+## 6. Yêu cầu bàn giao cho giai đoạn sau — không phải công việc Phase 1
+
+Các mục dưới đây chỉ mô tả hành vi cần giữ khi triển khai theo kế hoạch chung.
+Member 3 chưa thực hiện Phase 2; không dùng các mục này để đánh giá đã xong Phase 1.
 
 - Tách Matching command khỏi Discovery query, giữ việc tạo yêu cầu và tính gợi ý
   trong giao dịch hiện tại; không tự chuyển sang xử lý bất đồng bộ.
@@ -182,7 +198,10 @@ lịch chỉ đóng yêu cầu chồng giờ. Không gộp hai hành vi này.
   dữ liệu `my_participations` của mình.
 - Bổ sung kiểm thử ranh giới module, vòng phụ thuộc và import adapter nội bộ.
 
-## 7. Bằng chứng cần bổ sung
+## 7. Tiêu chí kiểm chứng khi triển khai sau — không phải checklist đóng Phase 1
+
+Đây là tiêu chí nghiệm thu tương lai. Đầu ra còn thiếu để đóng Phase 1 là corpus
+Matching có dữ liệu/kết quả cố định tại mục 12, không phải toàn bộ test dưới đây.
 
 - [ ] Ánh xạ SkillLevel → rank giống nhau cho người gọi và ứng viên.
 - [ ] Không có/thiếu ứng viên, không có nhóm hợp lệ, nhiều nhóm hợp lệ, đồng hạng.
@@ -206,14 +225,16 @@ tuyên bố đã chạy lại hoặc đã kiểm chứng PostgreSQL.
   timeout, thiết kế fixture; Member 3 chấp nhận để tích hợp theo mục 9.
 - [x] Member 3 chấp nhận response timeout ingress khởi điểm 30 giây để đo thử,
   không bật retry upstream POST; chưa xác nhận cấu hình thực hoặc hiệu năng.
-- [ ] Member 1 xác nhận/công bố profile reader, batch reader, Catalog và wiring writer.
-- [ ] Member 1 công bố port khóa và chốt mã lỗi mới; Member 2 triển khai adapter/fixture.
+- [x] Member 1 xác nhận thiết kế profile/batch reader, Catalog và wiring writer
+  theo mục 1.2 báo cáo mới; chưa coi code đã được công bố.
+- [x] Member 1 xác nhận UoW/khóa và hợp đồng lỗi theo mục 1.2–1.3;
+  adapter/fixture thuộc giai đoạn triển khai sau.
 - [x] Member 3 chấp nhận VenueSummary/VenueReader, phạm vi join đọc và batch tối đa
   500 ID/câu theo Member 2 mục 10.3; chưa tạo port/adapter trong lượt cập nhật này.
 - [x] Đối chiếu query cũ và chấp nhận loại candidate thiếu profile/UNSPECIFIED,
   giữ thứ tự và bộ lọc theo Member 2 mục 10.4.
 - [x] Member 3 chấp nhận generic 500 cho 57014 chưa rõ nguồn hủy và quy tắc
-  telemetry tại mục 10.3; Member 1 còn công bố response contract.
+  telemetry tại mục 10.3; Member 1 đã xác nhận response contract trong tài liệu.
 - [ ] Ghi lại quyết định cuối, người xác nhận, ngày xác nhận và commit bàn giao.
 
 Chỉ đánh dấu sau khi có phản hồi thực tế. Các điểm chưa chốt cần được ghi rõ
@@ -403,7 +424,11 @@ Member 3 chấp nhận đề nghị Member 2 mục 10.2 để giữ telemetry v�
 - Không thêm DatabaseCancelledError vào domain. Member 1 còn ghi nhận/công bố
   contract; Member 2 triển khai nhận diện, Member 3 tích hợp log/metrics tương ứng.
 
-### 10.4. Việc còn lại sau xác nhận
+### 10.4. Yêu cầu triển khai tương lai đã ghi trong lịch sử
+
+Danh sách này thuộc giai đoạn 2–3, không phải phần Member 3 đã bắt đầu hoặc điều
+kiện đóng Phase 1. Các quyết định thiết kế đã được Member 1 xác nhận; checkbox
+bên dưới chỉ thể hiện chưa triển khai code/cấu hình, không còn chờ đồng thuận.
 
 - [ ] Member 1 công bố port UoW/locks, profile/batch, error contract và wiring,
   bao gồm projection sân và generic cancellation.
@@ -414,3 +439,129 @@ Member 3 chấp nhận đề nghị Member 2 mục 10.2 để giữ telemetry v�
 
 Lượt cập nhật này chỉ sửa tài liệu Member 3; không chạy lại test runtime, không
 đánh dấu các đầu việc triển khai đã xong, không thay kết quả 73 test đã được Member 2 báo cáo.
+
+## 11. Xác nhận hiện hành sau cập nhật Member 1/2
+
+Ngày đối chiếu: **19/11/2026**, Member 1 `e9c696e`, Member 2 `7475ef9`.
+Member 3 ghi nhận xác nhận chính thức của Member 1 tại mục 1.2–1.3 và chấp nhận
+đặc tả [telemetry Member 2](member2-telemetry-va-backup.md). Không sửa xác nhận
+thay người khác hoặc yêu cầu xác nhận lại năm nhóm hợp đồng đã chốt.
+
+### 11.1. Năm nhóm hợp đồng đã chốt ở Phase 1
+
+- UoW/locks/snapshot: use case sở hữu transaction, reader/repository/locks/writer
+  chung UoW, khóa session trước user, Clock và trạng thái đọc lại sau khóa;
+  PostgreSQL write READ COMMITTED, read REPEATABLE READ READ ONLY.
+- Identity: DTO bốn trường, reader đơn/batch, giữ enum và skill_to_rank(), thứ tự
+  ứng viên, loại candidate thiếu/UNSPECIFIED; giữ lỗi caller hiện hành.
+- Catalog: status reader, VenueSummary/VenueReader tại đường dẫn đã đề xuất,
+  batch tối đa 500 ID/câu, đọc inactive cho lịch sử, filter/count/order trước
+  pagination và phạm vi projection/join đọc đã chốt.
+- Matching writer: giữ port/chữ ký, cùng transaction tạo kèo/duyệt, tách
+  CONFIRMED/REPLACED; chấp nhận vị trí đích và composition root Member 1 phụ trách.
+- Error contract: giữ envelope/request_id/X-Request-ID. BUSY có Retry-After: 1;
+  timeout/unavailable không có Retry-After mặc định. Commit-unknown không tự
+  replay; 57014 chưa rõ nguồn hủy dùng generic 500, không thêm exception domain.
+
+Các message/details/status chính xác lấy theo bảng Member 1 mục 1.3 và đề nghị
+Member 2 mục 9.2/10.2 đã được chấp nhận. Đây là hợp đồng tài liệu, không khẳng
+định exception/handler/adapter mới đã được viết. Các câu còn ghi chờ xác nhận
+trong mục lịch sử 9–10 không còn phản ánh trạng thái hiện tại.
+
+### 11.2. Telemetry HTTP và Matching — xác nhận phía Member 3
+
+Chấp nhận tên trường và đơn vị tại mục 1 đặc tả Member 2. Timestamp UTC;
+duration dùng đồng hồ monotonic, đơn vị giây. Chưa đo được phải null/bỏ trường,
+không giả số 0. Member 3 cung cấp:
+
+- `request_id`: từ request state hiện có, trùng error envelope/X-Request-ID,
+  không sinh ID thứ hai ở DB; chỉ log/trace, không làm nhãn metrics.
+- `route_template`, `method`, `http_status`, `request_duration_seconds`,
+  `error_code`: lớp HTTP đo từ lúc bắt đầu xử lý request đến hoàn tất response
+  hoặc lỗi; bao query/Strategy/commit nếu có. Route dùng template đã match,
+  chưa match là `unmatched`, không raw URL/query string. Error code đúng mã API
+  thực, thành công null; ghi cả 401/422/503 và request chưa match.
+- `matching_candidate_count`: số ứng viên sau lọc request/lịch/profile và ngay
+  trước Strategy, không tính caller, không phải số tổ hợp hay kích thước nhóm.
+- `matching_selection_duration_seconds`: bao đúng lời gọi Strategy đến khi trả
+  về hoặc lỗi, không gồm query/profile batch/commit. Đo cả ca không có gợi ý;
+  không chạy Matching hoặc lỗi trước điểm đo thì null/bỏ trường.
+
+### 11.3. Telemetry DB — ghi nhận trách nhiệm Member 2
+
+- `db_acquire_duration_seconds`: yêu cầu connection đến thành công/thất bại,
+  có thể gồm tạo connection; không gọi là pool wait thuần. Chỉ thêm
+  `db_pool_wait_seconds` nếu có hook đo đợi slot riêng, checkout event không đủ.
+- `db_lock_acquire_duration_seconds`: bao primitive khóa tới kết quả/lỗi,
+  lock_target session/user, outcome acquired/missing/timeout/error; có execute
+  và round trip, không coi toàn bộ là lock wait thuần. Lấy mẫu PostgreSQL phải
+  ghi khoảng lấy mẫu, không suy thời gian chính xác từ một mẫu hoặc thu SQL text.
+- `db_transaction_duration_seconds`: trước BEGIN tới kết thúc commit/rollback
+  và cleanup, không gồm acquire đã đo riêng. Mode read/write; outcome
+  committed/rolled_back/failed/unknown. Read đóng bình thường bằng rollback
+  không phải lỗi request; một UoW phát đúng một kết quả cuối.
+- `db_error_kind`, `db_sqlstate`, `db_phase`: dùng tập hữu hạn và phase
+  acquire/begin/execute/commit/rollback theo đặc tả Member 2; SQLSTATE thiếu null.
+  57014 chưa rõ nguồn dùng query_cancelled_unknown. Cleanup không ghi đè nguyên
+  nhân/kết quả commit-unknown. SQLSTATE chỉ log/trace đã lọc, không là nhãn metrics.
+
+### 11.4. Context, nơi export và giới hạn dữ liệu
+
+Member 3 xác nhận nguyên tắc bàn giao context/export sau để Member 2 nối hook
+khi triển khai; đây là thiết kế Phase 1, chưa tạo instrumentation:
+
+- HTTP đưa request_id/route/method vào context riêng mỗi request; dự kiến dùng
+  ContextVar và bảo toàn khi sang sync/threadpool. Hook DB dùng cùng context,
+  không global dùng chung hoặc sinh ID khác; reset khi kết thúc request.
+- Structured request/error logs xuất stdout ứng dụng; hook DB và Matching gửi
+  số đo tới collector metrics nội bộ dùng chung, exporter đặt mạng private theo
+  topology Member 2. Không yêu cầu public endpoint export để hoàn thành Phase 1.
+  Thư viện, bucket, địa chỉ scrape và cấu hình thực chọn ở giai đoạn triển khai.
+- Histogram dùng tên/đơn vị tương ứng, công bố bucket khi triển khai. Nhãn chỉ
+  thuộc tập hữu hạn route template/method/status/dialect/mode/outcome/lock target/
+  error kind. Không dùng request/user/session/venue ID, PID, SQLSTATE tùy ý,
+  URL, SQL/params, email, token hoặc credential làm nhãn.
+- Không log hồ sơ, ngân sách người khác, password, URL kết nối hoặc dump.
+  Telemetry lỗi không thay kết quả command, không phát query trên transaction
+  đã lỗi hoặc giữ transaction chờ exporter I/O mạng.
+
+Phía Member 2 đã chốt đặc tả gốc tại `7475ef9`, phía Member 3 xác nhận danh sách,
+đơn vị và ranh giới đo trong mục 11 này. Cần Member 2 ghi nhận phương án context/
+export cụ thể nêu trên khi đồng bộ bàn giao; không giả định họ đã xác nhận thêm
+một implementation chưa tồn tại. Context xuyên HTTP/DB, ca lỗi, số đo acquisition,
+nhãn hữu hạn và redaction là tiêu chí nghiệm thu tương lai, không phải test đã chạy.
+
+## 12. Checklist hoàn thiện Phase 1 phía Member 3
+
+- [x] Ghi nhận luồng Matching, response, thứ tự/tie-break, thay thế request,
+  quyền riêng tư và phạm vi Catalog/Discovery.
+- [x] Thống nhất profile/rank/batch, Catalog/projection, writer/UoW/khóa và lỗi;
+  Member 1 đã xác nhận chính thức, không còn chờ code để chốt thiết kế.
+- [x] Ghi nhận topology private, ingress timeout 30s để đo demo, không retry POST.
+- [x] Xác nhận danh sách telemetry chung, bên cung cấp, đơn vị và ranh giới đo
+  theo đặc tả Member 2; bổ sung nguyên tắc context/export phía Member 3.
+- [ ] Chuẩn bị đủ corpus Matching cố định: caller/request/candidate ID,
+  created_at, rank, giới tính, policy, phí/ngân sách, sân/giờ/loại trận; ghi thứ
+  tự đầu vào và nhóm/ID mong đợi hoặc null cho từng ca.
+- [ ] Corpus đủ ca: không ứng viên; thiếu người đơn/đôi; đủ người nhưng không
+  nhóm hợp lệ (chỉ rõ rank/giới tính/ngân sách làm loại); nhiều nhóm hợp lệ;
+  cùng created_at phân xử bằng ID. Đính kèm đường dẫn bằng chứng/test hiện có,
+  tách kết quả mong đợi khỏi kết quả đã chạy.
+- [ ] Member 2 ghi nhận phần context/export và đồng bộ trạng thái telemetry
+  chung; các lựa chọn đã xác nhận không cần thảo luận lại.
+- [ ] Cùng nhóm ghi commit bàn giao chung khi đủ đầu ra Phase 1.
+
+Member 1 dẫn `tests/integration/test_main.py` đã có một phần ca không gợi ý/nhóm
+đôi, chưa đủ corpus cố định. Lượt này không tạo corpus/test nên không đánh dấu
+hoàn thành. Không đánh đồng việc chuẩn bị corpus làm mốc với refactor Strategy
+hoặc viết batch reader ở Phase 2.
+
+Phụ thuộc chung còn mở: người quản lý hạ tầng cung cấp đích backup off-host thực,
+đường dẫn/người quản lý theo đặc tả Member 2; Member 3 không tự đặt địa chỉ hoặc
+xác nhận restore đã đạt. Member 1 đồng bộ báo cáo cũ/checklist tổng.
+
+**Bằng chứng:** lượt này chỉ sửa tài liệu, không chạy lại test, không sửa runtime
+và chưa bắt đầu Phase 2. Member 2 báo cáo lần mới tại mục 11.4 là 3 test và Ruff
+đạt; 73 test là mốc lịch sử, lần chạy toàn foundation chưa hoàn tất không dùng
+để tái xác nhận. Container healthy không chứng minh migration/concurrency/restore.
+Phase 1 Member 3 chưa tuyên bố hoàn tất vì corpus và bàn giao chung còn mở.
