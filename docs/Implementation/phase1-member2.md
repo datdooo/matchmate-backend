@@ -242,7 +242,10 @@ không quay về SQLite cũ bằng cách đổi URL vì sẽ mất các ghi mớ
 - [x] Member 1 ghi nhận phản hồi Member 2 ở `a5402b4`; Member 2 đối chiếu lại ở phần 9.
 - [x] Đối chiếu Member 3 tại `6ba6c60` và Member 1 tại `7c9a400`; bổ sung phương án
   cho cancellation, projection sân và hồ sơ thiếu ở phần 10.
-- [ ] Member 1 công bố port/chốt mã lỗi mới; Member 3 xác nhận phần giao tiếp mình sở hữu.
+- [x] Member 1 xác nhận năm nhóm hợp đồng tại `40f0ee3`, được giữ trong `e9c696e`;
+  Member 3 đã xác nhận phần giao tiếp tại `89978d6`. Trạng thái mới ở mục 11.
+- [ ] Công bố port/error handler/wiring và triển khai adapter: giai đoạn 2–3;
+  không đồng nhất xác nhận thiết kế với code đã tồn tại.
 - [ ] Adapter PostgreSQL, Alembic/import và fixture cạnh tranh: giai đoạn 2–3.
 - [ ] Chạy migration/import thật, restore và đo phục hồi: chưa có bằng chứng ở Phase 1.
 
@@ -609,3 +612,71 @@ Member 1/3 hay coi port chưa tạo là đã hoàn thành. Chưa chạy lại te
 code; bằng chứng gần nhất vẫn là **73 passed** ở mục 9.6. Những mục runtime chưa
 đánh dấu là việc triển khai/nghiệm thu, không phải lý do phải thảo luận lại các
 lựa chọn Member 2/3 đã cùng chấp nhận.
+
+## 11. Xử lý bàn giao sau cập nhật mới nhất của Member 1
+
+Ngày thực hiện: **19/11/2026**. Đã đọc `daf3856`, `40f0ee3` và bản rút gọn
+`e9c696e` của Member 1, đối chiếu `89978d6` của Member 3. Mục này thay trạng thái
+"chờ Member 1 xác nhận" ở các mục lịch sử 2/9/10: Member 1 **đã xác nhận**
+UoW/locks/snapshot, Identity batch, Catalog projection/join, writer và error
+contract. Chưa công bố code là việc giai đoạn 2–3, không phải quyết định còn mở.
+
+### 11.1. Việc cần thực hiện theo tài liệu mới
+
+- Member 2 ghi đích backup ngoài máy ứng dụng, đường dẫn và người quản lý thực.
+- Member 2/3 thống nhất danh sách telemetry cho request, Matching và DB.
+- Member 3 hoàn thiện corpus Matching có đầu vào/thứ tự/kết quả cố định.
+- Member 1 đồng bộ xác nhận trong hai báo cáo cũ và checklist tổng; cả nhóm ghi
+  commit bàn giao chung khi đủ đầu ra. Không tự xác nhận thay các chủ sở hữu.
+
+### 11.2. Việc Member 2 đã làm trong đợt này
+
+- [x] Đối chiếu cập nhật Member 1/3; bỏ trạng thái chờ xác nhận thiết kế đã lỗi thời
+  ở checklist mục 6 của báo cáo này. Không sửa tài liệu của thành viên khác.
+- [x] Viết [đặc tả telemetry và quy trình backup/restore](member2-telemetry-va-backup.md).
+  Chốt phía Member 2 đơn vị, ranh giới đo acquire/lock/transaction, outcome,
+  SQLSTATE/phase, commit-unknown, nhãn hữu hạn và tiêu chí kiểm chứng.
+- [x] Làm rõ pool acquisition/lock acquisition latency không phải thời gian chờ
+  thuần; không ghi số đo chưa có thành 0 hoặc dùng checkout event để suy ra pool wait.
+- [x] Chuẩn bị hồ sơ cần điền cho kho off-host, manifest/checksum, các bước
+  xác minh truyền tệp và restore DB riêng; phân biệt kế hoạch với kết quả chạy.
+- [x] Kiểm tra chỉ đọc Docker: container `matchmate-member2-phase1-postgres-1`
+  đang chạy và healthy trong lần đối chiếu này. Chưa kiểm lại version/SQL,
+  migration/import, khóa đồng thời hoặc restore PostgreSQL.
+
+### 11.3. Thông tin còn cần để hoàn thiện
+
+- **Member 1:** đồng bộ báo cáo/checklist cũ; bàn giao commit công bố port,
+  exception/handler và wiring khi làm giai đoạn 2. Không cần xác nhận lại năm
+  nhóm hợp đồng đã chốt. Nếu Member 1 quản lý hạ tầng demo, cung cấp hồ sơ kho
+  backup mục 2 tài liệu kèm theo hoặc chỉ rõ người có thể cấp thông tin đó.
+- **Member 3:** phản hồi danh sách telemetry, nhất là candidate count trước
+  Strategy, phạm vi duration và cách truyền context/export. Corpus Matching
+  vẫn thuộc Member 3; chưa có bằng chứng mới để đánh dấu hoàn thành. Cấu hình
+  ingress thực và số worker phục vụ tích hợp/connection budget giai đoạn sau.
+- **Người quản lý hạ tầng (chưa xác định là Member 1 hay 3):** địa chỉ kho/máy,
+  đường dẫn, người quản lý, quyền truyền/restore, retention và DB restore riêng.
+  Không yêu cầu gửi secret vào chat. Thiếu các dữ liệu này nên chưa thể chọn
+  một đích off-host thực hoặc tuyên bố diễn tập khôi phục đã đạt.
+
+- [x] Phía Member 2 đã bàn giao đặc tả telemetry và quy trình backup cụ thể.
+- [ ] Member 3 xác nhận danh sách telemetry chung.
+- [ ] Có đích backup off-host thực và người quản lý.
+- [ ] Đủ corpus, đồng bộ tài liệu và commit bàn giao chung để đóng Phase 1.
+
+Đợt này thực hiện phạm vi Phase 1 theo tài liệu mới nhất; không sửa runtime hoặc
+tự mở rộng sang adapter/migration của giai đoạn 2–3. Kết quả kiểm thử chạy lại
+trong đợt này được ghi dưới đây, tách khỏi bằng chứng lịch sử ở mục 8–10.
+
+### 11.4. Kiểm tra thực tế trong đợt cập nhật
+
+- `.venv/Scripts/python.exe -m pytest tests/foundation/test_member2_phase1_fixture.py tests/test_architecture.py -vv -s`:
+  **3 passed**, 1 cảnh báo deprecation Starlette/AnyIO. Kiểm nguồn tổng hợp giữ
+  lịch sử/unique đang hoạt động, không ghi đè bằng chứng và hướng import hiện có.
+- `.venv/Scripts/python.exe -m ruff check app tests scripts`: **đạt**.
+- `git diff --check`: **đạt** trước khi bàn giao.
+- Lệnh chạy toàn thư mục foundation cùng architecture không trả kết quả trong
+  phiên công cụ, đã ngắt. Không dùng lần chạy chưa hoàn tất này để xác nhận lại
+  mốc 73 test cũ; chưa xác định nguyên nhân và không sửa/bỏ test.
+- Docker chỉ xác nhận trạng thái container healthy; không phải bằng chứng
+  migration/import/concurrency/backup/restore hoặc telemetry runtime đã đạt.
