@@ -24,27 +24,27 @@ Nhóm sẽ bàn giao một ứng dụng nguyên khối mô-đun có thể triể
 
 ## Giai đoạn 1 · Hợp đồng và kiểm thử hồi quy · Ngày 16–17 tháng 11
 
+Phase 1 hoàn thành ngày 19/11/2026. Hợp đồng, dữ liệu mẫu, kiểm thử và quyết định vận hành nằm trong [báo cáo tổng Phase 1](../Implementation/phase1.md).
+
 **Thành viên 1 — Giao dịch ở tầng ứng dụng**
 
-- [ ] Lần theo các vị trí bắt đầu và commit giao dịch hiện tại trong Auth và Sessions. Liệt kê các lệnh vòng đời và các bất biến mà từng lệnh phải bảo toàn.
-- [ ] Chạy các kiểm thử vòng đời và Auth hiện có. Ghi nhận phản hồi mong đợi cho dữ liệu đầu vào không hợp lệ, người gọi chưa xác thực, yêu cầu trùng lặp và thao tác rút tham gia/hủy lặp lại. Xác định những chỗ cần kiểm thử hồi quy cho lỗi commit.
-- [ ] Thống nhất với Thành viên 2 về Unit of Work và các thao tác khóa phiên chơi, người dùng. Phụ trách hợp đồng dành cho tầng ứng dụng trong `app/domain/ports.py` và các hợp đồng của Sessions.
-- [ ] Thống kê các thành phần sử dụng hồ sơ của Identity và các quy tắc truy cập tuyến API hiện có, bao gồm tìm kiếm công khai có chế độ dành cho người đã xác thực. Thống nhất với Thành viên 3 về DTO hồ sơ và hợp đồng trạng thái địa điểm của Catalog mà Sessions cần.
+- [x] Lần theo các vị trí bắt đầu và commit giao dịch hiện tại trong Auth và Sessions. Liệt kê các lệnh vòng đời và các bất biến mà từng lệnh phải bảo toàn.
+- [x] Chạy các kiểm thử vòng đời và Auth hiện có. Ghi nhận phản hồi mong đợi cho dữ liệu đầu vào không hợp lệ, người gọi chưa xác thực, yêu cầu trùng lặp và thao tác rút tham gia/hủy lặp lại. Xác định những chỗ cần kiểm thử hồi quy cho lỗi commit.
+- [x] Thống nhất với Thành viên 2 về Unit of Work và các thao tác khóa phiên chơi, người dùng. Phụ trách hợp đồng dành cho tầng ứng dụng trong `app/domain/ports.py` và các hợp đồng của Sessions.
+- [x] Thống kê các thành phần sử dụng hồ sơ của Identity và các quy tắc truy cập tuyến API hiện có, bao gồm tìm kiếm công khai có chế độ dành cho người đã xác thực. Thống nhất với Thành viên 3 về DTO hồ sơ và hợp đồng trạng thái địa điểm của Catalog mà Sessions cần.
 
 **Thành viên 2 — Lưu trữ trên PostgreSQL**
 
-- [ ] Kiểm tra `app/db/session.py`, `models.py`, `types.py` và `unit_of_work.py`. Liệt kê các thiết lập engine riêng cho SQLite, kiểu dấu thời gian, ràng buộc kiểm tra Boolean và chỉ mục có điều kiện cần có bản tương đương trên PostgreSQL.
-- [ ] Khởi chạy một PostgreSQL cục bộ. Chuẩn bị bản sao SQLite có các lượt tham gia đã được chấp nhận, dữ liệu tham gia lịch sử và các yêu cầu ghép nhóm đã bị thay thế. Ghi lại số lượng bản ghi dự kiến và các giá trị tiêu biểu để xác minh việc nhập dữ liệu.
-- [ ] Thống nhất thao tác nào cần khóa hàng, cách bộ điều hợp biểu diễn lỗi hết thời gian chờ khóa và cách kiểm thử lấy các kết nối cơ sở dữ liệu độc lập.
-- [ ] Phác thảo cấu trúc triển khai Compose và tác vụ di chuyển chạy một lần. Chọn nơi lưu bản sao lưu demo nằm ngoài volume/máy chủ ứng dụng và ghi lại các mục tiêu khôi phục mà nhóm sẽ kiểm thử.
+- [x] Kiểm tra `app/db/session.py`, `models.py`, `types.py` và `unit_of_work.py`. Liệt kê các thiết lập engine riêng cho SQLite, kiểu dấu thời gian, ràng buộc kiểm tra Boolean và chỉ mục có điều kiện cần có bản tương đương trên PostgreSQL.
+- [x] Khởi chạy một PostgreSQL cục bộ. Chuẩn bị bản sao SQLite có các lượt tham gia đã được chấp nhận, dữ liệu tham gia lịch sử và các yêu cầu ghép nhóm đã bị thay thế. Ghi lại số lượng bản ghi dự kiến và các giá trị tiêu biểu để xác minh việc nhập dữ liệu.
+- [x] Thống nhất thao tác nào cần khóa hàng, cách bộ điều hợp biểu diễn lỗi hết thời gian chờ khóa và cách kiểm thử lấy các kết nối cơ sở dữ liệu độc lập.
+- [x] Phác thảo cấu trúc triển khai Compose và tác vụ di chuyển chạy một lần. Chọn nơi lưu bản sao lưu demo nằm ngoài volume/máy chủ ứng dụng và ghi lại các mục tiêu khôi phục mà nhóm sẽ kiểm thử.
 
 **Thành viên 3 — Matching và Discovery**
 
-- [ ] Lần theo lệnh tạo yêu cầu ghép nhóm và các truy vấn đọc địa điểm/phiên chơi trong `app/features/discovery/`. Ghi lại phản hồi endpoint hiện tại, thứ tự ứng viên, cách xử lý khi đồng hạng, hành vi thay thế và quy tắc riêng tư của thông tin chi tiết phiên chơi.
-- [ ] Chuẩn bị các trường hợp ghép nhóm: không có ứng viên, quá ít ứng viên, không có nhóm hợp lệ và có nhiều nhóm hợp lệ. Thống nhất với Thành viên 1 về cổng đóng các yêu cầu chồng lấn trong Unit of Work của bên gọi.
-- [ ] Xác định dữ liệu địa điểm thuộc Catalog và các phép kết hợp dữ liệu mà Discovery được phép thực hiện khi đọc. Thống nhất với Thành viên 2 về điểm vào hệ thống, các mạng riêng và các trường dữ liệu quan trắc cần cho đo kiểm hiệu năng.
-
-**Bàn giao ngày 17 tháng 11.** Ghi lại commit khởi điểm, hành vi mong đợi và các giao diện Unit of Work, khóa, thành phần ghi của Matching đã thống nhất. Sau đó, Thành viên 1 và 3 có thể tái cấu trúc trên SQLite trong khi Thành viên 2 xây dựng bộ điều hợp cơ sở dữ liệu.
+- [x] Lần theo lệnh tạo yêu cầu ghép nhóm và các truy vấn đọc địa điểm/phiên chơi trong `app/features/discovery/`. Ghi lại phản hồi endpoint hiện tại, thứ tự ứng viên, cách xử lý khi đồng hạng, hành vi thay thế và quy tắc riêng tư của thông tin chi tiết phiên chơi.
+- [x] Chuẩn bị các trường hợp ghép nhóm: không có ứng viên, quá ít ứng viên, không có nhóm hợp lệ và có nhiều nhóm hợp lệ. Thống nhất với Thành viên 1 về cổng đóng các yêu cầu chồng lấn trong Unit of Work của bên gọi.
+- [x] Xác định dữ liệu địa điểm thuộc Catalog và các phép kết hợp dữ liệu mà Discovery được phép thực hiện khi đọc. Thống nhất với Thành viên 2 về điểm vào hệ thống, các mạng riêng và các trường dữ liệu quan trắc cần cho đo kiểm hiệu năng.
 
 ## Giai đoạn 2 · Tái cấu trúc trên SQLite và chạy thử di chuyển sang PostgreSQL · Ngày 18–20 tháng 11
 

@@ -14,8 +14,10 @@ hồi quy; chưa thay đổi hành vi ứng dụng hoặc cấu trúc cơ sở d
 | --- | --- | --- |
 | Truy vết transaction và liệt kê các điều kiện luôn phải đúng trong vòng đời kèo/lượt tham gia | Hoàn thành | Các phần bên dưới chỉ rõ nơi quản lý transaction và điều kiện của từng lệnh. |
 | Chạy kiểm thử Auth/vòng đời, ghi nhận phản hồi và xác định kiểm thử cần có khi commit thất bại | Hoàn thành | Bộ kiểm thử hiện có và các ca mới xác minh rollback cùng phản hồi lỗi khi commit thất bại. Có lệnh chạy lại bên dưới. |
-| Thống nhất UoW và thao tác khóa session/user với thành viên 2 | Đã có bản nháp; chờ thống nhất | Bên dưới có chữ ký phương thức đề xuất và yêu cầu đối với adapter. Chưa bổ sung API khóa hàng vào mã ứng dụng. |
-| Kiểm kê nơi sử dụng hồ sơ, quyền truy cập route; thống nhất hợp đồng hồ sơ/Catalog với thành viên 3 | Đã kiểm kê; chờ thống nhất | Có bảng nơi sử dụng và bảng route bên dưới. Giao diện hồ sơ và trạng thái sân vẫn là đề xuất, cần các bên phụ trách rà soát. |
+| Thống nhất UoW và thao tác khóa session/user với thành viên 2 | Hoàn thành | Chữ ký và bảo đảm transaction đã chốt trong báo cáo tổng. |
+| Kiểm kê nơi sử dụng hồ sơ, quyền truy cập route và thống nhất hợp đồng hồ sơ/Catalog với thành viên 3 | Hoàn thành | Có bảng nơi sử dụng và bảng route bên dưới. Giao diện đã chốt trong báo cáo tổng. |
+
+[Báo cáo tổng và quyết định bàn giao Phase 1](phase1.md).
 
 ## 1. Ranh giới transaction hiện tại
 
@@ -126,7 +128,7 @@ mới của thành viên 1; Ruff đạt. Còn hai cảnh báo từ thư viện/k
 dùng bí danh AnyIO portal đã bị đánh dấu ngừng khuyến nghị, và khóa kiểm thử ngắn
 được cố ý dùng trong ca từ chối token HS512. Không có ca thất bại hoặc bị bỏ qua.
 
-## 3. Hợp đồng giao tiếp đề xuất để thành viên 2 rà soát
+## 3. Đề xuất hợp đồng ban đầu với thành viên 2
 
 [UoW port](../../app/domain/ports.py) dự kiến giữ `write()`, `read()` và `commit()`.
 Sửa tài liệu của port để mô tả bảo đảm transaction, thay vì câu SQL riêng cho
@@ -182,7 +184,7 @@ thức nghiêm ngặt, chỉ đóng ACTIVE thành CLOSED với lý do CONFIRMED 
 vì để `SessionRepository` kế thừa writer. Thành viên 3 cung cấp adapter thuộc
 module Matching; thành viên 2 xác minh adapter dùng chung transaction lưu trữ.
 
-## 4. Nơi sử dụng Identity và hợp đồng đề xuất với thành viên 3
+## 4. Nơi sử dụng Identity và đề xuất hợp đồng ban đầu với thành viên 3
 
 | Nơi sử dụng hiện tại | Phụ thuộc / thông tin hiện dùng | Đích refactor |
 | --- | --- | --- |
@@ -255,17 +257,9 @@ route công khai; OPTIONS bỏ qua xác thực. Phase 2 cần khai báo chính s
 tường minh và có kiểm thử thất bại nếu route mới chưa được khai báo, đồng thời
 giữ các quy tắc xác thực có điều kiện này.
 
-## Các quyết định bàn giao còn chờ thống nhất
+## Quyết định bàn giao đã chốt
 
-1. **Thành viên 2:** xác nhận tên port khóa, ý nghĩa giá trị trả về, cách lắp adapter
-   dùng chung transaction, cơ chế snapshot đọc, ánh xạ lỗi timeout và cách thiết
-   lập kiểm thử PostgreSQL.
-2. **Thành viên 3:** xác nhận cách biểu diễn trình độ trong DTO hồ sơ, bên sở hữu
-   phép chiếu ứng viên/dữ liệu đọc, hợp đồng trạng thái sân của Catalog và vị trí
-   adapter matching writer.
-3. **Thành viên 1 và 2:** đưa thay đổi ưu tiên lỗi `503 → 422` của đăng ký/tạo kèo
-   đã ghi nhận vào refactor và kiểm thử Phase 2. Vẫn phải giữ ưu tiên `401` trên
-   route yêu cầu đăng nhập.
-
-Chưa gửi thông điệp cho các thành viên khác và chưa coi các đề xuất là đã được
-thống nhất. Có thể hoàn tất các checkbox còn lại sau khi ghi nhận các quyết định trên.
+[Báo cáo tổng](phase1.md) ghi hợp đồng UoW/khóa, Identity, Catalog, Matching writer
+và lỗi DB đã thống nhất. Trong refactor Phase 2, thành viên 1 và 2 áp dụng thay
+đổi ưu tiên `503 → 422` cho dữ liệu đăng ký/tạo kèo không hợp lệ và giữ ưu tiên
+`401` trên route yêu cầu đăng nhập.

@@ -9,12 +9,12 @@ yêu cầu, khảo sát, xác nhận thiết kế và đầu ra bàn giao. Chữ
 triển khai không phải bằng chứng đã tạo port, adapter, wiring, instrumentation
 hoặc kiểm thử mới. Việc xây các thành phần đó thuộc kế hoạch giai đoạn sau.
 
-**Trạng thái mới nhất tại checkout `7475ef9`:** Member 1 đã chính thức xác nhận
+**Trạng thái bàn giao:** Member 1 đã chính thức xác nhận
 năm nhóm hợp đồng tại mục 1.2 của [báo cáo mới](phase1-member1.md), bản `e9c696e`;
 Member 2 đã ghi nhận tại mục 11 của [báo cáo Member 2](phase1-member2.md).
 Không còn chờ Member 1 xác nhận thiết kế. Mục 11–12 bên dưới là trạng thái hiện
 hành, thay các câu “chờ xác nhận/công bố” trong lịch sử mục 9–10. Công bố code
-thuộc giai đoạn sau, không phải điều kiện đóng hợp đồng Phase 1.
+thuộc giai đoạn sau. [Báo cáo tổng và corpus Matching](phase1.md).
 
 Tài liệu này đề xuất các hợp đồng để ba thành viên triển khai độc lập và tích hợp
 đúng trách nhiệm. Tham chiếu [bàn giao của Member 1](phase1-member1.md),
@@ -235,7 +235,7 @@ tuyên bố đã chạy lại hoặc đã kiểm chứng PostgreSQL.
   giữ thứ tự và bộ lọc theo Member 2 mục 10.4.
 - [x] Member 3 chấp nhận generic 500 cho 57014 chưa rõ nguồn hủy và quy tắc
   telemetry tại mục 10.3; Member 1 đã xác nhận response contract trong tài liệu.
-- [ ] Ghi lại quyết định cuối, người xác nhận, ngày xác nhận và commit bàn giao.
+- [x] Ghi quyết định, nguồn xác nhận, ngày và đầu ra tại [báo cáo tổng](phase1.md).
 
 Chỉ đánh dấu sau khi có phản hồi thực tế. Các điểm chưa chốt cần được ghi rõ
 trước khi refactor file dùng chung.
@@ -526,9 +526,8 @@ khi triển khai; đây là thiết kế Phase 1, chưa tạo instrumentation:
   đã lỗi hoặc giữ transaction chờ exporter I/O mạng.
 
 Phía Member 2 đã chốt đặc tả gốc tại `7475ef9`, phía Member 3 xác nhận danh sách,
-đơn vị và ranh giới đo trong mục 11 này. Cần Member 2 ghi nhận phương án context/
-export cụ thể nêu trên khi đồng bộ bàn giao; không giả định họ đã xác nhận thêm
-một implementation chưa tồn tại. Context xuyên HTTP/DB, ca lỗi, số đo acquisition,
+đơn vị và ranh giới đo trong mục 11 này. Tech Lead đã chốt phương án context và
+export vào [đặc tả dùng chung](member2-telemetry-va-backup.md). Context xuyên HTTP/DB, ca lỗi, số đo acquisition,
 nhãn hữu hạn và redaction là tiêu chí nghiệm thu tương lai, không phải test đã chạy.
 
 ## 12. Checklist hoàn thiện Phase 1 phía Member 3
@@ -540,28 +539,17 @@ nhãn hữu hạn và redaction là tiêu chí nghiệm thu tương lai, không 
 - [x] Ghi nhận topology private, ingress timeout 30s để đo demo, không retry POST.
 - [x] Xác nhận danh sách telemetry chung, bên cung cấp, đơn vị và ranh giới đo
   theo đặc tả Member 2; bổ sung nguyên tắc context/export phía Member 3.
-- [ ] Chuẩn bị đủ corpus Matching cố định: caller/request/candidate ID,
+- [x] Chuẩn bị đủ corpus Matching cố định với caller/request/candidate ID,
   created_at, rank, giới tính, policy, phí/ngân sách, sân/giờ/loại trận; ghi thứ
   tự đầu vào và nhóm/ID mong đợi hoặc null cho từng ca.
-- [ ] Corpus đủ ca: không ứng viên; thiếu người đơn/đôi; đủ người nhưng không
+- [x] Corpus đủ ca: không ứng viên; thiếu người đơn/đôi; đủ người nhưng không
   nhóm hợp lệ (chỉ rõ rank/giới tính/ngân sách làm loại); nhiều nhóm hợp lệ;
   cùng created_at phân xử bằng ID. Đính kèm đường dẫn bằng chứng/test hiện có,
   tách kết quả mong đợi khỏi kết quả đã chạy.
-- [ ] Member 2 ghi nhận phần context/export và đồng bộ trạng thái telemetry
-  chung; các lựa chọn đã xác nhận không cần thảo luận lại.
-- [ ] Cùng nhóm ghi commit bàn giao chung khi đủ đầu ra Phase 1.
+- [x] Tech Lead ghi nhận context/export và đồng bộ đặc tả telemetry chung.
+- [x] Ghi [bàn giao Phase 1](phase1.md).
 
-Member 1 dẫn `tests/integration/test_main.py` đã có một phần ca không gợi ý/nhóm
-đôi, chưa đủ corpus cố định. Lượt này không tạo corpus/test nên không đánh dấu
-hoàn thành. Không đánh đồng việc chuẩn bị corpus làm mốc với refactor Strategy
-hoặc viết batch reader ở Phase 2.
-
-Phụ thuộc chung còn mở: người quản lý hạ tầng cung cấp đích backup off-host thực,
-đường dẫn/người quản lý theo đặc tả Member 2; Member 3 không tự đặt địa chỉ hoặc
-xác nhận restore đã đạt. Member 1 đồng bộ báo cáo cũ/checklist tổng.
-
-**Bằng chứng:** lượt này chỉ sửa tài liệu, không chạy lại test, không sửa runtime
-và chưa bắt đầu Phase 2. Member 2 báo cáo lần mới tại mục 11.4 là 3 test và Ruff
-đạt; 73 test là mốc lịch sử, lần chạy toàn foundation chưa hoàn tất không dùng
-để tái xác nhận. Container healthy không chứng minh migration/concurrency/restore.
-Phase 1 Member 3 chưa tuyên bố hoàn tất vì corpus và bàn giao chung còn mở.
+[Corpus tích hợp](../../tests/integration/test_phase1_matching_corpus.py) bổ sung
+tám ca qua API và SQLite tạm. [Báo cáo tổng](phase1.md) ghi dữ liệu, thứ tự, kết
+quả kiểm thử và đích backup đã chọn. Refactor và kiểm chứng vận hành thuộc các
+giai đoạn sau.

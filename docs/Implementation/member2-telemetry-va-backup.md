@@ -1,17 +1,18 @@
 # Member 2 · Bàn giao telemetry và khôi phục Phase 1
 
 Ngày cập nhật: **19/11/2026**. Đối chiếu Member 1 tại `e9c696e` (mục 3–5)
-và Member 3 tại `89978d6` (mục 9–10).
+và Member 3 tại `43cd47e` (mục 11).
 
 Đây là đặc tả bàn giao phía Member 2, chưa phải instrumentation hoặc backup đã
 triển khai. Không yêu cầu xác nhận lại các hợp đồng Member 1 đã chốt tại mục 1.2
 của [báo cáo mới](phase1-member1.md).
 
-## 1. Danh sách telemetry gửi Member 3
+## 1. Danh sách telemetry đã chốt
 
-Member 2 chốt phía mình các tên trường, đơn vị và cách đo dưới đây để Member 3
-ghép vào request trace. Thời lượng dùng đồng hồ monotonic, đơn vị giây; timestamp
-sự kiện dùng UTC. Trường chưa đo được phải bỏ hoặc dùng null, không gán 0.
+Member 2 đặc tả tên trường, đơn vị và cách đo tại `7475ef9`. Member 3 xác nhận tại
+`43cd47e`. Tech Lead chốt cách ghép context và export trong [báo cáo tổng](phase1.md).
+Thời lượng dùng đồng hồ monotonic, đơn vị giây. Timestamp sự kiện dùng UTC.
+Trường chưa đo được phải bỏ hoặc dùng null.
 
 - `request_id`: lấy từ request state hiện có, giữ cùng giá trị với envelope lỗi
   và `X-Request-ID`. Member 3 truyền context này tới hook DB; Member 2 không sinh
@@ -21,10 +22,9 @@ sự kiện dùng UTC. Trường chưa đo được phải bỏ hoặc dùng nul
   không dùng raw URL/query string; route không match dùng giá trị cố định
   `unmatched`. `error_code` lấy mã API thực trả, thành công dùng null.
 - `matching_candidate_count`, `matching_selection_duration_seconds`: Member 3
-  cung cấp. Đề nghị count là số ứng viên sau bộ lọc request/lịch/profile và trước
-  Strategy; duration chỉ bao phần chọn nhóm, không gồm query DB. Phải đo cả khi
-  không có gợi ý; route không chạy Matching dùng null. Member 3 còn cần xác nhận
-  định nghĩa và vị trí hook trước khi đóng danh sách chung.
+  cung cấp. Count là số ứng viên sau bộ lọc request/lịch/profile, trước Strategy
+  và không tính caller. Duration chỉ bao lời gọi Strategy. Đo cả khi không có
+  gợi ý. Nếu chưa chạy đến điểm đo thì dùng null hoặc bỏ trường.
 - `db_acquire_duration_seconds`: Member 2 cung cấp, tính từ yêu cầu lấy connection
   đến lấy được hoặc thất bại. Có thể gồm tạo connection mới; **không gọi đây là
   pool wait thuần**. Muốn tách `db_pool_wait_seconds` phải có hook đo riêng lúc
@@ -58,6 +58,12 @@ chỉ thuộc log/trace đã lọc. Không log password, URL kết nối hoặc 
 Telemetry lỗi không được làm command thất bại hoặc tự phát query trên transaction
 đã lỗi; exporter không giữ transaction chờ I/O mạng.
 
+HTTP truyền `request_id`, `route_template` và `method` qua `ContextVar` riêng
+mỗi request. Hook DB dùng cùng context, giữ giá trị khi sang threadpool và dọn
+sau request. Log có cấu trúc xuất stdout. Metrics HTTP/Matching/DB gửi tới
+collector trên mạng riêng. Thư viện, histogram bucket và cấu hình thu thập sẽ
+được chọn khi triển khai.
+
 ### Tiêu chí kiểm chứng khi triển khai giai đoạn 2–3
 
 1. Member 3 chứng minh cùng request ID từ HTTP qua DB đến error envelope; route
@@ -71,24 +77,30 @@ Telemetry lỗi không được làm command thất bại hoặc tự phát quer
 5. Cả hai kiểm nhãn hữu hạn và soát log không chứa dữ liệu nhạy cảm. Những ca này
    là tiêu chí nghiệm thu tương lai, chưa phải test đã chạy trong Phase 1.
 
-## 2. Hồ sơ đích backup cần điền
+## 2. Đích backup đã chốt
 
-Chưa có địa chỉ kho/máy ngoài máy ứng dụng trong repository. Không dùng
-`artifacts/`, volume PostgreSQL hay thư mục khác trên cùng máy làm bằng chứng
-off-host. Hồ sơ sau phải được người quản lý hạ tầng cung cấp trước diễn tập:
+Người dùng xác nhận ngày **19/11/2026**: app/DB chạy trên **máy Member 1**;
+backup lưu trên **máy Member 2**, do **Member 2 quản lý**. Thư mục đích là
+`artifacts/backups/`, tính từ gốc dự án `matchmate-backend/` trên máy Member 2;
+không phụ thuộc ký tự ổ đĩa. Đây là đích lưu đã chọn cho Phase 1, chưa phải bằng
+chứng đã cấu hình truyền tệp hoặc đã backup/restore thành công.
 
-- Máy/kho đích và bằng chứng độc lập với máy chạy API/DB: **chưa được cung cấp**.
-- Bucket/share/thư mục gốc thực tế: **chưa được cung cấp**.
-- Người quản lý và người có quyền restore: **chưa được cung cấp**.
+- Máy chạy ứng dụng/DB nguồn: **máy Member 1**.
+- Máy lưu backup độc lập với nguồn: **máy Member 2**.
+- Thư mục đích: **`matchmate-backend/artifacts/backups/` trên máy Member 2**.
+- Người quản lý kho backup: **Member 2**; quyền truy cập phục vụ restore cần được
+  cấu hình khi triển khai.
 - Kênh truyền, tài khoản dịch vụ và cách cấp secret ngoài Git:
   **chưa được cung cấp**; không gửi mật khẩu/private key vào báo cáo/chat.
 - Chính sách lưu giữ, dung lượng, mã hóa và lịch chạy backup:
   **chưa được xác nhận**. Đề nghị hằng ngày để kiểm mục tiêu RPO 24 giờ.
 - DB/host restore riêng và người cấp quyền tạo DB: **chưa được cung cấp**.
 
-Sau khi có thư mục gốc, cấu trúc tương đối thống nhất phía Member 2:
-`matchmate-backups/<release-commit>/<UTC timestamp>/`, gồm dump custom,
-checksum SHA-256 và manifest. Đây là quy ước đặt tên, chưa phải đích đã cấu hình.
+Cấu trúc lưu tính từ gốc dự án trên máy Member 2:
+`artifacts/backups/<release-commit>/<UTC timestamp>/`, gồm dump custom,
+checksum SHA-256 và manifest. `artifacts/` đã được gitignore; không commit dump
+vào Git. Bản nằm trên máy Member 1 chỉ là staging; chỉ bản đã truyền tới máy
+Member 2 và kiểm checksum mới được tính là backup off-host thành công.
 Manifest ghi release commit/image digest, migration revision, PostgreSQL/pg_dump
 version, UTC bắt đầu/kết thúc dump, checksum, kích thước, thời điểm off-host
 upload/verify hoàn tất và người vận hành; không chứa secret. Nếu cần đối chiếu
@@ -124,17 +136,15 @@ không so counts từ một lần query khác rồi tuyên bố bản dump sai/�
    bằng chứng. Chỉ xóa DB restore/staging theo chính sách đã thống nhất sau đó;
    quy trình này chưa thực hiện xóa hay thay đổi DB nào.
 
-## 4. Xác nhận còn cần
+## 4. Trách nhiệm khi triển khai
 
-- **Member 1:** cập nhật trạng thái xác nhận ở báo cáo cũ và checklist tổng theo
-  mục 1.2 tài liệu mới; cung cấp commit công bố port/error handler/composition
-  root khi triển khai giai đoạn 2. Xác nhận thiết kế đã có, không cần hỏi lại.
-- **Member 3:** xác nhận tên/đơn vị/định nghĩa trường HTTP và Matching, cách truyền
-  request context, nơi export; thống nhất cùng Member 2 giới hạn đo pool/lock
-  wait nêu ở mục 1. Cung cấp corpus Matching và sau đó cấu hình ingress thực,
-  số worker để tính connection budget (không cần cấu hình thật để đóng Phase 1).
-- **Nhóm/người quản lý hạ tầng:** điền hồ sơ mục 2. Đây là thông tin môi trường
-  thực, không thể thay bằng tên máy, tài khoản hoặc địa chỉ kho tự đặt.
+- **Member 1:** công bố port/error handler/composition root khi triển khai Phase 2.
+- **Member 3:** triển khai telemetry HTTP/Matching theo mục 1, xác minh tương
+  thích với corpus, cung cấp cấu hình ingress và số worker để tính connection budget.
+- **Member 1/2:** khi triển khai, cung cấp hostname/IP và kênh truyền từ máy
+  Member 1 sang máy Member 2, cấu hình quyền truy cập/restore; Member 2 chốt
+  retention, lịch chạy và môi trường restore. Đích lưu/người quản lý đã chốt
+  theo mục 2, không cần xác nhận lại lựa chọn này.
 
-Chỉ đánh dấu telemetry đã thống nhất chung sau phản hồi Member 3; chỉ đánh dấu
-backup off-host/restore đạt sau khi có đích thực và bằng chứng chạy.
+Phase 1 đã chốt telemetry và đích backup. Kiểm chứng truyền tệp và restore nằm
+trong kế hoạch nghiệm thu triển khai.

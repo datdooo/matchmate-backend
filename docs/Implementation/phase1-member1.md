@@ -11,10 +11,11 @@ Nguồn đối chiếu:
 
 - [Báo cáo hiện trạng thành viên 1](member-1-phase-1.vi.md), commit làm mốc
   `696fbb1683eff430012f4db9db0701ec9a98fb01`.
-- [Báo cáo thành viên 2](phase1-member2.md), đặc biệt mục 9–10; cập nhật
-  `7ceb404`.
-- [Báo cáo thành viên 3](phase1-member3.md), đặc biệt mục 9–10; cập nhật
-  `89978d6`.
+- [Báo cáo thành viên 2](phase1-member2.md), đặc biệt mục 11 và đặc tả telemetry
+  tại `7475ef9`.
+- [Báo cáo thành viên 3](phase1-member3.md), đặc biệt mục 11–12 và xác nhận
+  telemetry tại `43cd47e`.
+- [Báo cáo tổng và bằng chứng bàn giao](phase1.md).
 
 `[x]` nghĩa là đã có tài liệu, xác nhận hoặc bằng chứng được dẫn cụ thể.
 `[ ]` nghĩa là đầu ra Phase 1 còn thiếu hoặc chưa đủ bằng chứng.
@@ -25,18 +26,19 @@ rút gọn tài liệu này.
 
 | Thành viên | Đã có | Còn cần để đóng Phase 1 |
 | --- | --- | --- |
-| **1 — Identity và Sessions** | Truy vết transaction/invariant, kiểm thử và hành vi làm mốc, kiểm kê hồ sơ/quyền truy cập, xác nhận năm nhóm hợp đồng | Đồng bộ trạng thái xác nhận trong báo cáo cũ/checklist tổng; ghi commit bàn giao chung. |
-| **2 — Persistence và vận hành** | Khảo sát khác biệt SQLite/PostgreSQL, nguồn SQLite tổng hợp và manifest, PostgreSQL cục bộ, hợp đồng khóa/snapshot/lỗi, thiết kế fixture, phác thảo topology và phục hồi | Ghi đích backup ngoài máy ứng dụng cụ thể; cùng thành viên 3 xác nhận danh sách trường telemetry. |
-| **3 — Catalog, Matching và Discovery** | Truy vết luồng Matching và quy tắc ứng viên, hợp đồng Catalog/profile/writer, phạm vi join đọc và lựa chọn ingress | Hoàn thiện bộ ca Matching làm mốc với đầu vào/kết quả mong đợi; cùng thành viên 2 chốt telemetry. |
+| **1 — Identity và Sessions** | Truy vết transaction/invariant, kiểm thử, quyền truy cập, xác nhận năm nhóm hợp đồng, đồng bộ tài liệu và checklist | Hoàn thành. |
+| **2 — Persistence và vận hành** | Khảo sát SQLite/PostgreSQL, nguồn SQLite tổng hợp, PostgreSQL cục bộ, hợp đồng khóa/snapshot/lỗi, đích backup, đặc tả telemetry | Hoàn thành. |
+| **3 — Catalog, Matching và Discovery** | Truy vết Matching, Catalog/profile/writer, phạm vi join đọc, ingress, xác nhận telemetry và bộ ca làm mốc | Hoàn thành. |
 
 ### 1.1. Điều kiện đóng Phase 1
 
 - [x] Đã ghi commit khảo sát ban đầu, hành vi API và các invariant cần giữ.
 - [x] Đã có bằng chứng kiểm thử Auth/Sessions và nguồn dữ liệu migration thử.
 - [x] Đã ghi nhận lựa chọn của thành viên 2/3 và xác nhận của thành viên 1.
-- [ ] Đủ bộ ca Matching làm mốc theo mục 4.
-- [ ] Có đích backup ngoài máy ứng dụng cụ thể và danh sách telemetry đã thống nhất.
-- [ ] Đồng bộ checklist/tài liệu và ghi một commit bàn giao chung kèm các nguồn bằng chứng.
+- [x] Đủ bộ ca Matching làm mốc theo mục 4.
+- [x] Có đích backup ngoài máy ứng dụng cụ thể và người quản lý (mục 3).
+- [x] Có danh sách telemetry đã thống nhất giữa thành viên 2/3.
+- [x] Đồng bộ checklist/tài liệu và ghi bàn giao chung tại [báo cáo tổng](phase1.md).
 
 ### 1.2. Xác nhận chính thức từ thành viên 1
 
@@ -102,9 +104,9 @@ và 10.2 của báo cáo thành viên 2.
   công khai có chế độ `host_me=true` yêu cầu đăng nhập.
 - [x] Thống nhất hợp đồng UoW/khóa với thành viên 2 và profile/Catalog/writer
   với thành viên 3; xác nhận được ghi ở mục 1.2.
-- [ ] Đồng bộ trạng thái đã xác nhận trong báo cáo hiện trạng tiếng Việt/tiếng Anh
-  và checklist Phase 1 của kế hoạch tổng; các bản cũ còn ghi chờ thống nhất.
-- [ ] Ghi commit bàn giao chung sau khi thu đủ các đầu ra còn mở ở mục 5.
+- [x] Đồng bộ xác nhận trong hai bản báo cáo hiện trạng và checklist Phase 1
+  của kế hoạch tổng.
+- [x] Ghi bàn giao chung tại [báo cáo tổng](phase1.md).
 
 Bằng chứng: [báo cáo thành viên 1](member-1-phase-1.vi.md) ghi **160 ca đạt**,
 gồm 29 ca mới; Ruff đạt. Các ca mới kiểm lỗi commit của bảy lệnh, ưu tiên 401,
@@ -130,9 +132,12 @@ khi DB đang bị khóa có thể trả 503 ở đăng ký/tạo kèo, nhưng tr
   một lần trước API startup, liveness/readiness và quy trình backup/restore.
 - [x] Ghi mục tiêu diễn tập: phát hiện DB mất kết nối 30 giây, API phục hồi 60 giây
   sau khi DB khỏe, RTO 30 phút, RPO 24 giờ nếu backup hằng ngày thành công.
-- [ ] Ghi đích backup ngoài máy ứng dụng cụ thể: máy/kho, thư mục đích và người
-  quản lý. Báo cáo hiện mới nêu ví dụ; chưa có đích thực được cung cấp.
-- [ ] Cùng thành viên 3 ghi danh sách trường telemetry cần bàn giao theo mục 4.1.
+- [x] Người dùng chốt ngày **19/11/2026**: app/DB trên máy thành viên 1;
+  backup trên máy thành viên 2, tại `artifacts/backups/` tính từ gốc dự án
+  `matchmate-backend/`, do thành viên 2 quản lý, không ghi ký tự ổ đĩa.
+  Chi tiết tại [hồ sơ backup](member2-telemetry-va-backup.md#2-đích-backup-đã-chốt).
+  Đây là xác nhận đích lưu Phase 1; chưa phải bằng chứng truyền tệp/restore đạt.
+- [x] Chốt danh sách trường telemetry theo mục 4.1.
 
 Bằng chứng do thành viên 2 báo cáo: hai ca fixture đạt; kết quả mới nhất của suite
 foundation/architecture chọn lọc là **73 passed**, Ruff đạt, sau khi sửa khả năng
@@ -152,9 +157,9 @@ chứng import hoặc concurrency PostgreSQL.
   Catalog và projection đọc/join Discovery được phép; thành viên 1 đã xác nhận.
 - [x] Ghi nhận topology private của thành viên 2 và mốc response timeout ingress
   demo 30 giây, không retry upstream POST; đây là lựa chọn thiết kế đã được chấp nhận.
-- [ ] Hoàn thiện bộ ca Matching làm mốc bên dưới với dữ liệu cố định, thứ tự
-  ứng viên, nhóm/kết quả mong đợi và đường dẫn bằng chứng hoặc kiểm thử hiện có.
-- [ ] Cùng thành viên 2 xác nhận danh sách trường telemetry ở mục 4.1.
+- [x] Hoàn thiện bộ ca Matching với dữ liệu cố định, thứ tự ứng viên và kết quả
+  tại [báo cáo tổng, mục 3](phase1.md#3-bộ-ca-matching-làm-mốc).
+- [x] Cùng thành viên 2 chốt danh sách telemetry ở mục 4.1.
 
 | Ca cần chuẩn bị | Kết quả mong đợi |
 | --- | --- |
@@ -164,11 +169,10 @@ chứng import hoặc concurrency PostgreSQL.
 | Có nhiều nhóm hợp lệ | Chọn đúng nhóm hợp lệ đầu tiên theo thứ tự hiện hành. |
 | Ứng viên cùng `created_at` | Dùng ID để phân xử thứ tự và chọn nhóm nhất quán. |
 
-[Bộ tích hợp hiện tại](../../tests/integration/test_main.py) đã có một phần các
-trường hợp không có gợi ý và nhóm đôi. Chưa có bộ đầu vào/kết quả được ghi đủ cho
-tất cả các ca trên; vì vậy checklist chuẩn bị corpus vẫn để mở.
+[Corpus tích hợp](../../tests/integration/test_phase1_matching_corpus.py) kiểm
+các ca trên qua API và SQLite tạm.
 
-### 4.1. Telemetry cần thành viên 2 và 3 xác nhận
+### 4.1. Telemetry đã chốt
 
 Ghi một danh sách chung cho benchmark và truy vết, phân công rõ bên cung cấp:
 
@@ -176,22 +180,23 @@ Ghi một danh sách chung cho benchmark và truy vết, phân công rõ bên cu
 | --- | --- |
 | Request, thành viên 3 phụ trách | Correlation/request ID, route template, HTTP status, duration, error code. |
 | Matching, thành viên 3 phụ trách | Candidate count và thời gian chọn nhóm. |
-| DB, thành viên 2 phụ trách | Pool wait, lock wait, transaction duration. |
+| DB, thành viên 2 phụ trách | Thời lượng lấy connection, lấy khóa và transaction. Chỉ đo thời gian chờ thuần nếu có hook phù hợp. |
 
-Đây là danh sách cần xác nhận trong bàn giao Phase 1, chưa phải log/metrics đã
-được triển khai. Giữ thông tin nhạy cảm ngoài log; không dùng user/session ID làm
-nhãn metrics. Thiết kế mạng chỉ công khai ingress, giữ API/DB/metrics trong mạng
-private đã được ghi ở báo cáo thành viên 2.
+Member 2 đặc tả tại `7475ef9`, Member 3 xác nhận tại `43cd47e` và Tech Lead chốt
+context/export theo [đặc tả telemetry](member2-telemetry-va-backup.md).
+Instrumentation nằm trong kế hoạch triển khai.
 
 ## 5. Checklist ghi nhận và xác nhận bàn giao
 
 - [x] Đã có commit khảo sát, báo cáo hành vi và bằng chứng Auth/Sessions của thành viên 1.
 - [x] Đã có dữ liệu nguồn, môi trường PostgreSQL cục bộ và khảo sát persistence của thành viên 2.
 - [x] Đã ghi nhận năm nhóm hợp đồng được thành viên 1 xác nhận, cùng các phản hồi thành viên 2/3.
-- [ ] Thành viên 3 bàn giao đủ corpus Matching làm mốc, gồm trường hợp nhiều nhóm hợp lệ và đồng hạng.
-- [ ] Thành viên 2 ghi địa điểm backup off-host thực tế.
-- [ ] Thành viên 2/3 chốt danh sách telemetry và bên cung cấp từng trường/số đo.
-- [ ] Thành viên 1 đồng bộ trạng thái hợp đồng trong tài liệu cũ và checklist tổng.
-- [ ] Cả ba ghi một commit bàn giao chung, liên kết corpus/dữ liệu mẫu/kết quả kiểm thử và hợp đồng đã chốt.
+- [x] Corpus Matching làm mốc có ca nhiều nhóm hợp lệ và đồng hạng.
+- [x] Thành viên 2 ghi đích backup trên máy thành viên 2, thư mục
+  `artifacts/backups/` từ gốc dự án, do thành viên 2 quản lý (nguồn ở máy thành viên 1).
+- [x] Chốt danh sách telemetry và bên cung cấp từng trường/số đo.
+- [x] Đồng bộ trạng thái hợp đồng trong tài liệu cũ và checklist tổng.
+- [x] Bàn giao chung tại [phase1.md](phase1.md), liên kết corpus, dữ liệu mẫu,
+  kết quả kiểm thử và hợp đồng đã chốt.
 
-Hoàn thành các mục còn mở trên là đủ để đóng phạm vi Phase 1 theo kế hoạch.
+Các mục trên hoàn thành phạm vi Phase 1 theo kế hoạch.

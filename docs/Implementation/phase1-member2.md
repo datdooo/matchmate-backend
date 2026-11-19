@@ -217,10 +217,14 @@ chia sẻ mạng DB private; metrics không publish ra Internet.
   ngừng nhận traffic, không liên tục restart API chỉ vì DB đang mất kết nối.
 - Không cần Redis/Kafka/Kubernetes cho giai đoạn này.
 
-Backup demo chọn **kho ngoài máy ứng dụng**, ví dụ thư mục trên máy người vận hành
-riêng `matchmate-backups/<release>/<UTC timestamp>/`, nhận dump bằng kênh bảo mật.
-Local `artifacts/` chỉ là staging/bằng chứng, không tính là backup off-host.
-Cần nhóm cung cấp máy/kho thật trước nghiệm thu; chưa có đích ngoài máy được cấu hình.
+Backup demo đã được người dùng chốt ngày **19/11/2026**: app/DB chạy trên
+**máy Member 1**, backup lưu trên **máy Member 2**, do **Member 2 quản lý**.
+Thư mục đích tính từ gốc dự án trên máy Member 2 là
+`artifacts/backups/<release-commit>/<UTC timestamp>/`, không ghi ký tự ổ đĩa.
+`artifacts/` trên máy Member 1 chỉ là staging; bản trên máy Member 2 sau khi truyền
+và kiểm checksum mới là backup off-host. Đã chọn đích lưu, chưa cấu hình kênh
+truyền hoặc có bằng chứng backup/restore; chi tiết ở
+[hồ sơ backup](member2-telemetry-va-backup.md#2-đích-backup-đã-chốt).
 Dump PostgreSQL dạng custom bằng `pg_dump -Fc`, checksum, lưu quyền truy cập hạn chế;
 khôi phục bằng `pg_restore` vào DB thứ hai, không ghi đè DB nguồn/backup.
 SQLite đang ghi phải dùng SQLite backup API hoặc dừng ghi khi chụp, không copy
@@ -602,7 +606,8 @@ Member 3 thêm test first-valid/thứ tự/profile thiếu khi hiện thực bat
 - [x] Member 2 đối chiếu query cũ và nêu quy tắc candidate thiếu/UNSPECIFIED.
 - [ ] Member 1 công bố port khóa/UoW, profile/batch reader, error handler và wiring;
   ghi nhận nhánh cancellation unknown ở mục 10.2.
-- [ ] Member 1/3 xác nhận projection sân cụ thể ở mục 10.3 và đưa vào contract Catalog.
+- [x] Member 1/3 xác nhận projection sân cụ thể ở mục 10.3.
+- [ ] Member 3 đưa projection đã chốt vào contract Catalog ở Phase 2.
 - [ ] Member 3 hiện thực/test batch và Matching theo quy tắc tương thích mục 10.4.
 - [ ] Member 2 hiện thực adapter/migration/import/fixture theo giai đoạn 2–3;
   phối hợp proxy/backend và đo connection budget trước demo.
@@ -623,7 +628,8 @@ contract. Chưa công bố code là việc giai đoạn 2–3, không phải quy
 
 ### 11.1. Việc cần thực hiện theo tài liệu mới
 
-- Member 2 ghi đích backup ngoài máy ứng dụng, đường dẫn và người quản lý thực.
+- Member 2 ghi đích backup ngoài máy ứng dụng, đường dẫn và người quản lý thực
+  (đã chốt theo cập nhật người dùng ngày 19/11/2026 ở mục 5).
 - Member 2/3 thống nhất danh sách telemetry cho request, Matching và DB.
 - Member 3 hoàn thiện corpus Matching có đầu vào/thứ tự/kết quả cố định.
 - Member 1 đồng bộ xác nhận trong hai báo cáo cũ và checklist tổng; cả nhóm ghi
@@ -638,31 +644,33 @@ contract. Chưa công bố code là việc giai đoạn 2–3, không phải quy
   SQLSTATE/phase, commit-unknown, nhãn hữu hạn và tiêu chí kiểm chứng.
 - [x] Làm rõ pool acquisition/lock acquisition latency không phải thời gian chờ
   thuần; không ghi số đo chưa có thành 0 hoặc dùng checkout event để suy ra pool wait.
-- [x] Chuẩn bị hồ sơ cần điền cho kho off-host, manifest/checksum, các bước
-  xác minh truyền tệp và restore DB riêng; phân biệt kế hoạch với kết quả chạy.
+- [x] Ghi đích off-host đã chốt: máy Member 2, thư mục `artifacts/backups/`
+  từ gốc dự án, Member 2 quản lý; nguồn app/DB trên máy Member 1. Chuẩn bị
+  manifest/checksum, các bước xác minh truyền tệp và restore DB riêng.
 - [x] Kiểm tra chỉ đọc Docker: container `matchmate-member2-phase1-postgres-1`
   đang chạy và healthy trong lần đối chiếu này. Chưa kiểm lại version/SQL,
   migration/import, khóa đồng thời hoặc restore PostgreSQL.
 
-### 11.3. Thông tin còn cần để hoàn thiện
+### 11.3. Trạng thái bàn giao và công việc triển khai
 
-- **Member 1:** đồng bộ báo cáo/checklist cũ; bàn giao commit công bố port,
-  exception/handler và wiring khi làm giai đoạn 2. Không cần xác nhận lại năm
-  nhóm hợp đồng đã chốt. Nếu Member 1 quản lý hạ tầng demo, cung cấp hồ sơ kho
-  backup mục 2 tài liệu kèm theo hoặc chỉ rõ người có thể cấp thông tin đó.
-- **Member 3:** phản hồi danh sách telemetry, nhất là candidate count trước
-  Strategy, phạm vi duration và cách truyền context/export. Corpus Matching
-  vẫn thuộc Member 3; chưa có bằng chứng mới để đánh dấu hoàn thành. Cấu hình
-  ingress thực và số worker phục vụ tích hợp/connection budget giai đoạn sau.
-- **Người quản lý hạ tầng (chưa xác định là Member 1 hay 3):** địa chỉ kho/máy,
-  đường dẫn, người quản lý, quyền truyền/restore, retention và DB restore riêng.
-  Không yêu cầu gửi secret vào chat. Thiếu các dữ liệu này nên chưa thể chọn
-  một đích off-host thực hoặc tuyên bố diễn tập khôi phục đã đạt.
+- **Member 1:** đã đồng bộ báo cáo/checklist. Khi triển khai, công bố port,
+  exception/handler và wiring, đồng thời phối hợp cấu hình kênh truyền backup
+  từ máy Member 1 sang máy Member 2.
+- **Member 3:** xác nhận telemetry tại `43cd47e`. Tech Lead chốt context qua
+  `ContextVar`, log stdout và metrics qua collector nội bộ. Corpus Matching
+  và bằng chứng đã ghi trong [báo cáo tổng](phase1.md). Cấu hình ingress và số
+  worker thuộc giai đoạn triển khai.
+- **Member 1/2 khi triển khai:** hostname/IP, kênh truyền, quyền truyền/restore;
+  Member 2 chốt retention, lịch chạy và DB restore riêng. Đã chọn máy Member 2
+  làm kho backup và Member 2 quản lý; các cấu hình vận hành còn thiếu không
+  phải yêu cầu xác nhận lại đích lưu Phase 1. Chưa có bằng chứng diễn tập restore.
 
 - [x] Phía Member 2 đã bàn giao đặc tả telemetry và quy trình backup cụ thể.
-- [ ] Member 3 xác nhận danh sách telemetry chung.
-- [ ] Có đích backup off-host thực và người quản lý.
-- [ ] Đủ corpus, đồng bộ tài liệu và commit bàn giao chung để đóng Phase 1.
+- [x] Member 3 xác nhận telemetry chung. Tech Lead ghi nhận context/export vào
+  [đặc tả dùng chung](member2-telemetry-va-backup.md).
+- [x] Có đích backup off-host và người quản lý: máy Member 2,
+  `artifacts/backups/` từ gốc dự án, Member 2 quản lý; app/DB trên máy Member 1.
+- [x] Đủ corpus, đồng bộ tài liệu và ghi [bàn giao chung](phase1.md).
 
 Đợt này thực hiện phạm vi Phase 1 theo tài liệu mới nhất; không sửa runtime hoặc
 tự mở rộng sang adapter/migration của giai đoạn 2–3. Kết quả kiểm thử chạy lại

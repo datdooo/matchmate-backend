@@ -24,32 +24,27 @@ The team will deliver a single deployable modular monolith, a tested PostgreSQL 
 
 ## Phase 1 · Contracts and regression tests · 16–17 November
 
+Phase 1 closed on 19 November 2026. The [consolidated Phase 1 report](../Implementation/phase1.md) records the contracts, fixtures, test evidence, and operational decisions.
+
 **Member 1 — Application transactions**
 
 - [x] Trace where transactions currently start and commit in Auth and Sessions. List the lifecycle commands and the invariants each command must preserve.
 - [x] Run the existing lifecycle and Auth tests. Capture expected responses for invalid payloads, unauthenticated callers, duplicate requests, and repeated withdraw/cancel. Identify where a commit failure needs a regression test.
-- [ ] Agree with Member 2 on the Unit of Work and the operations for locking sessions and users. Own the application-facing contract in `app/domain/ports.py` and the Sessions contracts.
-- [ ] Inventory Identity's profile consumers and existing route access rules, including public searches with authenticated modes. Agree with Member 3 on the profile DTO and the Catalog venue-status contract needed by Sessions.
-
-Member 1's [Phase 1 baseline and contract handoff](member-1-phase-1.md)
-([bản tiếng Việt](member-1-phase-1.vi.md)) records the
-transaction trace, regression evidence, consumer/access inventory, and proposed
-interfaces. The last two items remain open for agreement with Members 2 and 3.
+- [x] Agree with Member 2 on the Unit of Work and the operations for locking sessions and users. Own the application-facing contract in `app/domain/ports.py` and the Sessions contracts.
+- [x] Inventory Identity's profile consumers and existing route access rules, including public searches with authenticated modes. Agree with Member 3 on the profile DTO and the Catalog venue-status contract needed by Sessions.
 
 **Member 2 — PostgreSQL persistence**
 
-- [ ] Inspect `app/db/session.py`, `models.py`, `types.py`, and `unit_of_work.py`. List the SQLite-specific engine settings, timestamp type, Boolean checks, and partial indexes that need PostgreSQL equivalents.
-- [ ] Start a local PostgreSQL instance. Prepare a SQLite copy with accepted and historical participations and replaced matching requests. Record expected counts and representative values for import verification.
-- [ ] Agree on which operations need row locks, how lock timeouts surface through the adapter, and how tests will obtain independent database connections.
-- [ ] Sketch the Compose topology and one-shot migration job. Choose a demo backup location outside the application volume/host and record the recovery targets the team will test.
+- [x] Inspect `app/db/session.py`, `models.py`, `types.py`, and `unit_of_work.py`. List the SQLite-specific engine settings, timestamp type, Boolean checks, and partial indexes that need PostgreSQL equivalents.
+- [x] Start a local PostgreSQL instance. Prepare a SQLite copy with accepted and historical participations and replaced matching requests. Record expected counts and representative values for import verification.
+- [x] Agree on which operations need row locks, how lock timeouts surface through the adapter, and how tests will obtain independent database connections.
+- [x] Sketch the Compose topology and one-shot migration job. Choose a demo backup location outside the application volume/host and record the recovery targets the team will test.
 
 **Member 3 — Matching and Discovery**
 
-- [ ] Trace the create-matching command and the venue/session read queries in `app/features/discovery/`. Record current endpoint responses, candidate order, tie-breaking, replacement behavior, and session-detail privacy rules.
-- [ ] Prepare matching cases for no candidates, too few candidates, no valid group, and multiple valid groups. Agree with Member 1 on the port for closing overlapping requests inside the caller's Unit of Work.
-- [ ] Define Catalog-owned venue data and Discovery's allowed read joins. Agree with Member 2 on the ingress entry point, private networks, and telemetry fields needed by the benchmark.
-
-**Handoff on 17 November.** Record the starting commit, expected behavior, and agreed Unit of Work, lock, and matching writer interfaces. Members 1 and 3 can then refactor on SQLite while Member 2 builds the database adapter.
+- [x] Trace the create-matching command and the venue/session read queries in `app/features/discovery/`. Record current endpoint responses, candidate order, tie-breaking, replacement behavior, and session-detail privacy rules.
+- [x] Prepare matching cases for no candidates, too few candidates, no valid group, and multiple valid groups. Agree with Member 1 on the port for closing overlapping requests inside the caller's Unit of Work.
+- [x] Define Catalog-owned venue data and Discovery's allowed read joins. Agree with Member 2 on the ingress entry point, private networks, and telemetry fields needed by the benchmark.
 
 ## Phase 2 · SQLite refactor and PostgreSQL migration trial · 18–20 November
 

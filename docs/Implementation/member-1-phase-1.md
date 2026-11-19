@@ -14,8 +14,10 @@ tests; application behavior and schema have not been changed.
 | --- | --- | --- |
 | Trace transactions and list lifecycle invariants | Complete | Sections below link the current owners and record each command's invariants. |
 | Run Auth/lifecycle tests, capture responses, identify commit-failure regressions | Complete | Existing tests plus the new baseline tests verify rollback and error responses when commit fails. Reproduction command below. |
-| Agree UoW and session/user lock operations with Member 2 | Draft ready; agreement pending | Proposed signatures and adapter obligations below. No row-lock API has been added to production code yet. |
-| Inventory profile consumers and route access; agree profile/Catalog contracts with Member 3 | Inventory complete; agreement pending | Consumer and route tables below. Profile and venue interfaces are proposals until reviewed by the other owners. |
+| Agree UoW and session/user lock operations with Member 2 | Complete | Final signatures and transaction guarantees are recorded in the consolidated report. |
+| Inventory profile consumers and route access, and agree profile/Catalog contracts with Member 3 | Complete | Consumer and route tables below. Final interfaces are recorded in the consolidated report. |
+
+[Phase 1 consolidated handoff and final decisions](phase1.md).
 
 ## 1. Current transaction boundaries
 
@@ -119,7 +121,7 @@ Member 1 baseline cases; Ruff passed. Two dependency/test warnings remain:
 Starlette's deprecated AnyIO portal alias and a short test key used deliberately
 for the rejected HS512 token case. No test failed or was skipped.
 
-## 3. Proposed contract for Member 2 review
+## 3. Original contract proposal for Member 2
 
 The target [UoW port](../../app/domain/ports.py) keeps `write()`, `read()`, and
 `commit()`. Change its documentation to transaction guarantees rather than SQLite
@@ -171,7 +173,7 @@ using the supplied clock. Inject it directly into create and approve rather than
 making `SessionRepository` inherit it. Member 3 supplies its module-owned adapter;
 Member 2 verifies it shares the persistence transaction.
 
-## 4. Identity consumers and proposed Member 3 contracts
+## 4. Identity consumers and original Member 3 contract proposal
 
 | Current consumer | Current dependency / information | Target |
 | --- | --- | --- |
@@ -242,15 +244,9 @@ Authorization is rejected even on public routes; OPTIONS skips authentication.
 Phase 2 should declare access policy explicitly and fail tests for undeclared new
 routes, preserving these conditional-authentication rules.
 
-## Handoff decisions still requiring owner agreement
+## Final handoff decisions
 
-1. **Member 2:** confirm lock port names/return semantics, transaction-bound adapter
-   wiring, read snapshot mechanism, timeout mapping and PostgreSQL test setup.
-2. **Member 3:** confirm profile DTO skill representation, candidate/read projection
-   ownership, Catalog status contract and matching writer placement.
-3. **Members 1 and 2:** carry the documented registration/create `503 → 422`
-   precedence change into the Phase 2 refactor and tests. Protected-route `401`
-   precedence remains required.
-
-No teammate messages have been sent or agreements assumed. The remaining
-checkboxes can be completed once those decisions are recorded.
+The agreed contracts for UoW/locks, Identity, Catalog, Matching writer and database
+errors are recorded in [the consolidated report](phase1.md). During the Phase 2
+refactor, Members 1 and 2 will apply the agreed registration/create `503 → 422`
+change for invalid payloads while preserving protected-route `401` precedence.
