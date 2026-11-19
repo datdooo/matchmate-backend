@@ -1,0 +1,29 @@
+name: matchmate-member2-phase1
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: matchmate_phase1
+      POSTGRES_USER: matchmate
+      POSTGRES_PASSWORD: ${MEMBER2_POSTGRES_PASSWORD:?Set MEMBER2_POSTGRES_PASSWORD locally}
+      TZ: UTC
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - member2_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U matchmate -d matchmate_phase1"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    command:
+      - postgres
+      - -c
+      - timezone=UTC
+      - -c
+      - lock_timeout=5s
+      - -c
+      - statement_timeout=15s
+
+volumes:
+  member2_postgres_data:
