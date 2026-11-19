@@ -240,6 +240,8 @@ không quay về SQLite cũ bằng cách đổi URL vì sẽ mất các ghi mớ
 - [x] Tạo dữ liệu SQLite và xác minh PostgreSQL cục bộ healthy (bằng chứng ở phần 8).
 - [x] Phác thảo migration một lần, mạng private, backup off-host và mục tiêu khôi phục.
 - [x] Member 1 ghi nhận phản hồi Member 2 ở `a5402b4`; Member 2 đối chiếu lại ở phần 9.
+- [x] Đối chiếu Member 3 tại `6ba6c60` và Member 1 tại `7c9a400`; bổ sung phương án
+  cho cancellation, projection sân và hồ sơ thiếu ở phần 10.
 - [ ] Member 1 công bố port/chốt mã lỗi mới; Member 3 xác nhận phần giao tiếp mình sở hữu.
 - [ ] Adapter PostgreSQL, Alembic/import và fixture cạnh tranh: giai đoạn 2–3.
 - [ ] Chạy migration/import thật, restore và đo phục hồi: chưa có bằng chứng ở Phase 1.
@@ -443,7 +445,7 @@ khi đã thiết kế cancellation/kiểm kết quả rõ ràng. Chưa bật ret
   **không cần đặt PYTHONUTF8**: **73 passed**, 1 cảnh báo deprecation Starlette/AnyIO.
   Đây là suite chọn lọc, chưa phải toàn bộ test của dự án.
 
-### 9.7. Phần còn phải được chủ sở hữu xác nhận
+### 9.7. Phần còn phải được chủ sở hữu xác nhận tại thời điểm `abfc916`
 
 Phía Member 2 đã có chữ ký, bảo đảm, đường dẫn dự kiến và tiêu chí kiểm chứng cho
 các phụ thuộc đang mở. Còn Member 1 công bố port/error handler; Member 1/3 chọn
@@ -451,3 +453,159 @@ projection/vị trí writer; Member 3 xác nhận timeout ingress. Đây là quy
 thuộc chủ sở hữu tương ứng, không tự chuyển thành đồng thuận toàn nhóm bằng việc
 sửa checkbox. Adapter/migration/concurrency vẫn triển khai theo giai đoạn 2–3;
 không cần đợi phần 9 được coi là bằng chứng runtime mới bắt đầu phần adapter độc lập.
+
+## 10. Đối chiếu `7c9a400` của Member 1 và `6ba6c60` của Member 3
+
+Ngày đối chiếu: **19/11/2026**. Phần này cập nhật trạng thái phần 9, không thay
+các bằng chứng chạy test trước đó bằng kết quả chạy mới. Hai commit trên chỉ sửa
+tài liệu, chưa công bố port/exception/adapter trong mã nguồn.
+
+### 10.1. Những lựa chọn Member 2 và 3 đã cùng chấp nhận
+
+Đã đọc xác nhận mục 9 của Member 3 và phần tổng hợp/checklist mới của Member 1:
+
+- UoW/khóa: session provider dùng chung, bool tồn tại/đã khóa, thứ tự khóa và
+  vị trí adapter `app/db/transaction_locks.py`.
+- Snapshot: read REPEATABLE READ READ ONLY, write READ COMMITTED; không dùng
+  read-only để khóa/ghi và không coi snapshot là dữ liệu mới nhất lúc trả response.
+- Identity: `PlayerProfilesReader.get_by_ids()` đọc theo lô, giữ enum/rank,
+  không lộ credential, không dùng thứ tự SQL IN/dict để chọn nhóm.
+- Catalog status reader và Matching writer ở vị trí phần 9.4; chỉ một implementation
+  writer, chuyển wiring/test trước khi bỏ đường cũ.
+- Error envelope/commit-unknown và cấu hình timeout/pool khởi điểm như phần 9.2/9.5;
+  ingress 30 giây để đo demo, không retry upstream POST.
+
+Như vậy không còn chờ Member 3 xác nhận lại các lựa chọn trên. Member 1 đã ghi nhận
+chúng nhưng trong checklist của mình vẫn để mở xác nhận/công bố contract và wiring.
+Member 2 giữ nguyên cam kết triển khai, không tự ghi rằng Member 1 đã công bố.
+
+### 10.2. Bổ sung dứt điểm phương án cho `57014` chưa rõ nguồn hủy
+
+Member 1 mục 2.3 yêu cầu nêu phản hồi cuối khi chưa phân biệt được query cancellation.
+Member 2 chọn đề nghị sau để không nhận diện sai nguyên nhân hoặc phát sinh thêm mã
+API chưa cần thiết:
+
+- Chỉ tạo `DatabaseTimeoutError` khi có ngữ cảnh tin cậy xác định statement timeout,
+  ví dụ nhánh deadline do adapter quản lý; **SQLSTATE `57014` riêng lẻ chưa đủ**.
+  Có cấu hình statement_timeout không chứng minh mọi cancellation đều do timeout.
+- `57014` không xác định được nguồn hủy: rollback transaction nếu thất bại đã rõ,
+  truyền lỗi kỹ thuật tới generic error handler hiện tại. Client nhận **HTTP 500,
+  `INTERNAL_ERROR`, message `Không thể xử lý yêu cầu`, details `{}`**, giữ request_id
+  và `X-Request-ID`; không `Retry-After`, không SQL/driver message trong response.
+- Telemetry nội bộ phân loại `query_cancelled_unknown`, có SQLSTATE và phase
+  (`execute`/`commit`) nhưng không ghi SQL/params/URL/password; không gán nó thành
+  metric statement_timeout hay lock_timeout. Đây là tên loại lỗi trong telemetry,
+  không phải nhãn request/user có cardinality cao hoặc mã API mới.
+- Giai đoạn đầu chỉ có SQLSTATE mà chưa xác định được nguyên nhân thì dùng nhánh
+  unknown này; không cần trì hoãn adapter để cố phân loại bằng chuỗi thông báo.
+- Lỗi mất kết nối **trong commit** vẫn áp dụng `DATABASE_UNAVAILABLE` với
+  `outcome=unknown`; không gộp nó với query cancellation chỉ vì cùng là lỗi DB.
+  SQLSTATE deadlock/serialization/lock và lỗi toàn vẹn giữ mapping phần 2/9.2.
+
+Test cần có khi triển khai: giả lập `57014` không có ngữ cảnh → generic 500;
+nguồn timeout xác định → 503 DATABASE_TIMEOUT; hai nhánh không có Retry-After;
+rollback khi kết quả thất bại xác định; commit-unknown không tự replay và không
+assert mutation chắc chắn chưa xảy ra. Member 1 cần ghi nhận nhánh generic này khi
+công bố handler; không cần thêm `DatabaseCancelledError` ở domain.
+
+### 10.3. Projection sân đầy đủ để Member 1/3 chốt
+
+Code hiện tại đã có DTO `VenueRecord` trong Discovery gồm năm trường
+`id`, `name`, `address`, `district_code`, `is_active`; detail Sessions trả đúng
+năm trường này. Member 2 đề nghị Catalog công bố kiểu tương ứng và reader tại
+`app/features/catalog/contracts.py` do Member 3 sở hữu:
+
+```python
+@dataclass(frozen=True)
+class VenueSummary:
+    id: int
+    name: str
+    address: str
+    district_code: str
+    is_active: bool
+
+
+class VenueReader(Protocol):
+    def get_by_id(self, venue_id: int) -> VenueSummary | None: ...
+    def get_by_ids(self, venue_ids: list[int]) -> dict[int, VenueSummary]: ...
+```
+
+Quy tắc dữ liệu và persistence Member 2 hỗ trợ:
+
+- SELECT đúng năm cột; trả DTO thuần và cùng transaction bên gọi; không commit,
+  mở UoW riêng hoặc trả ORM. Danh sách rỗng không query; loại ID trùng; thiếu ID
+  không có key; batch tối đa đề nghị 500 ID/câu để dùng được cả SQLite/PostgreSQL.
+  Đây là kích thước batch, **không phải giới hạn số kết quả nghiệp vụ**.
+- `get_by_id/get_by_ids` trả cả sân inactive để xem lịch sử. Không lọc inactive
+  ở reader chung. Danh sách sân công khai hiện chỉ lấy sân active, lọc quận,
+  order ID, count/page: Discovery phải giữ riêng hành vi này.
+- Không dùng VenueReader thay VenueStatusReader cho command: status reader vẫn
+  None → VENUE_NOT_FOUND, False → VENUE_INACTIVE, True → tiếp tục kiểm nghiệp vụ.
+- Discovery/detail ánh xạ VenueSummary sang DTO API hiện hành, không đổi tên
+  trường hoặc thêm wrapper. Catalog không import contracts nội bộ Discovery/Sessions.
+  Khi chuyển quyền sở hữu DTO, có thể giữ mapper tương thích trong read adapter,
+  không duy trì hai model lưu trữ venue độc lập.
+
+Phạm vi query/join để giữ bộ lọc và pagination:
+
+- Discovery read adapter được đọc/join **projection năm cột Catalog trên** với
+  Sessions theo hợp đồng đọc; chỉ đọc, không ghi venue hoặc import repository
+  nội bộ Catalog. SQL/ORM vẫn ở infrastructure; shared storage metadata có thể
+  dùng trong adapter trong cấu trúc repo hiện tại.
+- Không thay join lọc sân bằng lấy một trang session trước rồi lọc sân bằng
+  Python: làm sai total, limit/offset và số kết quả. Nếu dùng reader batch để enrich,
+  bộ lọc/count/order phải đã được áp đúng trước phân trang.
+- Detail đã có session nhưng mất venue FK: giữ lỗi kỹ thuật hiện hành, không
+  biến thành SESSION_NOT_FOUND, không trả venue giả hoặc âm thầm bỏ trường.
+  Sân inactive vẫn đọc được trong detail nếu endpoint hiện tại cho xem session đó.
+- Member 3 công bố DTO/reader và phạm vi read adapter; Member 1 xác nhận dùng
+  cho detail/wiring. Member 2 xác nhận khả năng SELECT/batch/FK/snapshot trên cả DB.
+
+Tiêu chí kiểm chứng: active/inactive/missing; batch rỗng/trùng; chỉ năm cột;
+filter quận và count/page giữ nguyên; detail không có N+1 theo từng sân khi đọc
+danh sách; dữ liệu venue và session cùng snapshot. Đây là đề nghị cụ thể thay cho
+mục projection sân còn mở, chưa phải Member 3 đã công bố port mới.
+
+### 10.4. Hồ sơ ứng viên thiếu: kết luận từ query cũ
+
+Đã đối chiếu `SqlAlchemyMatchingRepository.candidates()` trong
+`app/features/discovery/repository.py`: dùng **INNER JOIN UserModel**,
+lọc gender MALE/FEMALE, ACTIVE, sân/loại/lịch khớp, chưa bắt đầu, loại caller và
+lịch ACCEPTED chồng nhau, order `(created_at, id)`.
+
+Do đó Member 2 đề nghị contract tương thích khi Member 3 chuyển sang batch:
+
+- Candidate không có profile: bỏ khỏi tập ứng viên, tương ứng INNER JOIN cũ;
+  không KeyError/hồ sơ giả và không đóng/xóa matching request vì thiếu profile.
+- Candidate UNSPECIFIED: loại trước Strategy, tương ứng bộ lọc gender cũ.
+  Caller thiếu vẫn UNAUTHORIZED; caller UNSPECIFIED vẫn PROFILE_INCOMPLETE.
+- Giữ mọi bộ lọc request/overlap và thứ tự tương đối của ứng viên còn hợp lệ.
+  Không giới hạn top-K để vừa batch, không tự biến lỗi truy vấn thành suggestion=null.
+- Thiếu hồ sơ ở DB đã bật FK thường không xảy ra: kiểm tương thích bằng fake
+  reader hoặc dữ liệu legacy được kiểm soát; không tắt FK trong app để tạo test.
+- Các truy vấn batch trong command ở READ COMMITTED vẫn theo isolation đã chọn;
+  không tuyên bố chúng có snapshot chung như read REPEATABLE READ. Khóa caller
+  bảo vệ lịch của caller, không phải khóa toàn bộ hồ sơ ứng viên. Gợi ý không giữ chỗ.
+
+Điều này cung cấp kết quả đối chiếu mà Member 1 mục 3.5 và Member 3 mục 9.2 yêu cầu;
+Member 3 thêm test first-valid/thứ tự/profile thiếu khi hiện thực batch reader.
+
+### 10.5. Bàn giao để chuyển sang giai đoạn 2
+
+- [x] Member 2 ghi nhận xác nhận thực tế của Member 3, không yêu cầu xác nhận lại
+  UoW/locks/batch/writer/timeout đã có ở `6ba6c60`.
+- [x] Member 2 bổ sung nhánh phản hồi cancellation chưa rõ nguyên nhân.
+- [x] Member 2 đề nghị chữ ký/semantics projection sân đầy đủ và phạm vi join đọc.
+- [x] Member 2 đối chiếu query cũ và nêu quy tắc candidate thiếu/UNSPECIFIED.
+- [ ] Member 1 công bố port khóa/UoW, profile/batch reader, error handler và wiring;
+  ghi nhận nhánh cancellation unknown ở mục 10.2.
+- [ ] Member 1/3 xác nhận projection sân cụ thể ở mục 10.3 và đưa vào contract Catalog.
+- [ ] Member 3 hiện thực/test batch và Matching theo quy tắc tương thích mục 10.4.
+- [ ] Member 2 hiện thực adapter/migration/import/fixture theo giai đoạn 2–3;
+  phối hợp proxy/backend và đo connection budget trước demo.
+
+Phần 10 chỉ thay đổi tài liệu Member 2; không sửa mã runtime, docs/checklist của
+Member 1/3 hay coi port chưa tạo là đã hoàn thành. Chưa chạy lại test vì không đổi
+code; bằng chứng gần nhất vẫn là **73 passed** ở mục 9.6. Những mục runtime chưa
+đánh dấu là việc triển khai/nghiệm thu, không phải lý do phải thảo luận lại các
+lựa chọn Member 2/3 đã cùng chấp nhận.
