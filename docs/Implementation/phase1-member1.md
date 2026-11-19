@@ -1,594 +1,197 @@
-# Phase 1 · Thành viên 1 · Yêu cầu bàn giao cho thành viên 2 và 3
+# Phase 1 · Thành viên 1 · Hiện trạng, hợp đồng và bàn giao
 
-Ngày lập và cập nhật đối chiếu: **19/11/2026**.
+Ngày cập nhật: **19/11/2026**.
 
-Tài liệu này chuyển các đề xuất trong
-[báo cáo rà soát của thành viên 1](member-1-phase-1.vi.md)
-thành đầu việc và tiêu chí bàn giao cho thành viên 2, thành viên 3.
-Đã đối chiếu [báo cáo thành viên 2](phase1-member2.md) và
-[đề xuất thành viên 3](phase1-member3.md), cùng
-[kế hoạch triển khai](../Architecture_Phase2/kehoachtrienkhai-VN.md).
-**Thành viên 1 đã xác nhận cả năm nhóm hợp đồng ngày 19/11/2026**, qua xác nhận
-trực tiếp của người dùng phụ trách thành viên 1 trong cuộc trao đổi này. Nội dung
-chấp nhận được ghi ở mục 1.2, dựa trên các lựa chọn thành viên 2/3 đã xác nhận.
-Trạng thái công bố port, xây adapter, wiring và kiểm thử được theo dõi riêng.
+Tài liệu chỉ theo dõi phạm vi **Phase 1: khảo sát hiện trạng, kiểm thử làm mốc,
+thống nhất hợp đồng và chuẩn bị bàn giao**. Các đầu việc xây adapter, refactor,
+migration/import, wiring, cấu hình ingress thực tế và kiểm chứng PostgreSQL được
+quản lý trong [kế hoạch triển khai](../Architecture_Phase2/kehoachtrienkhai-VN.md).
 
-Lần đối chiếu mới nhất dựa trên mục 10 của báo cáo thành viên 2 (commit `7ceb404`)
-và các xác nhận mục 10 của thành viên 3 (commit `89978d6`). Các lựa chọn đã được
-hai bên chấp nhận được cập nhật thành phương án triển khai; phần công bố hợp đồng
-của thành viên 1 và bằng chứng runtime tiếp tục được theo dõi riêng.
+Nguồn đối chiếu:
 
-## 1. Cần chốt gì ở cuối Phase 1?
+- [Báo cáo hiện trạng thành viên 1](member-1-phase-1.vi.md), commit làm mốc
+  `696fbb1683eff430012f4db9db0701ec9a98fb01`.
+- [Báo cáo thành viên 2](phase1-member2.md), đặc biệt mục 9–10; cập nhật
+  `7ceb404`.
+- [Báo cáo thành viên 3](phase1-member3.md), đặc biệt mục 9–10; cập nhật
+  `89978d6`.
 
-| Người phụ trách | Nội dung cần thống nhất với thành viên 1 | Kết quả bàn giao |
+`[x]` nghĩa là đã có tài liệu, xác nhận hoặc bằng chứng được dẫn cụ thể.
+`[ ]` nghĩa là đầu ra Phase 1 còn thiếu hoặc chưa đủ bằng chứng.
+Kết quả kiểm thử bên dưới là kết quả đã ghi nhận, không phải lần chạy lại khi
+rút gọn tài liệu này.
+
+## 1. Phạm vi và trạng thái Phase 1
+
+| Thành viên | Đã có | Còn cần để đóng Phase 1 |
 | --- | --- | --- |
-| Thành viên 2 | UoW, API khóa session/user, phạm vi transaction, snapshot đọc, lỗi timeout và fixture PostgreSQL | Chữ ký phương thức, bảo đảm của adapter, cách chạy kiểm thử trên các connection độc lập. |
-| Thành viên 3 | Catalog, bộ đọc hồ sơ theo lô, matching writer và cấu hình ingress phối hợp với thành viên 2 | Giao diện trạng thái sân, quy tắc ghép hồ sơ giữ thứ tự ứng viên, đường dẫn writer và các ca kiểm thử tương thích. |
+| **1 — Identity và Sessions** | Truy vết transaction/invariant, kiểm thử và hành vi làm mốc, kiểm kê hồ sơ/quyền truy cập, xác nhận năm nhóm hợp đồng | Đồng bộ trạng thái xác nhận trong báo cáo cũ/checklist tổng; ghi commit bàn giao chung. |
+| **2 — Persistence và vận hành** | Khảo sát khác biệt SQLite/PostgreSQL, nguồn SQLite tổng hợp và manifest, PostgreSQL cục bộ, hợp đồng khóa/snapshot/lỗi, thiết kế fixture, phác thảo topology và phục hồi | Ghi đích backup ngoài máy ứng dụng cụ thể; cùng thành viên 3 xác nhận danh sách trường telemetry. |
+| **3 — Catalog, Matching và Discovery** | Truy vết luồng Matching và quy tắc ứng viên, hợp đồng Catalog/profile/writer, phạm vi join đọc và lựa chọn ingress | Hoàn thiện bộ ca Matching làm mốc với đầu vào/kết quả mong đợi; cùng thành viên 2 chốt telemetry. |
 
-Phase 1 chốt hợp đồng và hành vi làm mốc. Phần xây adapter/refactor trên SQLite
-và thử migration thuộc Phase 2; tích hợp khóa PostgreSQL thuộc Phase 3 theo kế hoạch.
+### 1.1. Điều kiện đóng Phase 1
 
-### 1.1. Thông tin mới từ hai báo cáo
-
-| Nội dung | Trạng thái được ghi nhận | Việc tiếp theo |
-| --- | --- | --- |
-| UoW và `TransactionLocks` | Thành viên 1 đã chấp nhận cùng thành viên 2/3 việc dùng chung transaction và thứ tự khóa; adapter dự kiến tại `app/db/transaction_locks.py` | Thành viên 1 công bố port; thành viên 2 xây adapter; thành viên 3 tích hợp `lock_user()` vào Matching. |
-| Snapshot PostgreSQL | Thành viên 1 đã chấp nhận lựa chọn chung: `read()` REPEATABLE READ, READ ONLY; `write()` READ COMMITTED | Thành viên 1 công bố hợp đồng trong mã nguồn; thành viên 2 triển khai và kiểm chứng bằng fixture PostgreSQL. |
-| PostgreSQL và dữ liệu nguồn | Thành viên 2 báo cáo PostgreSQL cục bộ healthy, có nguồn SQLite tổng hợp và manifest | Còn adapter, migration/import và kiểm thử cạnh tranh; chưa coi là tích hợp ứng dụng thành công. |
-| Hồ sơ ứng viên | Thành viên 1 đã chấp nhận DTO/reader Identity, đọc batch và bỏ candidate thiếu profile/UNSPECIFIED, giữ lỗi caller và thứ tự request | Thành viên 1 công bố port/adapter; thành viên 3 bổ sung test tương thích, không cắt top-K hoặc đổi lỗi truy vấn thành suggestion=null. |
-| Catalog và Matching writer | Thành viên 1 đã chấp nhận VenueSummary/VenueReader, status reader, phạm vi join và đường dẫn/wiring writer theo lựa chọn thành viên 2/3 | Thành viên 1 triển khai wiring; thành viên 3 triển khai projection sân và chuyển writer. Batch sân tối đa 500 ID/câu, giữ count/page ở DB. |
-| Error contract và ingress | Thành viên 1 đã chấp nhận error contract, generic 500 cho 57014 chưa rõ nguồn hủy và commit-unknown; thành viên 2/3 giữ mốc ingress demo 30 giây, không retry POST | Thành viên 1 công bố exception/handler; thành viên 2 phân loại driver; thành viên 3 triển khai telemetry query_cancelled_unknown và cấu hình proxy thực. |
-| Kiểm thử của thành viên 2 | Mục 9.6 ghi đã sửa URL Windows/UTF-8; suite nền tảng + kiến trúc chọn lọc đạt **73 passed**, Ruff đạt | Theo dõi kết quả mới này thay lỗi cũ 72 đạt/1 thất bại; vẫn cần suite tích hợp và bằng chứng PostgreSQL riêng. |
-
-Đây là tổng hợp bằng chứng được ghi trong hai tài liệu. Checklist bên dưới đã
-được đối chiếu với mã nguồn và các kiểm thử hiện có ngày 19/11/2026:
-`[x]` chỉ phần đã có mã triển khai hoặc đầu ra tài liệu được nêu cụ thể; `[ ]`
-chỉ phần chưa làm đủ hoặc chưa có bằng chứng. Những hành vi đã có trên SQLite
-được ghi rõ phạm vi, không thay cho hoàn tất refactor hoặc kiểm chứng PostgreSQL.
-Các kết quả chạy trước đây được dẫn theo báo cáo, không phải lượt chạy lại trong
-lần cập nhật checklist này.
+- [x] Đã ghi commit khảo sát ban đầu, hành vi API và các invariant cần giữ.
+- [x] Đã có bằng chứng kiểm thử Auth/Sessions và nguồn dữ liệu migration thử.
+- [x] Đã ghi nhận lựa chọn của thành viên 2/3 và xác nhận của thành viên 1.
+- [ ] Đủ bộ ca Matching làm mốc theo mục 4.
+- [ ] Có đích backup ngoài máy ứng dụng cụ thể và danh sách telemetry đã thống nhất.
+- [ ] Đồng bộ checklist/tài liệu và ghi một commit bàn giao chung kèm các nguồn bằng chứng.
 
 ### 1.2. Xác nhận chính thức từ thành viên 1
 
 Người xác nhận: **người dùng phụ trách thành viên 1**, ngày **19/11/2026**.
-Nguồn: xác nhận trực tiếp “Ok lets confirm them” sau khi rà soát năm nhóm quyết
-định bên dưới. Quyết định được ghi trong tài liệu này; chưa có commit bàn giao
-triển khai mới được ghi nhận.
+Nguồn: xác nhận trực tiếp “Ok lets confirm them” sau khi rà soát năm nhóm hợp đồng.
+Các lựa chọn dưới đây dựa trên phản hồi đã ghi của thành viên 2 và 3.
 
-- [x] **UoW và khóa hàng:** chấp nhận mỗi command sở hữu transaction, mọi adapter
-  dùng chung UoW, `TransactionLocks` trả bool, thứ tự session trước user, write
-  PostgreSQL READ COMMITTED và read REPEATABLE READ, READ ONLY (mục 2.1–2.3).
-- [x] **Hồ sơ Identity:** chấp nhận DTO bốn trường, reader đơn/batch do Identity
-  sở hữu, ánh xạ rank hiện có, quy tắc ID thiếu/UNSPECIFIED và giữ thứ tự ứng viên
-  như mục 3.4–3.5. Thành viên 1 chịu trách nhiệm công bố hợp đồng/adapter Identity.
-- [x] **Catalog:** chấp nhận `VenueStatusReader`, `VenueSummary`/`VenueReader`,
-  năm trường công khai, sân inactive cho lịch sử, batch tối đa 500 ID/câu và quy
-  tắc join/filter/pagination ở mục 3.1 để Sessions/Discovery tiêu thụ.
-- [x] **Matching writer:** chấp nhận đường dẫn
-  `app/features/matching/infrastructure/matching_request_writer.py`, inject vào
-  tạo/duyệt trong cùng transaction, giữ riêng CONFIRMED/REPLACED, chuyển wiring/test
-  trước khi bỏ adapter cũ; thành viên 1 phụ trách composition root (mục 3.2).
-- [x] **Error contract:** chấp nhận toàn bộ status/code/message/details/header
-  tại mục 2.3, gồm generic 500 cho cancellation chưa rõ nguồn hủy, unavailable với
-  `outcome=unknown` khi mất kết nối trong commit, không tự replay; trong ba nhóm
-  lỗi DB được nêu, chỉ BUSY có `Retry-After` mặc định.
-
-Năm quyết định thiết kế đã được xác nhận. Các mục triển khai port/adapter/handler,
-refactor, wiring và kiểm chứng PostgreSQL bên dưới tiếp tục để trống đến khi có
-mã nguồn và bằng chứng hoàn thành tương ứng.
-
-## 2. Thành viên 2 cần triển khai
-
-### 2.1. Adapter Unit of Work cho SQLite và PostgreSQL
-
-Giữ giao diện ứng dụng `write()`, `read()`, `commit()` trong
-[app/domain/ports.py](../../app/domain/ports.py), đồng thời triển khai các bảo đảm:
-
-Thành viên 2 đã chấp nhận hợp đồng này trong mục 2 của báo cáo. Cách lắp adapter
-được đề nghị là nhận session provider `lambda: uow.session`, dùng chung cho
-repository, profile/Catalog reader, locks và Matching writer.
-
-- [x] Participation repository và matching writer hiện dùng chung session provider
-  của UoW; xem [participation dependencies](../../app/features/sessions/participation_dependencies.py).
-- [ ] Lắp đủ profile reader, Catalog reader và bộ khóa mới vào cùng transaction;
-  các hợp đồng/adapter này chưa được triển khai.
-- [x] Participation commands và tạo Matching hiện tự mở/commit UoW một lần;
-  UoW không auto-commit khi thoát, repository/writer không commit riêng. Xem
-  [ParticipationService](../../app/features/sessions/participation_service.py) và
-  [DiscoveryService](../../app/features/discovery/service.py).
-- [ ] Chuyển Auth và tạo/hủy kèo sang use case sở hữu transaction; hiện vẫn
-  mở/commit ở dependency.
-- [x] UoW SQLite rollback khi có ngoại lệ hoặc thoát mà chưa commit; lỗi commit
-  truyền ra trước phản hồi thành công. Có [test UoW](../../tests/foundation/test_unit_of_work.py)
-  và [test lỗi commit qua API](../../tests/integration/test_member1_baseline.py).
-- [x] UoW chặn lồng phạm vi transaction, truy cập session ngoài phạm vi/sau commit
-  và commit lần hai; có guard trong [adapter](../../app/db/unit_of_work.py).
-- [x] Ghi SQLite hiện dùng `BEGIN IMMEDIATE` trong adapter UoW.
-- [ ] Triển khai PostgreSQL `write()` READ COMMITTED; hiện adapter vẫn phát
-  `BEGIN IMMEDIATE` và engine chỉ cấu hình cho SQLite.
-
-**Quan hệ giữa worker và UoW:** hiện chỉ có một lớp triển khai
-`SqlAlchemyUnitOfWork`, nhưng mỗi lệnh tạo một instance UoW riêng. Bộ khóa được
-gắn với UoW của lệnh, không phải một instance dùng chung cho toàn bộ worker.
-PostgreSQL điều phối khóa giữa các transaction/worker tại DB.
-
-```text
-Lệnh A → UoW A → connection + transaction A → repositories / locks / writer
-Lệnh B → UoW B → connection + transaction B → repositories / locks / writer
-```
-
-Thành viên 1 phụ trách chuyển quyền mở/commit transaction từ dependency sang use
-case ở Auth và tạo/hủy kèo. Thành viên 2 cung cấp adapter đáp ứng hợp đồng đó.
-
-### 2.2. Adapter khóa session và user
-
-Thành viên 2 đã chấp nhận port dưới đây; thành viên 3 đã đề xuất sử dụng
-`lock_user()` với cùng ý nghĩa trả về. Thành viên 1 còn phải công bố port trong
-`app/domain/ports.py` trước khi các bên tích hợp:
-
-```python
-class TransactionLocks(Protocol):
-    def lock_session(self, session_id: int) -> bool: ...
-    def lock_user(self, user_id: int) -> bool: ...
-```
-
-Thành viên 2 chọn vị trí adapter `app/db/transaction_locks.py`, nhận
-`Callable[[], Session]`; thành viên 3 đã ghi nhận lựa chọn này. Đây là đầu ra cần
-triển khai, chưa phải file đã tồn tại. Các phương thức thực hiện khóa hàng bi quan
-trong transaction của UoW, không khóa một đối tượng UoW trong bộ nhớ.
-
-- [ ] `True` nghĩa là hàng tồn tại và đã được khóa đến khi transaction kết thúc;
-  `False` nghĩa là không có hàng. Use case chọn mã lỗi nghiệp vụ/xác thực phù hợp.
-- [ ] PostgreSQL khóa hàng trên chính connection/transaction của UoW đang hoạt
-  động bằng `SELECT id ... FOR UPDATE`. Chỉ gọi trong UoW ghi; không mở UoW mới,
-  commit hoặc đọc Clock trong phương thức khóa.
-- [ ] SQLite dùng khóa ghi đã lấy ở đầu UoW và kiểm tra hàng tồn tại; vẫn bảo toàn
-  khả năng chạy đường SQLite để làm mốc so sánh.
-- [ ] Cung cấp cách đọc lại dữ liệu sau khóa mà không bị bộ nhớ đệm ORM trả trạng
-  thái đã đọc trước khi khóa: truy vấn mới với `populate_existing=True` hoặc
-  refresh tường minh nếu dùng ORM entity. Chỉ SELECT ID để khóa không làm mới
-  entity đã cache.
-- [ ] Giải phóng khóa khi commit/rollback; có giới hạn thời gian chờ khóa.
-
-Thứ tự gọi do use case của thành viên 1 điều khiển; adapter cung cấp thao tác khóa:
-
-| Lệnh | Thứ tự khóa |
-| --- | --- |
-| Xin tham gia | Session → user xin tham gia. |
-| Duyệt / từ chối | Tra cứu ban đầu để lấy ID → session → user của lượt → đọc lại trạng thái. |
-| Rút lượt | Session → user của lượt → đọc lại trạng thái. |
-| Hủy kèo | Session → lấy các user có lượt hoạt động → loại trùng, khóa user theo ID tăng dần. |
-| Tạo kèo | User host → kiểm tra trùng lịch → thêm session mới. |
-| Tạo yêu cầu matching, do thành viên 3 tích hợp | User gọi lệnh → kiểm tra lịch → thay yêu cầu matching. |
-
-Quy tắc tổng quát: session đã tồn tại theo ID tăng dần → user theo ID tăng dần →
-participation → matching. Không lấy khóa session đã tồn tại sau khi giữ khóa user.
-Use case đọc đồng hồ và kiểm tra lại trạng thái sau khi lấy đủ khóa cần thiết.
-
-### 2.3. Snapshot đọc và xử lý lỗi hạ tầng
-
-Triển khai theo lựa chọn của thành viên 2 đã được thành viên 3 chấp nhận ở mục 9.1
-và 9.4 trong báo cáo của mình:
-
-- [ ] `read()` PostgreSQL dùng **REPEATABLE READ, READ ONLY**, thiết lập trước
-  SELECT đầu tiên; SQLite giữ BEGIN tường minh. Count/page và các phần chi tiết
-  trong cùng phạm vi phải nhìn cùng snapshot.
-- [x] Đã ghi rõ trong hợp đồng tài liệu: snapshot PostgreSQL bắt đầu từ truy vấn đầu tiên, không bảo đảm dữ
-  liệu mới nhất tại thời điểm trả response. Không dùng `read()` cho command hoặc
-  `FOR UPDATE`; `write()` vẫn READ COMMITTED để đọc thấy trạng thái mới sau chờ khóa.
-- [ ] Cấu hình khởi điểm: `pool_size=5`, `max_overflow=0`, `pool_timeout=5s`,
-  `connect_timeout=5s`, `lock_timeout=5s`, `statement_timeout=15s`. Với N worker,
-  ngân sách API là tối đa N×5 connection; tính thêm migration/monitor/test.
-- [ ] Nhận SQLSTATE từ psycopg 3, không so chuỗi lỗi và không dùng cách nhận diện
-  mã lỗi SQLite cho PostgreSQL. Bắt riêng `sqlalchemy.exc.TimeoutError` khi chờ pool.
-- [ ] Giai đoạn đầu không tự retry command; rollback toàn lệnh khi lỗi cho phép
-  xác định thất bại. Khi mất kết nối lúc commit, không tự replay hoặc khẳng định
-  server chắc chắn đã rollback nếu kết quả commit chưa rõ.
-
-| Loại lỗi | Phương án do thành viên 2 đề xuất | Trạng thái / việc cần làm |
-| --- | --- | --- |
-| SQLite BUSY; PostgreSQL `55P03`; pool timeout | `503 DATABASE_BUSY`, `Retry-After: 1` | Giữ mã lỗi hiện có; cần triển khai nhận diện PostgreSQL/pool và kiểm thử rollback. |
-| Deadlock `40P01`; serialization failure `40001` | `503 DATABASE_BUSY`, `Retry-After: 1`; không tự retry | Cần kiểm thử rollback toàn command và phản hồi lỗi. |
-| `57014` do statement timeout | `503 DATABASE_TIMEOUT`, không thêm `Retry-After` mặc định | Thành viên 3 chấp nhận đề nghị; thành viên 1 còn công bố contract. Chỉ kết luận statement timeout khi có đủ ngữ cảnh, không coi mọi `57014` là lock timeout. |
-| `57014` chưa xác định nguồn hủy | `500 INTERNAL_ERROR`, không thêm `Retry-After` | Thành viên 2 mục 10.2 và thành viên 3 mục 10.3 đã chọn generic handler hiện có; cần triển khai phân loại trong adapter và test, không thêm exception domain mới. |
-| Lỗi kết nối class 08 / lỗi driver do mất kết nối | `503 DATABASE_UNAVAILABLE`, không thêm `Retry-After` | Thành viên 3 chấp nhận đề nghị; thành viên 1 còn công bố contract, gồm trường hợp mất kết nối trong commit có kết quả chưa rõ. |
-| Unique/FK/CHECK | Chỉ unique constraint đã biết được map sang lỗi nghiệp vụ | Không đổi mọi lỗi toàn vẹn thành DATABASE_BUSY; giữ lỗi kỹ thuật ngoài dự kiến được che thông tin nhạy cảm. |
-
-**Đầu việc error contract của thành viên 1, theo mục 9.2 của thành viên 2 và 9.4
-của thành viên 3:** công bố `DatabaseTimeoutError`, `DatabaseUnavailableError`
-thuần Python trong `app/domain/errors.py`, đăng ký handler trong
-`app/api/error_handlers.py`. Exception unavailable hỗ trợ `outcome_unknown=True`
-khi mất kết nối trong commit; phần nhận diện SQLSTATE/SQLAlchemy ở infrastructure.
-
-| Exception / tình huống | Mã HTTP và code | Message | Details / header |
-| --- | --- | --- | --- |
-| `DatabaseBusyError` | `503 DATABASE_BUSY` | `Hệ thống đang bận, vui lòng thử lại` | `details={}`, `Retry-After: 1`; không có nghĩa tự retry command. |
-| `DatabaseTimeoutError` | `503 DATABASE_TIMEOUT` | `Thao tác dữ liệu vượt quá thời gian cho phép` | `details={}`, không thêm `Retry-After` mặc định. |
-| `DatabaseUnavailableError`, mất kết nối trước commit | `503 DATABASE_UNAVAILABLE` | `Không thể kết nối cơ sở dữ liệu` | `details={}`, không thêm `Retry-After`. |
-| `DatabaseUnavailableError(outcome_unknown=True)`, mất kết nối trong commit | `503 DATABASE_UNAVAILABLE` | `Chưa xác định được kết quả thao tác dữ liệu` | `details={"outcome": "unknown"}`, không thêm `Retry-After`; không tự replay hoặc khẳng định mutation chưa xảy ra. |
-| Lỗi kỹ thuật `57014` chưa rõ nguồn hủy, qua generic handler hiện có | `500 INTERNAL_ERROR` | `Không thể xử lý yêu cầu` | `details={}`, giữ request_id và `X-Request-ID`, không `Retry-After` hoặc nội dung SQL/driver. |
-
-Đây là response contract do thành viên 2 đề nghị và thành viên 3 chấp nhận, chưa
-phải các exception/handler mới đã được thành viên 1 công bố trong runtime.
-
-- [ ] Kiểm thử đúng status/code/message/header, envelope hiện có
-  `error={code, message, details, request_id}` và `X-Request-ID`; không lộ SQL,
-  URL kết nối hoặc mật khẩu. Không thêm `outcome` vào response thành công/lỗi khác.
-- [ ] Kiểm lỗi flush/timeout bằng connection khác để xác minh rollback; kiểm
-  commit-unknown riêng, không dùng assertion dữ liệu chắc chắn chưa thay đổi.
-- [x] Đã đối chiếu [generic handler hiện có](../../app/api/error_handlers.py):
-  trả `500 INTERNAL_ERROR`, message `Không thể xử lý yêu cầu`, details rỗng và
-  request ID. Đây là hành vi đã có, chưa phải adapter đã phân loại được `57014`.
-- [x] Đã ghi nhận quyết định của thành viên 2/3: chỉ có SQLSTATE `57014`, kể cả
-  đã cấu hình statement_timeout, chưa đủ chứng minh nguồn timeout; nhánh chưa rõ
-  dùng generic 500 ở trên, không cần `DatabaseCancelledError`.
-- [ ] Thành viên 2 phân loại `57014` trong adapter: nguồn timeout có ngữ cảnh
-  tin cậy → `DatabaseTimeoutError`; chưa rõ → truyền lỗi kỹ thuật cho generic
-  handler. Không so text driver hoặc chờ phân loại hoàn hảo mới bắt đầu adapter.
-- [ ] Thành viên 3 ghi telemetry loại `query_cancelled_unknown`, SQLSTATE và phase
-  `execute`/`commit`; không ghi SQL/params/URL/password, không gán thành metric
-  statement_timeout/lock_timeout hoặc thêm user/session ID vào nhãn metrics.
-- [ ] Kiểm thử riêng hai nhánh unknown cancellation → generic 500 và timeout xác
-  định → 503 DATABASE_TIMEOUT, đều không Retry-After. Rollback khi thất bại đã rõ;
-  lỗi mất kết nối trong commit vẫn là unavailable/outcome unknown, không gộp vào
-  query cancellation hoặc khẳng định chắc chắn mutation chưa xảy ra.
-
-Các giá trị timeout DB là cấu hình ban đầu để kiểm thử, chưa phải kết quả tối ưu
-hoặc deadline HTTP tổng. Thành viên 3 đã chấp nhận response timeout upstream
-**30 giây** làm mốc demo để đo Matching đồng bộ; chưa có bằng chứng cấu hình thực
-hoặc bảo đảm mọi request kết thúc trong 30 giây. Không bật retry upstream cho POST.
-Proxy trả 504/ngắt kết nối không chứng minh backend đã rollback; backend có thể
-vẫn commit. Thành viên 2/3 cần đo cấu hình thực trước khi chốt thông số vận hành.
-
-### 2.4. Môi trường đã chuẩn bị và bằng chứng còn cần bàn giao
-
-Theo mục 3, 4 và 8 của báo cáo thành viên 2:
-
-- [x] Đã có [script tạo nguồn SQLite](../../scripts/prepare_member2_phase1.py),
-  manifest và [Compose PostgreSQL riêng](../../compose.phase1-member2.yaml).
-  Dữ liệu là tổng hợp; không phải bản sao dữ liệu người dùng thật.
-- [x] Script/kiểm thử fixture đã mô tả và kiểm bộ nguồn venues=1, users=3, sessions=1, participations=4,
-  matching_requests=3; max ID tương ứng 10/40/50/90/120. Dùng để kiểm lịch sử,
-  partial uniqueness, sequence và timestamp UTC có microsecond; xem
-  [test fixture](../../tests/foundation/test_member2_phase1_fixture.py).
-- [x] Đã có bằng chứng do thành viên 2 báo cáo: PostgreSQL 17.11 cục bộ healthy, timezone UTC, cổng loopback 55432,
-  lock timeout 5s, statement timeout 15s trên môi trường Windows của thành viên 2.
-  Chưa có schema nghiệp vụ/migration trong DB này. Dùng cấu hình cục bộ theo báo
-  cáo; không trỏ API hiện tại vào đó trước khi adapter hỗ trợ PostgreSQL.
-
-Các phần còn phải triển khai/kiểm chứng:
-
-- [ ] Cung cấp cấu hình kết nối PostgreSQL, lệnh khởi động/migration và fixture
-  trên DB test riêng đã migrate. A/B phải là connection vật lý khác nhau, kiểm
-  bằng `pg_backend_pid()`; mỗi tác vụ có UoW riêng, không bọc cả test cạnh tranh
-  trong một outer transaction.
-- [ ] Chứng minh transaction B phải chờ khi A giữ cùng hàng session/user; sau khi
-  A commit/rollback, B lấy khóa và đọc được trạng thái mới. Điều phối bằng
-  Event/Barrier thay vì chỉ sleep; kiểm trạng thái cuối bằng connection C.
-- [ ] Kiểm tra hàng không tồn tại, timeout, giải phóng khóa, rollback khi ghi lỗi
-  và khi commit lỗi; xác minh dữ liệu bằng connection khác sau khi lệnh kết thúc.
-- [ ] Cùng thành viên 1 kiểm tra chỗ cuối, cùng user ở hai kèo chồng lịch, duyệt
-  đối đầu hủy/rút lượt và chờ khóa qua giờ bắt đầu.
-- [ ] Cùng thành viên 3 xác minh matching writer dùng chính transaction của lệnh
-  tạo kèo/duyệt, không có commit độc lập.
-- [ ] Bổ sung bằng chứng REPEATABLE READ giữ snapshot giữa count/page, đọc mới
-  sau khóa không stale, và deadline test đủ lớn so với lock timeout.
-- [x] Đã ghi nhận thành viên 2 xử lý lỗi URL Windows bằng so đường dẫn DB đích
-  (`engine.url.database`) và giữ kiểm timeout; test kiến trúc đọc UTF-8 tường minh.
-  Mục 9.6 báo cáo **73 passed** cho foundation/architecture, không cần đặt
-  `PYTHONUTF8`, cùng Ruff đạt. Đây là kết quả do thành viên 2 báo cáo, không phải
-  lần chạy lại ở tài liệu này hoặc toàn bộ suite/API/PostgreSQL.
-
-Adapter dùng driver psycopg 3, URL `postgresql+psycopg://...`; migration dùng
-Alembic. Tách PRAGMA/`check_same_thread` theo dialect, chuyển timestamp PostgreSQL
-sang TIMESTAMPTZ, xử lý Boolean phù hợp và thêm `postgresql_where` cho hai partial
-unique index. Import theo thứ tự venues + users → sessions → participations +
-matching_requests, đối chiếu manifest và đồng bộ sequence; thử insert không ID,
-kể cả bảng rỗng (`setval(..., 1, false)`). Không dùng seed thay migration.
-
-Migration phải giữ FK, lịch sử, ID/sequence, UTC timestamp và các unique predicate
-cho participation/matching đang hoạt động để các invariant trong báo cáo vẫn đúng.
-Chi tiết migration, Compose, CI và phục hồi nằm trong phần việc của thành viên 2
-ở kế hoạch triển khai; tài liệu này tập trung vào các phụ thuộc của thành viên 1.
-
-## 3. Thành viên 3 cần triển khai
-
-### 3.1. Catalog và giao diện trạng thái sân
-
-Thành viên 3 đã xác nhận phía mình giao diện dưới đây tại
-`app/features/catalog/contracts.py` (mục 9.3); thành viên 2 không yêu cầu đổi
-hợp đồng. Thành viên 1 đã xác nhận cách dùng trong Sessions tại mục 1.2;
-đường dẫn chưa phải file đã triển khai:
-
-```python
-class VenueStatusReader(Protocol):
-    def is_active(self, venue_id: int) -> bool | None: ...
-```
-
-- [ ] `None`: không tìm thấy sân, để use case trả `404 VENUE_NOT_FOUND`.
-- [ ] `False`: sân ngừng hoạt động, để use case trả `409 VENUE_INACTIVE`.
-- [ ] `True`: được tiếp tục kiểm tra nghiệp vụ, không có nghĩa toàn yêu cầu đã hợp lệ.
-- [ ] Adapter dùng transaction của bên gọi, không tự mở transaction hoặc commit.
-- [ ] Đưa quyền sở hữu dữ liệu sân/trạng thái hoạt động về Catalog; cung cấp phép
-  chiếu đọc gồm ID, tên, địa chỉ, quận và trạng thái cho Discovery/chi tiết kèo.
-  Chữ ký đã được thành viên 2/3 chọn bên dưới; status reader vẫn phục vụ command,
-  không thay toàn bộ DTO sân.
-- [ ] Giữ kiểm tra trạng thái tối thiểu và DTO hiển thị sân thành các hợp đồng rõ
-  ràng; giữ tương thích bộ lọc, phân trang và phản hồi hiện có.
-
-Thành viên 1 thay chỗ gọi `SessionRepository.venue_is_active()` bằng port được
-inject. Thành viên 3 cung cấp hợp đồng/adapter Catalog và tích hợp phía Matching.
-
-#### Projection sân đầy đủ đã được thành viên 2/3 chấp nhận
-
-Theo thành viên 2 mục 10.3 và thành viên 3 mục 10.1, đích công bố tại
-`app/features/catalog/contracts.py`, do thành viên 3 triển khai:
-
-```python
-@dataclass(frozen=True)
-class VenueSummary:
-    id: int
-    name: str
-    address: str
-    district_code: str
-    is_active: bool
-
-
-class VenueReader(Protocol):
-    def get_by_id(self, venue_id: int) -> VenueSummary | None: ...
-    def get_by_ids(self, venue_ids: list[int]) -> dict[int, VenueSummary]: ...
-```
-
-- [x] Thành viên 1 đã xác nhận chữ ký và quy tắc đọc do thành viên 2/3 chọn để
-  dùng cho detail/wiring (mục 1.2); file port/adapter Catalog chưa được tạo.
-- [ ] Reader chỉ SELECT năm cột trên, trả DTO trong transaction bên gọi, không
-  commit/mở UoW riêng hoặc trả ORM. Trả cả sân inactive để xem lịch sử; command
-  tiếp tục dùng `VenueStatusReader`, không thay bằng reader hiển thị.
-- [ ] `get_by_ids()` rỗng trả `{}` không query; loại ID trùng, ID thiếu không có
-  key; tối đa **500 ID mỗi câu SQL**. Đây là kích thước batch, không giới hạn tổng
-  số kết quả nghiệp vụ; xử lý hết các batch cần thiết.
-- [ ] Discovery/detail ánh xạ DTO API hiện có, không đổi trường/wrapper. Catalog
-  không import contracts nội bộ Discovery/Sessions hoặc tạo model lưu trữ sân thứ hai.
-- [ ] Read adapter Discovery được đọc/join projection năm cột Catalog với Sessions;
-  SQL/ORM và shared storage metadata chỉ ở infrastructure, không import repository
-  nội bộ Catalog hoặc ghi sân từ Discovery.
-- [ ] Áp filter/count/order tại DB trước limit/offset; không lấy một trang session
-  rồi lọc sân bằng Python. Chỉ batch enrich khi đã áp đúng điều kiện trước phân trang.
-  Danh sách sân công khai giữ active-only, lọc quận, order ID và count/page hiện có.
-- [ ] Detail giữ khả năng xem sân inactive nếu endpoint cho xem kèo đó. Session
-  tồn tại nhưng thiếu venue tham chiếu vẫn là lỗi kỹ thuật, không đổi thành
-  SESSION_NOT_FOUND, dựng sân giả hoặc âm thầm bỏ trường.
-- [ ] Bổ sung test active/inactive/missing, rỗng/trùng, năm cột, batch 500/nhiều
-  batch, filter/pagination/snapshot và tránh N+1 khi đọc danh sách.
-
-### 3.2. Matching writer dùng chung transaction
-
-Giữ chữ ký port đã có trong `app/domain/ports.py`:
-
-```python
-class MatchingRequestWriter(Protocol):
-    def close_overlapping(
-        self,
-        user_id: int,
-        starts_at: datetime,
-        ends_at: datetime,
-        now: datetime,
-    ) -> None: ...
-```
-
-- [ ] Cung cấp adapter do module Matching sở hữu, được lắp bằng UoW của bên gọi.
-  Thành viên 2 đề nghị và thành viên 3 chấp nhận đường dẫn
+- [x] **UoW và khóa hàng:** mỗi command sở hữu transaction; repository, reader,
+  locks và writer dùng chung UoW. Giữ `write()`, `read()`, `commit()`;
+  `TransactionLocks.lock_session()` / `lock_user()` trả bool tồn tại/đã khóa.
+  Khóa session trước user, theo ID tăng dần khi có nhiều hàng; đọc lại Clock và
+  trạng thái sau khóa. PostgreSQL write dùng READ COMMITTED, read dùng
+  REPEATABLE READ, READ ONLY; snapshot đọc bắt đầu ở truy vấn đầu tiên.
+- [x] **Identity:** chấp nhận `PlayerProfile` bốn trường `id`, `display_name`,
+  `skill_level: SkillLevel`, `gender: Gender`; reader đơn và batch do Identity
+  sở hữu. `get_by_id()` trả DTO hoặc None; `get_by_ids()` trả dict, bỏ ID thiếu,
+  loại ID trùng, đầu vào rỗng trả `{}`. Giữ `skill_to_rank()` và thứ tự ứng viên;
+  loại candidate thiếu profile/UNSPECIFIED, giữ lỗi caller hiện hành.
+- [x] **Catalog:** chấp nhận `VenueStatusReader.is_active() -> bool | None`,
+  `VenueSummary` năm trường và `VenueReader` đơn/batch tại
+  `app/features/catalog/contracts.py`. Đọc cả sân inactive cho lịch sử; batch
+  tối đa 500 ID/câu, không giới hạn tổng kết quả. Giữ filter/count/order trước
+  phân trang; chỉ cho phép join projection đọc đã thống nhất.
+- [x] **Matching writer:** giữ
+  `MatchingRequestWriter.close_overlapping(user_id, starts_at, ends_at, now)`;
+  cùng transaction với tạo kèo/duyệt, không tự commit. CONFIRMED chỉ đóng ACTIVE
+  chồng lịch; REPLACED dùng khi thay yêu cầu cũ. Chấp nhận đường dẫn đích
   `app/features/matching/infrastructure/matching_request_writer.py`, giữ tên lớp
-  `SqlAlchemyMatchingRequestWriter`; hiện adapter nằm tại
-  `app/db/matching_request_writer.py`. Thành viên 1 đã xác nhận phương án wiring
-  tại mục 1.2; việc chuyển/lắp adapter vẫn chưa hoàn thành.
-- [ ] Thành viên 3 tạo package và chuyển adapter; composition root của thành
-  viên 1 import/lắp implementation, Sessions service chỉ import port. Chỉ xóa
-  adapter cũ sau khi mọi wiring/test đã chuyển; không duy trì hai implementation
-  độc lập. Thành viên 2 hỗ trợ SQL/dialect.
-- [x] Adapter hiện tại chỉ đóng yêu cầu `ACTIVE` của đúng user có khoảng thời gian chồng nhau theo
-  `request.starts_at < ends_at and request.ends_at > starts_at`.
-- [x] Adapter hiện tại ghi `CLOSED`, lý do `CONFIRMED` và thời điểm `now` được truyền vào.
-- [x] Adapter hiện tại giữ nguyên yêu cầu không chồng lịch và lịch sử đã đóng; hai lịch nối tiếp
-  không được coi là chồng nhau.
-- [x] Adapter hiện tại không tự commit hoặc mở UoW mới; phát sinh lỗi truyền về use case.
-- [x] Luồng rút lượt/hủy kèo hiện không mở lại matching đã đóng.
+  `SqlAlchemyMatchingRequestWriter` và composition root do thành viên 1 phụ trách.
+- [x] **Error contract:** chấp nhận bảng phản hồi ở mục 1.3, gồm generic 500 cho
+  cancellation chưa rõ nguồn hủy, `outcome=unknown` khi mất kết nối trong commit
+  và không tự replay command. Trong các lỗi DB nêu dưới đây, chỉ BUSY có
+  `Retry-After` mặc định.
 
-Các mục đã đánh dấu ở phần này là hành vi của
-[writer hiện có trong app/db](../../app/db/matching_request_writer.py), được bao
-phủ bởi [test writer](../../tests/foundation/test_matching_request_writer.py),
-[test tích hợp](../../tests/integration/test_main.py) và test lỗi commit.
-Việc chuyển writer sang module Matching và wiring theo đường dẫn mới vẫn chưa xong.
+Đây là xác nhận hợp đồng ở Phase 1; trạng thái xây các thành phần mới được theo
+dõi ở kế hoạch triển khai riêng.
 
-Thành viên 1 inject writer trực tiếp vào tạo kèo và duyệt. Tạo session/lượt host
-hoặc chuyển lượt thành ACCEPTED và đóng matching phải cùng commit. Thành viên 2
-hỗ trợ adapter DB; thành viên 3 chịu trách nhiệm hành vi và ranh giới module Matching.
+### 1.3. Hành vi lỗi đã thống nhất để bàn giao
 
-**Bằng chứng cần có:** tạo kèo/duyệt thành công đóng đúng yêu cầu; lỗi giữa cập nhật
-participation và đóng matching hoặc lỗi commit khiến cả hai thay đổi rollback.
+Giữ envelope `error={code, message, details, request_id}` và header `X-Request-ID`.
 
-Theo báo cáo thành viên 3, phải giữ riêng hai hành vi:
-`close_active_for_user(..., REPLACED, ...)` đóng yêu cầu cũ khi gửi lại Matching;
-`close_overlapping(..., CONFIRMED, ...)` chỉ đóng yêu cầu chồng lịch khi lịch chơi
-được xác nhận. Không gộp thành một thao tác đóng mọi yêu cầu.
+| Tình huống | Phản hồi đã thống nhất | Details / header |
+| --- | --- | --- |
+| SQLite BUSY; PostgreSQL 55P03; pool timeout; 40P01/40001 | `503 DATABASE_BUSY` — `Hệ thống đang bận, vui lòng thử lại` | `{}`, `Retry-After: 1`; không tự retry command. |
+| Statement timeout có ngữ cảnh tin cậy | `503 DATABASE_TIMEOUT` — `Thao tác dữ liệu vượt quá thời gian cho phép` | `{}`, không `Retry-After` mặc định. |
+| Mất kết nối trước commit | `503 DATABASE_UNAVAILABLE` — `Không thể kết nối cơ sở dữ liệu` | `{}`, không `Retry-After`. |
+| Mất kết nối trong commit, chưa rõ kết quả | `503 DATABASE_UNAVAILABLE` — `Chưa xác định được kết quả thao tác dữ liệu` | `{"outcome": "unknown"}`, không `Retry-After`; không khẳng định mutation chưa xảy ra. |
+| SQLSTATE 57014 chưa rõ nguồn hủy | `500 INTERNAL_ERROR` — `Không thể xử lý yêu cầu` | `{}`, không `Retry-After` hoặc nội dung SQL/driver. |
 
-### 3.3. Tạo matching và Strategy
+Chỉ SQLSTATE 57014 hoặc việc đã cấu hình statement_timeout chưa đủ chứng minh
+nguyên nhân timeout. Nhánh chưa rõ dùng generic handler; telemetry nội bộ phân
+loại `query_cancelled_unknown`, không thêm exception domain cho cancellation.
+Unique/FK/CHECK không tự đổi thành DATABASE_BUSY. Chi tiết thiết kế lỗi ở mục 9.2
+và 10.2 của báo cáo thành viên 2.
 
-- [ ] Tách lệnh thay đổi matching khỏi đường đọc Discovery; use case sở hữu UoW.
-- [ ] Dùng cùng cơ chế khóa user với tạo kèo/duyệt trước khi kiểm tra lịch ACCEPTED
-  và thay yêu cầu ACTIVE: gọi `TransactionLocks.lock_user()`, sau đó đọc Clock,
-  đọc lại hồ sơ/lịch rồi mới thay yêu cầu. Không đặt SQL khóa trong service và
-  không lấy khóa session sau khi giữ khóa user.
-- [ ] Thay yêu cầu cũ và tạo yêu cầu mới trong một transaction; thất bại giữ nguyên
-  yêu cầu cũ: cần bổ sung bằng chứng kiểm thử lỗi thay thế Matching.
-- [x] Tạo Matching hiện đóng bản cũ bằng REPLACED, thêm bản mới và chọn nhóm trong
-  một UoW; gọi lặp thành công trả `201` với ID mới. Có test
-  `test_matching_replace_group_create_approve_cancel` trong bộ tích hợp.
-- [x] Đã có hàm thuần `find_group()` trong Discovery service, sắp `(created_at, id)`
-  và chọn nhóm hợp lệ đầu tiên; `group_is_valid()` giữ chênh lệch rank tối đa 2.
-- [ ] Tách Strategy first-valid thành hàm/lớp thuần; giữ thứ tự ứng viên
-  `(created_at, id)` và chọn nhóm hợp lệ đầu tiên. Chuẩn bị ca không có ứng viên,
-  thiếu ứng viên, không có nhóm hợp lệ, có nhiều nhóm hợp lệ và trường hợp đồng hạng.
-  Phần còn thiếu là tách Strategy khỏi Discovery, lắp qua wiring và đủ bộ test
-  tương thích; hàm hiện có chưa hoàn thành toàn bộ đầu việc này.
-- [ ] Giữ quy tắc chênh lệch trình độ/ngân sách nhóm riêng với điều kiện trình độ
-  do host đặt của Sessions.
-- [x] Luồng hiện tại giữ ý nghĩa `suggestion=null`; không tự đổi sang tính ngoài transaction,
-  bất đồng bộ hoặc cắt bớt ứng viên làm thay đổi kết quả khi chưa có quyết định mới.
-  Không tìm được nhóm vẫn lưu yêu cầu; tạo yêu cầu và tính gợi ý vẫn cùng transaction.
-- [ ] Cùng thành viên 1/2 chạy tình huống tạo matching đối đầu duyệt/tạo kèo;
-  trạng thái cuối không có yêu cầu ACTIVE xung đột với lịch ACCEPTED.
+## 2. Thành viên 1 · Checklist Phase 1
 
-### 3.4. Dùng hồ sơ Identity và bảo toàn dữ liệu đọc
+- [x] Truy vết nơi bắt đầu/commit transaction trong Auth và Sessions; liệt kê
+  create, join, approve/reject, withdraw/cancel và các invariant.
+- [x] Chạy các kiểm thử làm mốc, ghi phản hồi payload sai, thiếu xác thực,
+  yêu cầu trùng và DELETE lặp; bổ sung ca commit thất bại.
+- [x] Kiểm kê nơi sử dụng hồ sơ Identity và quyền truy cập route, gồm tìm kiếm
+  công khai có chế độ `host_me=true` yêu cầu đăng nhập.
+- [x] Thống nhất hợp đồng UoW/khóa với thành viên 2 và profile/Catalog/writer
+  với thành viên 3; xác nhận được ghi ở mục 1.2.
+- [ ] Đồng bộ trạng thái đã xác nhận trong báo cáo hiện trạng tiếng Việt/tiếng Anh
+  và checklist Phase 1 của kế hoạch tổng; các bản cũ còn ghi chờ thống nhất.
+- [ ] Ghi commit bàn giao chung sau khi thu đủ các đầu ra còn mở ở mục 5.
 
-**Thành viên 1 định nghĩa và công bố** `PlayerProfile` / `PlayerProfileReader`
-trong `app/features/auth/contracts.py` và cung cấp triển khai reader Identity,
-đúng đề nghị của thành viên 3. Thành viên 3 sử dụng hợp đồng, ánh xạ DTO và thay
-chỗ Matching gọi `get_user()`; không phụ trách xây chức năng xác thực Identity.
+Bằng chứng: [báo cáo thành viên 1](member-1-phase-1.vi.md) ghi **160 ca đạt**,
+gồm 29 ca mới; Ruff đạt. Các ca mới kiểm lỗi commit của bảy lệnh, ưu tiên 401,
+khác biệt 422/503 và quyền riêng tư của chi tiết kèo. Mốc hiện tại: payload sai
+khi DB đang bị khóa có thể trả 503 ở đăng ký/tạo kèo, nhưng trả 422 ở xin tham gia;
+401 vẫn được ưu tiên trên route yêu cầu đăng nhập.
 
-DTO đề xuất có `id`, `display_name`, `skill_level: SkillLevel`, `gender: Gender`;
-`get_by_id(user_id)` trả DTO hoặc `None`, không công bố email/password hash.
+## 3. Thành viên 2 · Checklist Phase 1
 
-- [ ] Giữ `PlayerSummary.skill_level: int`; đổi `PlayerProfile.skill_level` bằng
-  `skill_to_rank()` hiện có cho cả người gọi và ứng viên. Không tạo bảng chuyển
-  đổi mới hoặc đổi thứ tự enum. Rank từ 1 đến 19 (NEWBIE=1, T_PLUS=19); giữ
-  `max(ranks) - min(ranks) <= 2` cùng quy tắc giới tính/ngân sách hiện tại.
-- [x] Sessions và Matching hiện kiểm giới tính chưa đầy đủ và trả
-  PROFILE_INCOMPLETE; Sessions có test với UNSPECIFIED trong
-  [test service](../../tests/sessions/test_service.py).
-- [ ] Bộ đọc hồ sơ mới phải tiếp tục trả được UNSPECIFIED; chưa có
-  `PlayerProfileReader`/`PlayerProfilesReader` để xác minh phần tích hợp mới.
-- [ ] Thay phụ thuộc nội bộ vào Auth bằng reader/phép chiếu công khai được thống
-  nhất. Với danh sách ứng viên, dùng phương án đọc theo lô do thành viên 2 đề nghị
-  và thành viên 3 chấp nhận bên dưới; thành viên 1 còn công bố port/adapter Identity.
-- [x] Read adapter hiện trả DTO/dữ liệu thuần; phản hồi hiển thị/gợi ý không chứa
-  ORM object, email, hash hoặc ngân sách của người khác. Có test DTO/privacy trong
-  [bộ tích hợp](../../tests/integration/test_main.py).
-- [x] Tìm kiếm hiện công khai; chế độ `host_me=true` yêu cầu JWT và lấy ID từ
-  principal, được kiểm trong bộ tích hợp và test ưu tiên xác thực.
-- [x] Chi tiết kèo hiện chỉ trả `management` cho host, mỗi người chỉ có lượt của
-  mình trong `my_participations`; có test
-  `test_detail_exposes_only_the_viewers_participations_to_non_hosts`.
-- [ ] Kiểm chứng lại DTO, tìm kiếm và privacy sau refactor sang Catalog/Matching,
-  bộ đọc hồ sơ mới và PostgreSQL; kết quả SQLite hiện tại chưa thay thế bước này.
-- [ ] Bổ sung kiểm thử kiến trúc cho chiều phụ thuộc, chu trình module và import
-  trực tiếp adapter nội bộ của module khác.
+- [x] Khảo sát `session.py`, `models.py`, `types.py`, `unit_of_work.py` và lỗi DB;
+  ghi PRAGMA, timestamp, Boolean, partial index và sequence cần xử lý theo dialect.
+- [x] Chuẩn bị [script nguồn SQLite tổng hợp](../../scripts/prepare_member2_phase1.py),
+  manifest và [kiểm thử fixture](../../tests/foundation/test_member2_phase1_fixture.py).
+  Bộ dữ liệu có lịch sử participation và matching đã thay thế; counts
+  venues=1, users=3, sessions=1, participations=4, matching_requests=3.
+- [x] Báo cáo đã chạy PostgreSQL cục bộ bằng
+  [Compose riêng](../../compose.phase1-member2.yaml): PostgreSQL 17.11, UTC,
+  cổng loopback 55432, lock timeout 5s và statement timeout 15s.
+- [x] Thống nhất thao tác khóa, lỗi timeout và thiết kế kiểm thử bằng connection
+  độc lập: A/B có UoW riêng, kiểm `pg_backend_pid()`, điều phối Event/Barrier,
+  đọc trạng thái cuối bằng connection C.
+- [x] Phác thảo HTTPS proxy → API → PostgreSQL, mạng ingress/DB private, migration
+  một lần trước API startup, liveness/readiness và quy trình backup/restore.
+- [x] Ghi mục tiêu diễn tập: phát hiện DB mất kết nối 30 giây, API phục hồi 60 giây
+  sau khi DB khỏe, RTO 30 phút, RPO 24 giờ nếu backup hằng ngày thành công.
+- [ ] Ghi đích backup ngoài máy ứng dụng cụ thể: máy/kho, thư mục đích và người
+  quản lý. Báo cáo hiện mới nêu ví dụ; chưa có đích thực được cung cấp.
+- [ ] Cùng thành viên 3 ghi danh sách trường telemetry cần bàn giao theo mục 4.1.
 
-### 3.5. Đọc hồ sơ ứng viên theo lô, thay cho lựa chọn projection còn mở trước đây
+Bằng chứng do thành viên 2 báo cáo: hai ca fixture đạt; kết quả mới nhất của suite
+foundation/architecture chọn lọc là **73 passed**, Ruff đạt, sau khi sửa khả năng
+chạy trên Windows. Nguồn SQLite là dữ liệu tổng hợp; kết quả này chưa phải bằng
+chứng import hoặc concurrency PostgreSQL.
 
-Thành viên 2 (mục 9.3) và thành viên 3 (mục 9.2) đã chọn phương án để thành viên 1
-công bố tại `app/features/auth/contracts.py`:
+## 4. Thành viên 3 · Checklist Phase 1
 
-```python
-class PlayerProfilesReader(Protocol):
-    def get_by_ids(self, user_ids: list[int]) -> dict[int, PlayerProfile]: ...
-```
+- [x] Truy vết tạo Matching, query sân/kèo và các phản hồi hiện tại: tạo thành công
+  trả 201, gửi lại tạo ID mới và đóng bản cũ bằng REPLACED; không có nhóm hợp lệ
+  trả `suggestion=null` nhưng vẫn lưu yêu cầu.
+- [x] Ghi thứ tự ứng viên `(created_at, id)`, chọn first-valid, rank spread tối đa
+  2, bộ lọc request/lịch và quy tắc hồ sơ thiếu/UNSPECIFIED theo query hiện hành.
+- [x] Ghi quy tắc privacy: chỉ host có `management`, mỗi người chỉ thấy lượt của
+  mình trong `my_participations`, gợi ý không lộ email hoặc ngân sách người khác.
+- [x] Thống nhất port đóng matching chồng lịch trong UoW bên gọi, quyền sở hữu
+  Catalog và projection đọc/join Discovery được phép; thành viên 1 đã xác nhận.
+- [x] Ghi nhận topology private của thành viên 2 và mốc response timeout ingress
+  demo 30 giây, không retry upstream POST; đây là lựa chọn thiết kế đã được chấp nhận.
+- [ ] Hoàn thiện bộ ca Matching làm mốc bên dưới với dữ liệu cố định, thứ tự
+  ứng viên, nhóm/kết quả mong đợi và đường dẫn bằng chứng hoặc kiểm thử hiện có.
+- [ ] Cùng thành viên 2 xác nhận danh sách trường telemetry ở mục 4.1.
 
-Identity sở hữu port/adapter và chỉ SELECT `id`, `display_name`, `skill_level`,
-`gender`, trả `PlayerProfile` với enum hiện có. Thành viên 2 hỗ trợ persistence;
-thành viên 3 tiêu thụ qua port, không import adapter nội bộ Auth.
-
-- [ ] Đầu vào rỗng trả `{}` mà không query; loại ID trùng; ID thiếu không có key
-  trong kết quả. Chia batch khi cần theo giới hạn tham số, không gọi từng user.
-- [ ] Matching lấy request/candidate ID theo `(created_at, id)`, đọc profile theo
-  lô trong cùng UoW rồi ghép theo thứ tự request ban đầu. Không dùng thứ tự dict
-  hoặc SQL IN làm thứ tự chọn nhóm; cùng quy tắc `skill_to_rank()` cho caller và
-  ứng viên, giữ `UNSPECIFIED`.
-- [x] Đã đối chiếu [query ứng viên hiện tại](../../app/features/discovery/repository.py):
-  INNER JOIN UserModel và lọc gender MALE/FEMALE. Khớp kết luận của thành viên 2
-  mục 10.4 và thành viên 3 mục 10.2 về ứng viên thiếu hồ sơ/UNSPECIFIED.
-- [ ] Khi chuyển sang batch, bỏ candidate thiếu profile hoặc UNSPECIFIED trước
-  Strategy; không KeyError, hồ sơ giả hoặc đóng/xóa request vì thiếu hồ sơ.
-  Caller thiếu vẫn UNAUTHORIZED, caller UNSPECIFIED vẫn PROFILE_INCOMPLETE.
-- [ ] Giữ lọc ACTIVE, sân/loại/giờ khớp, chưa bắt đầu, loại caller và lịch ACCEPTED
-  chồng nhau; giữ thứ tự tương đối `(created_at, id)` sau lọc. Không cắt top-K để
-  vừa batch và không biến lỗi truy vấn thành `suggestion=null`.
-- [ ] Kiểm trường hợp thiếu profile bằng fake reader hoặc dữ liệu legacy được
-  kiểm soát; không tắt FK trong ứng dụng. Test first-valid/rank/thứ tự/rollback
-  với batch reader mới vẫn chưa có bằng chứng hoàn thành.
-- [ ] Giữ total/pagination của Discovery và snapshot của phạm vi `read()` REPEATABLE
-  READ. Batch trong command READ COMMITTED **không** có cam kết cùng snapshot giữa
-  các câu lệnh; khóa caller bảo vệ lịch caller, không khóa mọi hồ sơ ứng viên,
-  và gợi ý không giữ chỗ. Nếu đo kiểm cho thấy
-  cần join trực tiếp xuyên module, Identity phải công bố projection bốn trường
-  trước; đây là lựa chọn có điều kiện sau đo, không còn là điều kiện chặn ban đầu.
-
-Thành viên 1 đã xác nhận và còn phải công bố hợp đồng batch trong mã nguồn.
-Các tiêu chí đầu vào rỗng/trùng,
-ID thiếu, chia batch, rank và thứ tự ứng viên phải có bằng chứng khi triển khai;
-hai báo cáo chưa tuyên bố các test này đã chạy đạt.
-
-### 3.6. Ingress phối hợp với thành viên 2
-
-- [ ] Thành viên 3 công bố cấu hình proxy thực với upstream response timeout demo
-  ban đầu 30 giây, không retry upstream POST; đo Matching đồng bộ trước khi chốt.
-- [ ] Phối hợp timeout/pool của thành viên 2 theo mục 2.3; không coi tổng timeout
-  DB là deadline request hoặc suy luận 504 đồng nghĩa rollback.
-- [ ] Giữ error envelope, `X-Request-ID`, chính sách không tự replay và phân biệt
-  timeout/unavailable/commit-unknown theo contract thành viên 1 công bố; bảo toàn
-  request telemetry không lộ SQL/thông tin kết nối.
-
-## 4. Phần thành viên 1 sẽ thực hiện để tích hợp
-
-| Phần việc | Phối hợp cần có |
+| Ca cần chuẩn bị | Kết quả mong đợi |
 | --- | --- |
-| Định nghĩa port UoW/khóa ở tầng ứng dụng và gọi khóa đúng thứ tự | Thành viên 2 triển khai adapter; thành viên 3 dùng cùng khóa user cho matching. |
-| Refactor Auth và tạo/hủy kèo để use case quản lý transaction | Thành viên 2 bảo đảm commit/rollback; dependency chỉ lắp các đối tượng. |
-| Đưa băm/kiểm tra mật khẩu ra ngoài transaction tương ứng | Thành viên 2 giữ unique email và cung cấp adapter cho transaction ngắn. |
-| Công bố `PlayerProfileReader` và `PlayerProfilesReader` tại `app/features/auth/contracts.py`, cung cấp adapter Identity | Thành viên 2 hỗ trợ persistence; thành viên 3 dùng reader theo lô và giữ thứ tự/rank. |
-| Inject Catalog reader và Matching writer vào Sessions | Thành viên 3 cung cấp adapter theo hợp đồng; thành viên 2 kiểm chứng dùng chung transaction. |
-| Kiểm tra quyền, điều kiện tham gia, trạng thái và dữ liệu sau khóa | Thành viên 2 cung cấp đọc mới sau khóa; thành viên 3 bảo toàn hợp đồng đọc. |
-| Công bố `DatabaseTimeoutError`, `DatabaseUnavailableError(outcome_unknown=...)` và handler tại các file domain/API hiện có | Thành viên 2 map driver/SQLSTATE; thành viên 3 chấp nhận response contract mục 2.3 và không retry POST. |
-| Triển khai batch reader, tiêu thụ VenueSummary/VenueReader và wiring writer ở đường dẫn mới | Thành viên 1 đã xác nhận chữ ký và semantics tại mục 1.2; tiếp theo công bố hợp đồng/lắp implementation cùng thành viên 2/3. |
+| Không có ứng viên | Lưu yêu cầu; không có gợi ý. |
+| Thiếu ứng viên để đủ nhóm đơn/đôi | Lưu yêu cầu; không có gợi ý. |
+| Đủ ứng viên nhưng không có nhóm hợp lệ | Lưu yêu cầu; không có gợi ý; ghi rõ điều kiện trình độ/giới tính/ngân sách làm nhóm bị loại. |
+| Có nhiều nhóm hợp lệ | Chọn đúng nhóm hợp lệ đầu tiên theo thứ tự hiện hành. |
+| Ứng viên cùng `created_at` | Dùng ID để phân xử thứ tự và chọn nhóm nhất quán. |
 
-Đã có bằng chứng mốc trong báo cáo: **160 ca kiểm thử đạt**, gồm 29 ca mới của
-thành viên 1. Khi chuyển kiểm tra payload lên trước transaction, cập nhật các ca
-đăng ký/tạo kèo từ ưu tiên `503` sang `422`; vẫn giữ ưu tiên `401` trên route yêu
-cầu đăng nhập. Đây là kết quả đã ghi trong báo cáo, chưa phải bằng chứng cho các
-adapter PostgreSQL hoặc chức năng mới liệt kê trong tài liệu này.
+[Bộ tích hợp hiện tại](../../tests/integration/test_main.py) đã có một phần các
+trường hợp không có gợi ý và nhóm đôi. Chưa có bộ đầu vào/kết quả được ghi đủ cho
+tất cả các ca trên; vì vậy checklist chuẩn bị corpus vẫn để mở.
+
+### 4.1. Telemetry cần thành viên 2 và 3 xác nhận
+
+Ghi một danh sách chung cho benchmark và truy vết, phân công rõ bên cung cấp:
+
+| Nhóm | Trường/số đo cần chốt |
+| --- | --- |
+| Request, thành viên 3 phụ trách | Correlation/request ID, route template, HTTP status, duration, error code. |
+| Matching, thành viên 3 phụ trách | Candidate count và thời gian chọn nhóm. |
+| DB, thành viên 2 phụ trách | Pool wait, lock wait, transaction duration. |
+
+Đây là danh sách cần xác nhận trong bàn giao Phase 1, chưa phải log/metrics đã
+được triển khai. Giữ thông tin nhạy cảm ngoài log; không dùng user/session ID làm
+nhãn metrics. Thiết kế mạng chỉ công khai ingress, giữ API/DB/metrics trong mạng
+private đã được ghi ở báo cáo thành viên 2.
 
 ## 5. Checklist ghi nhận và xác nhận bàn giao
 
-Các mục đã đánh dấu ghi nhận phản hồi của từng thành viên và xác nhận chính thức
-của thành viên 1 tại mục 1.2. Việc chấp nhận thiết kế và việc triển khai có trạng
-thái riêng; các mục này không xác nhận runtime mới đã hoàn thành.
-Trạng thái triển khai thực tế nằm ở từng checklist mục 2–3; các mục SQLite đã có
-được đánh dấu riêng và kèm nguồn đối chiếu.
+- [x] Đã có commit khảo sát, báo cáo hành vi và bằng chứng Auth/Sessions của thành viên 1.
+- [x] Đã có dữ liệu nguồn, môi trường PostgreSQL cục bộ và khảo sát persistence của thành viên 2.
+- [x] Đã ghi nhận năm nhóm hợp đồng được thành viên 1 xác nhận, cùng các phản hồi thành viên 2/3.
+- [ ] Thành viên 3 bàn giao đủ corpus Matching làm mốc, gồm trường hợp nhiều nhóm hợp lệ và đồng hạng.
+- [ ] Thành viên 2 ghi địa điểm backup off-host thực tế.
+- [ ] Thành viên 2/3 chốt danh sách telemetry và bên cung cấp từng trường/số đo.
+- [ ] Thành viên 1 đồng bộ trạng thái hợp đồng trong tài liệu cũ và checklist tổng.
+- [ ] Cả ba ghi một commit bàn giao chung, liên kết corpus/dữ liệu mẫu/kết quả kiểm thử và hợp đồng đã chốt.
 
-- [x] Đã ghi nhận thành viên 2 chấp nhận UoW, chữ ký/ý nghĩa `TransactionLocks`
-  và dùng cùng connection/transaction theo mục 2 của `phase1-member2.md`.
-- [x] Đã ghi nhận lựa chọn snapshot đọc, cấu hình timeout, ánh xạ lỗi và thiết kế
-  fixture connection độc lập từ thành viên 2.
-- [x] Đã ghi nhận đề xuất Catalog, Identity DTO/rank, writer và phạm vi triển khai
-  Matching/Discovery từ thành viên 3.
-- [x] Đã ghi nhận xác nhận mới của thành viên 3 cho batch reader, đường dẫn Catalog,
-  đường dẫn writer, UoW/khóa/snapshot/timeout và fixture ở mục 8–9 báo cáo của mình.
-- [x] Đã ghi nhận response timeout ingress khởi điểm 30 giây và không retry POST
-  được thành viên 3 chấp nhận; cấu hình thực và đo kiểm vẫn chưa hoàn thành.
-- [x] Đã cập nhật bằng chứng kiểm thử thành viên 2 từ lỗi Windows trước đây sang
-  **73 passed** cho suite chọn lọc tại mục 9.6; không coi là toàn suite đã đạt.
-- [x] Đã ghi nhận mục 10 của thành viên 2/3 chốt VenueSummary/VenueReader, batch
-  sân tối đa 500 ID/câu, phạm vi join đọc và quy tắc giữ filter/count/pagination.
-- [x] Đã đối chiếu query cũ và ghi nhận hai bên chọn bỏ candidate thiếu profile/
-  UNSPECIFIED, giữ lỗi caller/thứ tự; triển khai và test batch vẫn chưa xong.
-- [x] Đã ghi nhận nhánh `57014` chưa rõ nguồn hủy dùng generic 500 hiện có,
-  telemetry `query_cancelled_unknown`, tách với timeout xác định và commit-unknown.
-- [x] Thành viên 1 đã xác nhận năm nhóm hợp đồng UoW/khóa/snapshot, Identity,
-  Catalog, Matching writer và error contract ngày 19/11/2026; xem mục 1.2.
-- [ ] Thành viên 1 công bố port UoW/khóa, bộ đọc hồ sơ và bảo đảm snapshot
-  trong mã nguồn trước khi refactor file dùng chung.
-- [ ] Thành viên 1 công bố error contract mục 2.3, gồm message/details/header và
-  commit-unknown; thành viên 2 triển khai nhận diện lỗi và kiểm thử riêng từng trường hợp.
-- [ ] Thành viên 1 triển khai wiring Catalog/writer theo hợp đồng đã xác nhận;
-  thành viên 3 hiện thực VenueSummary/VenueReader và chuyển adapter an toàn.
-- [ ] Thành viên 1 công bố `PlayerProfilesReader.get_by_ids()` và adapter Identity;
-  thành viên 3 kiểm chứng batch/ID thiếu/rank/thứ tự ứng viên theo mục 3.5.
-- [ ] Thành viên 2 triển khai adapter khóa tại `app/db/transaction_locks.py`,
-  migration/fixture và bằng chứng PostgreSQL; thành viên 3 triển khai Matching,
-  Catalog, Discovery và bổ sung test mục 7 trong báo cáo của mình.
-- [ ] Thành viên 2/3 bàn giao cấu hình ingress/backend thực, số đo timeout và ngân
-  sách connection theo worker. Không coi lựa chọn timeout 30 giây là kết quả hiệu năng.
-- [x] Đã ghi lại năm quyết định cuối phía thành viên 1, người xác nhận, ngày và
-  nguồn xác nhận; tham chiếu các báo cáo xác nhận của thành viên 2/3.
-- [ ] Bổ sung đường dẫn mã triển khai thực tế, lệnh/kết quả kiểm thử và commit
-  bàn giao khi triển khai xong; chưa coi xác nhận thiết kế là hoàn thành runtime.
+Hoàn thành các mục còn mở trên là đủ để đóng phạm vi Phase 1 theo kế hoạch.
