@@ -26,10 +26,15 @@ The team will deliver a single deployable modular monolith, a tested PostgreSQL 
 
 **Member 1 — Application transactions**
 
-- [ ] Trace where transactions currently start and commit in Auth and Sessions. List the lifecycle commands and the invariants each command must preserve.
-- [ ] Run the existing lifecycle and Auth tests. Capture expected responses for invalid payloads, unauthenticated callers, duplicate requests, and repeated withdraw/cancel. Identify where a commit failure needs a regression test.
+- [x] Trace where transactions currently start and commit in Auth and Sessions. List the lifecycle commands and the invariants each command must preserve.
+- [x] Run the existing lifecycle and Auth tests. Capture expected responses for invalid payloads, unauthenticated callers, duplicate requests, and repeated withdraw/cancel. Identify where a commit failure needs a regression test.
 - [ ] Agree with Member 2 on the Unit of Work and the operations for locking sessions and users. Own the application-facing contract in `app/domain/ports.py` and the Sessions contracts.
 - [ ] Inventory Identity's profile consumers and existing route access rules, including public searches with authenticated modes. Agree with Member 3 on the profile DTO and the Catalog venue-status contract needed by Sessions.
+
+Member 1's [Phase 1 baseline and contract handoff](member-1-phase-1.md)
+([bản tiếng Việt](member-1-phase-1.vi.md)) records the
+transaction trace, regression evidence, consumer/access inventory, and proposed
+interfaces. The last two items remain open for agreement with Members 2 and 3.
 
 **Member 2 — PostgreSQL persistence**
 
