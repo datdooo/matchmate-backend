@@ -9,9 +9,12 @@ Tài liệu này đề xuất các hợp đồng để ba thành viên triển k
 [báo cáo hiện trạng của Member 1](member-1-phase-1.vi.md) và
 [kế hoạch triển khai](../Architecture_Phase2/kehoachtrienkhai-VN.md).
 
-**Trạng thái: đề xuất chờ xác nhận.** Chưa có xác nhận của Member 1/2 được ghi nhận
-trong tài liệu này. Việc tạo tài liệu không có nghĩa các interface mới đã được
-triển khai hoặc các kiểm thử bên dưới đã chạy đạt.
+**Cập nhật xác nhận phía Member 3 ngày 19/11/2026**, đối chiếu
+[Member 1, mục 5](phase1-member1.md#5-checklist-ghi-nhận-và-xác-nhận-bàn-giao) và
+[Member 2, mục 2 và 9](phase1-member2.md), tại checkout commit `abfc916`.
+Member 3 chấp nhận các lựa chọn ghi ở mục 9 bên dưới. Member 1 hiện mới ghi nhận
+đề nghị của các bên, chưa công bố toàn bộ port/error contract; không coi đây là
+đồng thuận đầy đủ hoặc bằng chứng adapter/kiểm thử đã hoàn thành.
 
 ## 1. Hiện trạng đã đọc
 
@@ -79,9 +82,11 @@ Không tạo bảng chuyển đổi khác, không thay thứ tự enum trong ph�
 
 ### 2.3. Hồ sơ ứng viên và dữ liệu hiển thị
 
-Đề nghị Member 1 và 3 chốt một phép chiếu đọc công khai do Identity sở hữu để
-adapter Matching/Discovery lấy ID, tên hiển thị, trình độ và giới tính theo lô
-hoặc bằng phép join đã được cho phép. Chữ ký và vị trí triển khai còn mở.
+Member 3 chấp nhận phương án đọc theo lô ở mục 9.3 của Member 2:
+`PlayerProfilesReader.get_by_ids(user_ids: list[int]) -> dict[int, PlayerProfile]`,
+do Identity công bố tại `app/features/auth/contracts.py`. Member 1 còn cần xác
+nhận/công bố port; quy tắc chi tiết tại mục 9.2 bên dưới. Join trực tiếp xuyên
+module chỉ xem xét sau đo kiểm và khi Identity công bố projection tương ứng.
 
 - Không gọi `get_by_id()` riêng cho từng ứng viên gây thêm một truy vấn mỗi người.
 - Không import adapter nội bộ Auth từ module khác.
@@ -135,8 +140,10 @@ class MatchingRequestWriter(Protocol):
 - Giữ yêu cầu không chồng giờ và các bản ghi lịch sử; hai lịch nối tiếp không trùng.
 - Không tự mở transaction hoặc commit; lỗi truyền về use case để rollback.
 - Không tự mở lại Matching khi hủy phiên chơi hoặc rút tham gia.
-- Member 3 sở hữu hành vi và adapter writer thuộc Matching; vị trí đích cụ thể
-  chốt cùng cấu trúc module. Member 1 inject vào tạo phiên chơi và phê duyệt.
+- Member 3 chấp nhận vị trí đích
+  `app/features/matching/infrastructure/matching_request_writer.py`, lớp
+  `SqlAlchemyMatchingRequestWriter`, theo mục 9.4 của Member 2.
+  Member 1 còn cần xác nhận wiring vào tạo phiên chơi và phê duyệt.
   Member 2 hỗ trợ persistence và xác minh dùng chung transaction.
 
 Phân biệt: `close_active_for_user(..., REPLACED, ...)` khi tạo lại Matching đóng
@@ -154,10 +161,11 @@ lịch chỉ đóng yêu cầu chồng giờ. Không gộp hai hành vi này.
   thay yêu cầu. Không lấy khóa session đã tồn tại sau khi giữ khóa user.
 - SQLite giữ cơ chế ghi hiện tại; PostgreSQL dùng khóa hàng trong adapter.
   Member 3 gọi port, không đặt SQL khóa trong service.
-- Xác nhận snapshot cho `read()` khi Discovery đếm tổng và lấy trang bằng nhiều
-  truy vấn: REPEATABLE READ, phạm vi snapshot riêng hoặc một câu SQL tương đương.
-- Xác nhận giới hạn thời gian chờ, ánh xạ lỗi PostgreSQL và fixture dùng các
-  connection độc lập để kiểm thử tạo Matching đối đầu phê duyệt/tạo phiên chơi.
+- Member 3 chấp nhận `read()` PostgreSQL REPEATABLE READ, READ ONLY cho cả phạm vi,
+  thiết lập trước SELECT đầu tiên; `write()` dùng READ COMMITTED và khóa hàng.
+- Member 3 ghi nhận/chấp nhận timeout và thiết kế fixture connection độc lập của
+  Member 2 để chuẩn bị tích hợp; chưa coi fixture/adapter đã được bàn giao chạy đạt.
+  Các mã lỗi mới còn chờ Member 1 công bố, chi tiết tại mục 9.4.
 
 ## 6. Phạm vi Member 3 triển khai sau khi chốt
 
@@ -188,12 +196,106 @@ tuyên bố đã chạy lại hoặc đã kiểm chứng PostgreSQL.
 
 ## 8. Checklist xác nhận của các bên
 
-- [ ] Member 1 xác nhận PlayerProfile/PlayerProfileReader và đường dẫn triển khai.
-- [ ] Member 1 và 3 xác nhận dùng skill_to_rank() và projection hồ sơ ứng viên.
-- [ ] Member 1 và 3 xác nhận VenueStatusReader và nơi đặt hợp đồng Catalog.
-- [ ] Member 1 và 3 xác nhận writer, vị trí adapter và cách inject vào Sessions.
-- [ ] Member 2 xác nhận UoW dùng chung, port khóa, snapshot, timeout và fixture.
+- [x] Member 3 chấp nhận PlayerProfile/PlayerProfileReader, dùng skill_to_rank()
+  và phương án PlayerProfilesReader đọc theo lô do Identity sở hữu.
+- [x] Member 3 chốt phía mình VenueStatusReader tại app/features/catalog/contracts.py.
+- [x] Member 3 chấp nhận đường dẫn writer mới và quy tắc chuyển adapter ở mục 9.3.
+- [x] Ghi nhận Member 2 chấp nhận UoW/locks chung transaction và chọn snapshot,
+  timeout, thiết kế fixture; Member 3 chấp nhận để tích hợp theo mục 9.
+- [x] Member 3 chấp nhận response timeout ingress khởi điểm 30 giây để đo thử,
+  không bật retry upstream POST; chưa xác nhận cấu hình thực hoặc hiệu năng.
+- [ ] Member 1 xác nhận/công bố profile reader, batch reader, Catalog và wiring writer.
+- [ ] Member 1 công bố port khóa và chốt mã lỗi mới; Member 2 triển khai adapter/fixture.
 - [ ] Ghi lại quyết định cuối, người xác nhận, ngày xác nhận và commit bàn giao.
 
 Chỉ đánh dấu sau khi có phản hồi thực tế. Các điểm chưa chốt cần được ghi rõ
 trước khi refactor file dùng chung.
+
+## 9. Xác nhận chi tiết phía Member 3 sau cập nhật của Member 1/2
+
+### 9.1. UoW, khóa và snapshot
+
+Chấp nhận các bảo đảm ở mục 2 và 9.1 của Member 2: mỗi command có UoW riêng;
+reader/repository/locks/writer nhận session provider của cùng UoW; use case commit
+một lần, không auto-commit hoặc UoW lồng, không dùng session sau commit.
+
+Port khóa do Member 1 công bố tại `app/domain/ports.py`; adapter Member 2 dự kiến
+đặt tại `app/db/transaction_locks.py`. Matching chỉ gọi `lock_user(actor_user_id)`
+trong UoW ghi. True nghĩa là hàng tồn tại và được khóa, False nghĩa là không tồn
+tại để use case giữ lỗi xác thực hiện hành. Sau khóa mới đọc Clock và truy vấn
+lại hồ sơ/lịch, tránh dữ liệu ORM cache trước khóa. Không lấy khóa session đã
+tồn tại sau khóa user. Việc kiểm tra lịch ACCEPTED, đóng yêu cầu cũ, tạo yêu cầu
+mới và chọn nhóm vẫn trong cùng transaction.
+
+Discovery chấp nhận REPEATABLE READ, READ ONLY cho `read()` để count/page dùng cùng
+snapshot. Snapshot được thiết lập ở truy vấn đầu tiên, không bảo đảm mới nhất lúc
+trả response. Không gọi FOR UPDATE trong read-only; command dùng `write()`
+READ COMMITTED. Member 1 còn công bố hợp đồng chung, Member 2 triển khai/kiểm chứng.
+
+### 9.2. Profile và đọc theo lô
+
+Chấp nhận DTO bốn trường tại mục 2, giữ enum SkillLevel/Gender và UNSPECIFIED;
+chuyển sang rank bằng skill_to_rank() cho cả caller và ứng viên.
+
+```python
+class PlayerProfilesReader(Protocol):
+    def get_by_ids(self, user_ids: list[int]) -> dict[int, PlayerProfile]: ...
+```
+
+Identity sở hữu port/adapter. Loại ID trùng, đầu vào rỗng trả `{}` không truy vấn;
+ID không tồn tại không có key. Chỉ SELECT bốn trường công khai, trả DTO trong
+cùng UoW; chia batch khi cần để giới hạn tham số, không query từng user.
+Matching giữ thứ tự request `(created_at, id)` khi ghép profile; không dùng thứ tự
+dict hoặc SQL IN để chọn nhóm. Không thay total/pagination của Discovery.
+
+Port batch thiếu profile không được gây KeyError hay tạo hồ sơ giả. Trước khi
+thay query hiện tại cần đối chiếu cách query cũ xử lý user không tồn tại để giữ
+hành vi tương thích; caller thiếu vẫn UNAUTHORIZED. Test tương thích còn mở.
+Member 1 cần xác nhận/công bố port trước khi sửa file Identity dùng chung.
+
+### 9.3. Catalog và writer
+
+Member 3 xác nhận VenueStatusReader tại `app/features/catalog/contracts.py`,
+giữ None/False/True và cùng transaction như mục 3. Projection sân đầy đủ còn cần
+chốt chữ ký cụ thể cho Discovery/detail; không coi status reader thay toàn bộ DTO sân.
+
+Chấp nhận chuyển writer về
+`app/features/matching/infrastructure/matching_request_writer.py`. Giữ tên lớp,
+port ở `app/domain/ports.py` và hành vi CONFIRMED/REPLACED riêng biệt. Member 3
+tạo package/chuyển adapter; Member 1 lắp implementation ở composition root,
+Sessions service chỉ import port. Member 2 hỗ trợ SQL/dialect. Chỉ xóa adapter cũ
+sau khi mọi wiring/test đã chuyển; không duy trì hai implementation độc lập.
+
+### 9.4. Timeout, lỗi và ingress
+
+Chấp nhận thông số khởi điểm Member 2 để kiểm thử: pool_size=5, max_overflow=0,
+pool_timeout=5s, connect_timeout=5s, lock_timeout=5s, statement_timeout=15s.
+Đây chưa phải thông số tối ưu đã đo; tổng connection budget phải tính theo worker.
+
+Ghi nhận ánh xạ BUSY/55P03, pool timeout, 40P01/40001 về 503 DATABASE_BUSY với
+Retry-After: 1, rollback khi kết quả thất bại đã rõ, không tự retry command.
+Member 3 chấp nhận đề nghị mục 9.2 của Member 2 về DATABASE_TIMEOUT và
+DATABASE_UNAVAILABLE để tích hợp; **Member 1 vẫn phải công bố exception/handler**.
+Không coi mọi 57014 là lock timeout; chỉ nhận diện statement timeout khi đủ ngữ cảnh.
+Giữ envelope error và X-Request-ID, không lộ SQL hoặc thông tin kết nối.
+
+Mất kết nối trong commit có thể không rõ kết quả: đề nghị trả
+`details={"outcome": "unknown"}` theo Member 2, không tuyên bố chắc chắn rollback,
+không thêm Retry-After cho timeout/unavailable và không tự replay command.
+
+Member 3 chấp nhận upstream response timeout **30 giây** làm mốc cấu hình demo
+để đo thử Matching đồng bộ, chưa xác nhận mọi request sẽ hoàn tất trong 30 giây.
+Không bật retry upstream cho POST. Timeout DB giới hạn từng thao tác, không phải
+deadline toàn request; proxy trả 504/ngắt kết nối không chứng minh backend rollback.
+Cần công bố cấu hình proxy thực và đo Matching trước khi chốt thông số vận hành.
+
+### 9.5. Trạng thái kiểm chứng và việc còn mở
+
+Member 2 báo cáo suite foundation/architecture chọn lọc đạt 73 test và Ruff đạt
+sau sửa khả năng chạy Windows (mục 9.6); đây là kết quả do Member 2 ghi nhận,
+không phải lần chạy lại của Member 3 hoặc bằng chứng PostgreSQL hoàn thành.
+
+Tiếp theo: Member 1 xác nhận/công bố port/error handler và wiring; Member 2 bàn
+giao adapter/migration/fixture; Member 3 triển khai các hợp đồng đã chấp nhận,
+chốt projection sân và bổ sung test mục 7. Các checkbox kiểm thử vẫn để trống
+cho đến khi có kết quả thực tế. Không sửa xác nhận thay người khác trong tài liệu của họ.
