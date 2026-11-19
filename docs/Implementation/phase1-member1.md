@@ -8,8 +8,10 @@ thành đầu việc và tiêu chí bàn giao cho thành viên 2, thành viên 3
 Đã đối chiếu [báo cáo thành viên 2](phase1-member2.md) và
 [đề xuất thành viên 3](phase1-member3.md), cùng
 [kế hoạch triển khai](../Architecture_Phase2/kehoachtrienkhai-VN.md).
-Các xác nhận đơn phương của từng thành viên được ghi rõ bên dưới; chúng chưa
-thay cho đồng thuận của cả nhóm hoặc bằng chứng adapter mới đã hoạt động.
+**Thành viên 1 đã xác nhận cả năm nhóm hợp đồng ngày 19/11/2026**, qua xác nhận
+trực tiếp của người dùng phụ trách thành viên 1 trong cuộc trao đổi này. Nội dung
+chấp nhận được ghi ở mục 1.2, dựa trên các lựa chọn thành viên 2/3 đã xác nhận.
+Trạng thái công bố port, xây adapter, wiring và kiểm thử được theo dõi riêng.
 
 Lần đối chiếu mới nhất dựa trên mục 10 của báo cáo thành viên 2 (commit `7ceb404`)
 và các xác nhận mục 10 của thành viên 3 (commit `89978d6`). Các lựa chọn đã được
@@ -30,12 +32,12 @@ và thử migration thuộc Phase 2; tích hợp khóa PostgreSQL thuộc Phase 
 
 | Nội dung | Trạng thái được ghi nhận | Việc tiếp theo |
 | --- | --- | --- |
-| UoW và `TransactionLocks` | Thành viên 2 và 3 chấp nhận dùng chung transaction và thứ tự khóa; adapter dự kiến tại `app/db/transaction_locks.py` | Thành viên 1 công bố port; thành viên 2 xây adapter; thành viên 3 tích hợp `lock_user()` vào Matching. |
-| Snapshot PostgreSQL | Thành viên 2 chọn và thành viên 3 chấp nhận `read()` REPEATABLE READ, READ ONLY; `write()` READ COMMITTED | Thành viên 1 công bố hợp đồng chung; thành viên 2 triển khai và kiểm chứng bằng fixture PostgreSQL. |
+| UoW và `TransactionLocks` | Thành viên 1 đã chấp nhận cùng thành viên 2/3 việc dùng chung transaction và thứ tự khóa; adapter dự kiến tại `app/db/transaction_locks.py` | Thành viên 1 công bố port; thành viên 2 xây adapter; thành viên 3 tích hợp `lock_user()` vào Matching. |
+| Snapshot PostgreSQL | Thành viên 1 đã chấp nhận lựa chọn chung: `read()` REPEATABLE READ, READ ONLY; `write()` READ COMMITTED | Thành viên 1 công bố hợp đồng trong mã nguồn; thành viên 2 triển khai và kiểm chứng bằng fixture PostgreSQL. |
 | PostgreSQL và dữ liệu nguồn | Thành viên 2 báo cáo PostgreSQL cục bộ healthy, có nguồn SQLite tổng hợp và manifest | Còn adapter, migration/import và kiểm thử cạnh tranh; chưa coi là tích hợp ứng dụng thành công. |
-| Hồ sơ ứng viên | Hai bên chấp nhận batch reader Identity; đã đối chiếu query cũ và chốt bỏ candidate thiếu profile/UNSPECIFIED, giữ lỗi caller và thứ tự request | Thành viên 1 công bố port/adapter; thành viên 3 bổ sung test tương thích, không cắt top-K hoặc đổi lỗi truy vấn thành suggestion=null. |
-| Catalog và Matching writer | Thành viên 3 xác nhận VenueSummary/VenueReader, status reader và phạm vi join tại Catalog; đường dẫn writer giữ nguyên lựa chọn đã có | Thành viên 1 xác nhận/công bố wiring; thành viên 3 triển khai projection sân và chuyển writer. Batch sân tối đa 500 ID/câu, giữ count/page ở DB. |
-| Error contract và ingress | Hai bên chấp nhận generic 500 INTERNAL_ERROR cho 57014 chưa rõ nguồn hủy, giữ riêng timeout xác định/commit-unknown; ingress demo 30 giây, không retry POST | Thành viên 1 công bố contract; thành viên 2 phân loại driver; thành viên 3 triển khai telemetry query_cancelled_unknown và cấu hình proxy thực. |
+| Hồ sơ ứng viên | Thành viên 1 đã chấp nhận DTO/reader Identity, đọc batch và bỏ candidate thiếu profile/UNSPECIFIED, giữ lỗi caller và thứ tự request | Thành viên 1 công bố port/adapter; thành viên 3 bổ sung test tương thích, không cắt top-K hoặc đổi lỗi truy vấn thành suggestion=null. |
+| Catalog và Matching writer | Thành viên 1 đã chấp nhận VenueSummary/VenueReader, status reader, phạm vi join và đường dẫn/wiring writer theo lựa chọn thành viên 2/3 | Thành viên 1 triển khai wiring; thành viên 3 triển khai projection sân và chuyển writer. Batch sân tối đa 500 ID/câu, giữ count/page ở DB. |
+| Error contract và ingress | Thành viên 1 đã chấp nhận error contract, generic 500 cho 57014 chưa rõ nguồn hủy và commit-unknown; thành viên 2/3 giữ mốc ingress demo 30 giây, không retry POST | Thành viên 1 công bố exception/handler; thành viên 2 phân loại driver; thành viên 3 triển khai telemetry query_cancelled_unknown và cấu hình proxy thực. |
 | Kiểm thử của thành viên 2 | Mục 9.6 ghi đã sửa URL Windows/UTF-8; suite nền tảng + kiến trúc chọn lọc đạt **73 passed**, Ruff đạt | Theo dõi kết quả mới này thay lỗi cũ 72 đạt/1 thất bại; vẫn cần suite tích hợp và bằng chứng PostgreSQL riêng. |
 
 Đây là tổng hợp bằng chứng được ghi trong hai tài liệu. Checklist bên dưới đã
@@ -45,6 +47,35 @@ chỉ phần chưa làm đủ hoặc chưa có bằng chứng. Những hành vi 
 được ghi rõ phạm vi, không thay cho hoàn tất refactor hoặc kiểm chứng PostgreSQL.
 Các kết quả chạy trước đây được dẫn theo báo cáo, không phải lượt chạy lại trong
 lần cập nhật checklist này.
+
+### 1.2. Xác nhận chính thức từ thành viên 1
+
+Người xác nhận: **người dùng phụ trách thành viên 1**, ngày **19/11/2026**.
+Nguồn: xác nhận trực tiếp “Ok lets confirm them” sau khi rà soát năm nhóm quyết
+định bên dưới. Quyết định được ghi trong tài liệu này; chưa có commit bàn giao
+triển khai mới được ghi nhận.
+
+- [x] **UoW và khóa hàng:** chấp nhận mỗi command sở hữu transaction, mọi adapter
+  dùng chung UoW, `TransactionLocks` trả bool, thứ tự session trước user, write
+  PostgreSQL READ COMMITTED và read REPEATABLE READ, READ ONLY (mục 2.1–2.3).
+- [x] **Hồ sơ Identity:** chấp nhận DTO bốn trường, reader đơn/batch do Identity
+  sở hữu, ánh xạ rank hiện có, quy tắc ID thiếu/UNSPECIFIED và giữ thứ tự ứng viên
+  như mục 3.4–3.5. Thành viên 1 chịu trách nhiệm công bố hợp đồng/adapter Identity.
+- [x] **Catalog:** chấp nhận `VenueStatusReader`, `VenueSummary`/`VenueReader`,
+  năm trường công khai, sân inactive cho lịch sử, batch tối đa 500 ID/câu và quy
+  tắc join/filter/pagination ở mục 3.1 để Sessions/Discovery tiêu thụ.
+- [x] **Matching writer:** chấp nhận đường dẫn
+  `app/features/matching/infrastructure/matching_request_writer.py`, inject vào
+  tạo/duyệt trong cùng transaction, giữ riêng CONFIRMED/REPLACED, chuyển wiring/test
+  trước khi bỏ adapter cũ; thành viên 1 phụ trách composition root (mục 3.2).
+- [x] **Error contract:** chấp nhận toàn bộ status/code/message/details/header
+  tại mục 2.3, gồm generic 500 cho cancellation chưa rõ nguồn hủy, unavailable với
+  `outcome=unknown` khi mất kết nối trong commit, không tự replay; trong ba nhóm
+  lỗi DB được nêu, chỉ BUSY có `Retry-After` mặc định.
+
+Năm quyết định thiết kế đã được xác nhận. Các mục triển khai port/adapter/handler,
+refactor, wiring và kiểm chứng PostgreSQL bên dưới tiếp tục để trống đến khi có
+mã nguồn và bằng chứng hoàn thành tương ứng.
 
 ## 2. Thành viên 2 cần triển khai
 
@@ -266,8 +297,8 @@ Chi tiết migration, Compose, CI và phục hồi nằm trong phần việc c�
 
 Thành viên 3 đã xác nhận phía mình giao diện dưới đây tại
 `app/features/catalog/contracts.py` (mục 9.3); thành viên 2 không yêu cầu đổi
-hợp đồng. Đường dẫn chưa phải file đã triển khai; thành viên 1 còn phải xác nhận
-cách dùng trong Sessions trước khi tích hợp:
+hợp đồng. Thành viên 1 đã xác nhận cách dùng trong Sessions tại mục 1.2;
+đường dẫn chưa phải file đã triển khai:
 
 ```python
 class VenueStatusReader(Protocol):
@@ -308,8 +339,8 @@ class VenueReader(Protocol):
     def get_by_ids(self, venue_ids: list[int]) -> dict[int, VenueSummary]: ...
 ```
 
-- [x] Đã ghi nhận chữ ký và quy tắc đọc do hai bên chọn. Thành viên 1 còn xác nhận
-  dùng cho detail/wiring; file port/adapter Catalog chưa được tạo.
+- [x] Thành viên 1 đã xác nhận chữ ký và quy tắc đọc do thành viên 2/3 chọn để
+  dùng cho detail/wiring (mục 1.2); file port/adapter Catalog chưa được tạo.
 - [ ] Reader chỉ SELECT năm cột trên, trả DTO trong transaction bên gọi, không
   commit/mở UoW riêng hoặc trả ORM. Trả cả sân inactive để xem lịch sử; command
   tiếp tục dùng `VenueStatusReader`, không thay bằng reader hiển thị.
@@ -349,7 +380,8 @@ class MatchingRequestWriter(Protocol):
   Thành viên 2 đề nghị và thành viên 3 chấp nhận đường dẫn
   `app/features/matching/infrastructure/matching_request_writer.py`, giữ tên lớp
   `SqlAlchemyMatchingRequestWriter`; hiện adapter nằm tại
-  `app/db/matching_request_writer.py`. Thành viên 1 còn phải xác nhận wiring.
+  `app/db/matching_request_writer.py`. Thành viên 1 đã xác nhận phương án wiring
+  tại mục 1.2; việc chuyển/lắp adapter vẫn chưa hoàn thành.
 - [ ] Thành viên 3 tạo package và chuyển adapter; composition root của thành
   viên 1 import/lắp implementation, Sessions service chỉ import port. Chỉ xóa
   adapter cũ sau khi mọi wiring/test đã chuyển; không duy trì hai implementation
@@ -481,7 +513,8 @@ thành viên 3 tiêu thụ qua port, không import adapter nội bộ Auth.
   cần join trực tiếp xuyên module, Identity phải công bố projection bốn trường
   trước; đây là lựa chọn có điều kiện sau đo, không còn là điều kiện chặn ban đầu.
 
-Thành viên 1 còn xác nhận/công bố hợp đồng batch. Các tiêu chí đầu vào rỗng/trùng,
+Thành viên 1 đã xác nhận và còn phải công bố hợp đồng batch trong mã nguồn.
+Các tiêu chí đầu vào rỗng/trùng,
 ID thiếu, chia batch, rank và thứ tự ứng viên phải có bằng chứng khi triển khai;
 hai báo cáo chưa tuyên bố các test này đã chạy đạt.
 
@@ -506,7 +539,7 @@ hai báo cáo chưa tuyên bố các test này đã chạy đạt.
 | Inject Catalog reader và Matching writer vào Sessions | Thành viên 3 cung cấp adapter theo hợp đồng; thành viên 2 kiểm chứng dùng chung transaction. |
 | Kiểm tra quyền, điều kiện tham gia, trạng thái và dữ liệu sau khóa | Thành viên 2 cung cấp đọc mới sau khóa; thành viên 3 bảo toàn hợp đồng đọc. |
 | Công bố `DatabaseTimeoutError`, `DatabaseUnavailableError(outcome_unknown=...)` và handler tại các file domain/API hiện có | Thành viên 2 map driver/SQLSTATE; thành viên 3 chấp nhận response contract mục 2.3 và không retry POST. |
-| Xác nhận batch reader, VenueSummary/VenueReader và wiring writer ở đường dẫn mới | Thành viên 2/3 đã chọn chữ ký và semantics, gồm projection sân và xử lý candidate thiếu; thành viên 1 còn công bố hợp đồng/lắp implementation, không yêu cầu hai bên chọn lại. |
+| Triển khai batch reader, tiêu thụ VenueSummary/VenueReader và wiring writer ở đường dẫn mới | Thành viên 1 đã xác nhận chữ ký và semantics tại mục 1.2; tiếp theo công bố hợp đồng/lắp implementation cùng thành viên 2/3. |
 
 Đã có bằng chứng mốc trong báo cáo: **160 ca kiểm thử đạt**, gồm 29 ca mới của
 thành viên 1. Khi chuyển kiểm tra payload lên trước transaction, cập nhật các ca
@@ -516,8 +549,9 @@ adapter PostgreSQL hoặc chức năng mới liệt kê trong tài liệu này.
 
 ## 5. Checklist ghi nhận và xác nhận bàn giao
 
-Các mục đã đánh dấu chỉ xác nhận đã nhận được nội dung trong báo cáo của từng
-thành viên, không xác nhận runtime mới đã triển khai hoặc đồng thuận của cả nhóm.
+Các mục đã đánh dấu ghi nhận phản hồi của từng thành viên và xác nhận chính thức
+của thành viên 1 tại mục 1.2. Việc chấp nhận thiết kế và việc triển khai có trạng
+thái riêng; các mục này không xác nhận runtime mới đã hoàn thành.
 Trạng thái triển khai thực tế nằm ở từng checklist mục 2–3; các mục SQLite đã có
 được đánh dấu riêng và kèm nguồn đối chiếu.
 
@@ -539,13 +573,14 @@ Trạng thái triển khai thực tế nằm ở từng checklist mục 2–3; c
   UNSPECIFIED, giữ lỗi caller/thứ tự; triển khai và test batch vẫn chưa xong.
 - [x] Đã ghi nhận nhánh `57014` chưa rõ nguồn hủy dùng generic 500 hiện có,
   telemetry `query_cancelled_unknown`, tách với timeout xác định và commit-unknown.
-- [ ] Thành viên 1 xác nhận/công bố port UoW/khóa, bộ đọc hồ sơ và lựa chọn snapshot
-  chung trước khi refactor file dùng chung.
+- [x] Thành viên 1 đã xác nhận năm nhóm hợp đồng UoW/khóa/snapshot, Identity,
+  Catalog, Matching writer và error contract ngày 19/11/2026; xem mục 1.2.
+- [ ] Thành viên 1 công bố port UoW/khóa, bộ đọc hồ sơ và bảo đảm snapshot
+  trong mã nguồn trước khi refactor file dùng chung.
 - [ ] Thành viên 1 công bố error contract mục 2.3, gồm message/details/header và
   commit-unknown; thành viên 2 triển khai nhận diện lỗi và kiểm thử riêng từng trường hợp.
-- [ ] Thành viên 1 xác nhận Catalog và wiring writer theo đường dẫn đã được thành
-  viên 2/3 chọn; thành viên 3 hiện thực VenueSummary/VenueReader và chuyển adapter
-  an toàn. Không còn chờ thành viên 2/3 chọn lại projection sân hoặc quy tắc candidate.
+- [ ] Thành viên 1 triển khai wiring Catalog/writer theo hợp đồng đã xác nhận;
+  thành viên 3 hiện thực VenueSummary/VenueReader và chuyển adapter an toàn.
 - [ ] Thành viên 1 công bố `PlayerProfilesReader.get_by_ids()` và adapter Identity;
   thành viên 3 kiểm chứng batch/ID thiếu/rank/thứ tự ứng viên theo mục 3.5.
 - [ ] Thành viên 2 triển khai adapter khóa tại `app/db/transaction_locks.py`,
@@ -553,5 +588,7 @@ Trạng thái triển khai thực tế nằm ở từng checklist mục 2–3; c
   Catalog, Discovery và bổ sung test mục 7 trong báo cáo của mình.
 - [ ] Thành viên 2/3 bàn giao cấu hình ingress/backend thực, số đo timeout và ngân
   sách connection theo worker. Không coi lựa chọn timeout 30 giây là kết quả hiệu năng.
-- [ ] Cả ba ghi lại quyết định cuối, đường dẫn triển khai, lệnh kiểm thử và commit
-  bàn giao trước khi đánh dấu hoàn thành các mục hợp đồng còn mở ở Phase 1.
+- [x] Đã ghi lại năm quyết định cuối phía thành viên 1, người xác nhận, ngày và
+  nguồn xác nhận; tham chiếu các báo cáo xác nhận của thành viên 2/3.
+- [ ] Bổ sung đường dẫn mã triển khai thực tế, lệnh/kết quả kiểm thử và commit
+  bàn giao khi triển khai xong; chưa coi xác nhận thiết kế là hoàn thành runtime.
