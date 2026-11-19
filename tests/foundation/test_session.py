@@ -44,7 +44,7 @@ def test_runtime_engine_uses_explicit_test_database(tmp_path):
     command = (
         "import json; from app.db.session import engine; "
         "connection=engine.connect(); "
-        "print(json.dumps({'url': str(engine.url), "
+        "print(json.dumps({'database': engine.url.database, "
         "'timeout': connection.exec_driver_sql('PRAGMA busy_timeout').scalar_one()})); "
         "connection.close(); engine.dispose()"
     )
@@ -55,4 +55,8 @@ def test_runtime_engine_uses_explicit_test_database(tmp_path):
         check=True,
         env=os.environ | {"DATABASE_URL": database_url, "SQLITE_BUSY_TIMEOUT_MS": "1200"},
     )
-    assert json.loads(result.stdout) == {"url": database_url, "timeout": 1200}
+    # So sánh file đích thực, không phụ thuộc cách URL encode đường dẫn Windows.
+    assert json.loads(result.stdout) == {
+        "database": str(tmp_path / "environment.db"),
+        "timeout": 1200,
+    }

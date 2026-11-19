@@ -239,13 +239,14 @@ không quay về SQLite cũ bằng cách đổi URL vì sẽ mất các ghi mớ
 - [x] Chuẩn bị script nguồn SQLite tổng hợp, manifest và Compose PostgreSQL riêng.
 - [x] Tạo dữ liệu SQLite và xác minh PostgreSQL cục bộ healthy (bằng chứng ở phần 8).
 - [x] Phác thảo migration một lần, mạng private, backup off-host và mục tiêu khôi phục.
-- [ ] Member 1/3 ghi nhận đồng thuận; Member 1 bổ sung port và chốt mã lỗi mới.
+- [x] Member 1 ghi nhận phản hồi Member 2 ở `a5402b4`; Member 2 đối chiếu lại ở phần 9.
+- [ ] Member 1 công bố port/chốt mã lỗi mới; Member 3 xác nhận phần giao tiếp mình sở hữu.
 - [ ] Adapter PostgreSQL, Alembic/import và fixture cạnh tranh: giai đoạn 2–3.
 - [ ] Chạy migration/import thật, restore và đo phục hồi: chưa có bằng chứng ở Phase 1.
 
 Không sửa checkbox trong docs của Member 1/3 thay cho xác nhận của họ.
-Không gửi thông điệp tới thành viên khác. Link báo cáo trong `phase1-member1.md`
-đang trỏ nhầm thư mục Architecture_Phase2; báo cáo thực tế ở cùng thư mục implementation.
+Không gửi thông điệp tới thành viên khác. Member 1 đã sửa link báo cáo về cùng
+thư mục implementation ở commit `a5402b4`.
 
 ## 7. Liên hệ học liệu
 
@@ -308,13 +309,145 @@ $env:PYTHONUTF8 = '1'
 .venv/Scripts/python.exe -m pytest tests/foundation tests/test_architecture.py -q
 ```
 
-Kết quả cuối: **72 passed, 1 failed**, một cảnh báo deprecation của Starlette/AnyIO.
+Kết quả lần bàn giao đầu: **72 passed, 1 failed**, một cảnh báo deprecation của Starlette/AnyIO.
 Test cũ `test_runtime_engine_uses_explicit_test_database` tại
 `tests/foundation/test_session.py:58` so sánh nguyên chuỗi URL: SQLAlchemy biểu diễn
 đường dẫn Windows bằng percent-encoding, khác chuỗi backslash đầu vào; timeout vẫn
-đúng 1200. Không đổi assertion này hoặc runtime trong bàn giao Phase 1.
+đúng 1200. Assertion đã được sửa trong lượt đối chiếu cập nhật ở phần 9.
 Lần chạy thiếu `PYTHONUTF8=1` còn lỗi đọc file tiếng Việt ở test kiến trúc; dùng UTF-8
 thì test kiến trúc đạt. Không tuyên bố toàn bộ regression suite đã xanh.
 
 Đã chạy `git diff --check`: đạt. Chưa chạy toàn bộ suite/API, PostgreSQL concurrency,
 import/migration hay restore; các kết quả SQLite trên không thay bằng chứng PostgreSQL.
+
+## 9. Đối chiếu cập nhật Member 1 tại `a5402b4`
+
+Đã đọc toàn bộ bản cập nhật `phase1-member1.md` ngày 19/11/2026. Bản cập nhật
+**ghi nhận** các đề nghị của Member 2/3; vẫn để mở xác nhận của chủ sở hữu contract.
+Phần này cung cấp phương án đủ cụ thể để triển khai, tách việc chọn thiết kế khỏi
+việc chứng minh runtime. Không đánh dấu thay xác nhận của Member 1/3.
+
+### 9.1. Các điểm không còn khác biệt từ phía Member 2
+
+Member 2 xác nhận giữ nguyên phần 2: use case sở hữu UoW; locks/reader/writer chung
+transaction; port khóa trả bool; session trước user; đọc mới và Clock sau khóa;
+read REPEATABLE READ READ ONLY, write READ COMMITTED; timeout/pool như đã nêu;
+không tự retry command. Nội dung cập nhật của Member 1 không mâu thuẫn các lựa chọn này.
+
+Member 1 công bố `TransactionLocks` ở `app/domain/ports.py`; Member 2 dự kiến đặt
+adapter tại `app/db/transaction_locks.py`, nhận `Callable[[], Session]` giống writer
+hiện tại. Đây là vị trí đã chọn từ phía Member 2 để chuẩn bị giai đoạn 2, chưa có file
+adapter và chưa có SQL khóa trong service. Các kiểm thử PostgreSQL ở phần 4 vẫn là
+điều kiện tích hợp, không phải phần thiếu xác nhận hợp đồng.
+
+### 9.2. Error contract gửi Member 1 để công bố
+
+Giữ envelope `make_error_response()` hiện tại:
+`error = {code, message, details, request_id}` và header `X-Request-ID`.
+Đề nghị Member 1 công bố hai exception thuần Python trong `app/domain/errors.py`:
+`DatabaseTimeoutError` và `DatabaseUnavailableError`; Member 2 nhận diện lỗi driver
+ở infrastructure, không đưa SQLSTATE/SQLAlchemy vào domain hoặc service.
+Member 1 đăng ký handler trong `app/api/error_handlers.py` với phản hồi chính xác:
+
+- `DatabaseBusyError`: HTTP 503, `DATABASE_BUSY`, message hiện tại
+  `Hệ thống đang bận, vui lòng thử lại`, `details={}`, `Retry-After: 1`.
+- `DatabaseTimeoutError`: HTTP 503, `DATABASE_TIMEOUT`, message
+  `Thao tác dữ liệu vượt quá thời gian cho phép`, `details={}`;
+  không thêm Retry-After mặc định để tránh khuyến khích retry command chưa có idempotency.
+- `DatabaseUnavailableError`: HTTP 503, `DATABASE_UNAVAILABLE`, message
+  `Không thể kết nối cơ sở dữ liệu`, `details={}` khi lỗi xảy ra trước commit.
+  Trường hợp mất kết nối **trong commit**, exception nhận `outcome_unknown=True`;
+  handler trả `details={"outcome": "unknown"}` và message
+  `Chưa xác định được kết quả thao tác dữ liệu`.
+  Không thêm Retry-After và không tự replay trong cả hai trường hợp unavailable.
+
+Không thêm trường outcome vào response thành công hoặc các lỗi khác. Client gặp
+outcome unknown phải đối chiếu trạng thái tài nguyên; chưa có API idempotency thì
+không tự gửi lại lệnh tạo. Busy có Retry-After giữ tương thích hiện hành, không có
+nghĩa adapter sẽ retry tự động.
+
+Tiêu chí test chung trước tích hợp: status/code/message/header đúng; cùng envelope
+và request_id; không lộ SQL, connection URL/password; timeout/flush lỗi xác minh
+rollback bằng connection khác. Commit-unknown phải được test riêng và không khẳng
+định mutation chưa xảy ra. `57014` là query cancellation: chỉ gán nguyên nhân
+statement timeout khi có ngữ cảnh xác định; không so text driver, không đổi thành
+DATABASE_BUSY. Nếu không phân biệt được nguồn hủy, chỉ công bố lỗi thực thi bị hủy,
+không ghi log/metrics như đã chứng minh lock timeout.
+
+Đây là bản đề nghị cuối từ Member 2; các mã mới vẫn chưa được Member 1 xác nhận
+hay triển khai. Các mã HTTP/nghiệp vụ hiện có không đổi trong lượt sửa tài liệu này.
+
+### 9.3. Projection hồ sơ ứng viên: phương án tránh N+1
+
+Member 2 đề nghị Member 1/3 dùng bước đọc theo lô trước khi cần tối ưu join:
+Identity công bố thêm port ở `app/features/auth/contracts.py`:
+
+```python
+class PlayerProfilesReader(Protocol):
+    def get_by_ids(self, user_ids: list[int]) -> dict[int, PlayerProfile]: ...
+```
+
+- `PlayerProfile` dùng đúng bốn trường và enum Member 3 đề xuất. Thiếu ID thì
+  không có key trong kết quả; danh sách rỗng trả `{}` không truy vấn. Loại ID trùng.
+- Query Matching lấy request/candidate ID theo thứ tự `(created_at, id)`, rồi đọc
+  profile theo lô trong **cùng UoW**, dựng DTO theo thứ tự candidate ban đầu.
+  Không lấy thứ tự của dict/SQL IN làm thứ tự xếp ứng viên.
+- Identity chỉ SELECT id/display_name/skill_level/gender, không SELECT nguyên
+  UserModel rồi truyền ra ngoài; trả DTO, giữ UNSPECIFIED, dùng skill_to_rank khi
+  chuyển sang PlayerSummary. Matching xử lý hồ sơ thiếu bằng luật hiện hành,
+  không tự thay đổi ý nghĩa suggestion.
+- Adapter do Identity sở hữu; composition root inject qua port, Matching không
+  import adapter nội bộ Auth. Với tập ID lớn được chia batch có giới hạn tham số;
+  số query theo số batch, không gọi get_by_id cho từng người.
+- Đây là phương án batch thay thế join xuyên module cho hồ sơ. Nếu đo cho thấy
+  cần join trực tiếp, Identity phải công bố projection đọc với bốn cột trên trước;
+  không tự cấp quyền SELECT credential hoặc thay pagination/total của Discovery.
+
+Member 1/3 sở hữu quyết định công bố port này. Member 2 xác nhận hỗ trợ adapter,
+kiểu dữ liệu và transaction; không tự tạo port Identity thay Member 1 trong Phase 1.
+
+### 9.4. Catalog, vị trí writer và wiring
+
+Member 2 không có yêu cầu thay `VenueStatusReader.is_active() -> bool | None` tại
+`app/features/catalog/contracts.py`. Reader được inject với session provider
+của UoW bên gọi; False/None giữ ý nghĩa Member 1/3 đã ghi.
+
+Đề nghị vị trí đích cụ thể của writer là
+`app/features/matching/infrastructure/matching_request_writer.py`, lớp
+`SqlAlchemyMatchingRequestWriter`, giữ port ở `app/domain/ports.py`.
+Member 3 tạo package và chuyển adapter; composition root của Member 1 import/lắp
+implementation, Sessions service chỉ import port. Member 2 hỗ trợ SQL/dialect,
+không tạo bản writer thứ hai ở `app/db` hoặc sửa hành vi CONFIRMED/REPLACED.
+Adapter cũ chỉ xóa sau khi mọi wiring/test chuyển sang đường dẫn mới. Vị trí này
+là đề nghị để Member 1/3 chốt, chưa phải file đã tồn tại.
+
+### 9.5. Timeout với ingress: đề nghị cho giai đoạn 3
+
+Các timeout 5/15 giây giới hạn từng thao tác DB, không giới hạn tổng request.
+Không lấy phép cộng chúng làm bằng chứng request luôn kết thúc đúng hạn.
+Member 2 đề nghị proxy upstream response timeout ban đầu 30 giây cho demo đồng bộ;
+Member 3 công bố cấu hình thực, đo riêng Matching và xác nhận phù hợp workload.
+Nếu proxy trả 504/ngắt kết nối, command trong backend có thể vẫn commit; không tự
+retry, không suy luận timeout HTTP đồng nghĩa rollback. Chỉ áp deadline toàn command
+khi đã thiết kế cancellation/kiểm kết quả rõ ràng. Chưa bật retry upstream cho POST.
+
+### 9.6. Đã xử lý điều kiện kiểm thử trên Windows
+
+- `test_runtime_engine_uses_explicit_test_database`: subprocess trả
+  `engine.url.database`, so với đường dẫn file dự kiến và vẫn kiểm timeout=1200.
+  Kiểm đúng DB đích, không phụ thuộc percent-encoding của chuỗi URL.
+- Test kiến trúc đọc source bằng UTF-8 tường minh, không phụ thuộc codepage Windows.
+  Không thay luật import hoặc bỏ qua test.
+- Ruff check hai file test sửa: đạt.
+- Chạy lại `.venv/Scripts/python.exe -m pytest tests/foundation tests/test_architecture.py -q`
+  **không cần đặt PYTHONUTF8**: **73 passed**, 1 cảnh báo deprecation Starlette/AnyIO.
+  Đây là suite chọn lọc, chưa phải toàn bộ test của dự án.
+
+### 9.7. Phần còn phải được chủ sở hữu xác nhận
+
+Phía Member 2 đã có chữ ký, bảo đảm, đường dẫn dự kiến và tiêu chí kiểm chứng cho
+các phụ thuộc đang mở. Còn Member 1 công bố port/error handler; Member 1/3 chọn
+projection/vị trí writer; Member 3 xác nhận timeout ingress. Đây là quyết định
+thuộc chủ sở hữu tương ứng, không tự chuyển thành đồng thuận toàn nhóm bằng việc
+sửa checkbox. Adapter/migration/concurrency vẫn triển khai theo giai đoạn 2–3;
+không cần đợi phần 9 được coi là bằng chứng runtime mới bắt đầu phần adapter độc lập.

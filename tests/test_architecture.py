@@ -12,7 +12,7 @@ def test_business_modules_do_not_import_web_or_database():
         *Path("app/features").rglob("*contracts.py"),
     ]
     for path in paths:
-        for node in ast.walk(ast.parse(path.read_text())):
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             if isinstance(node, ast.Import):
                 names = [alias.name for alias in node.names]
             elif isinstance(node, ast.ImportFrom):
