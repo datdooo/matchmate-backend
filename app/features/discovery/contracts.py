@@ -7,9 +7,23 @@ from app.domain.enums import (
     DisplayStatus,
     Gender,
     GenderPolicy,
-    MatchingStatus,
     PlayType,
     SessionStatus,
+)
+from app.features.matching.contracts import (
+    MatchingCandidate as MatchingCandidate,
+)
+from app.features.matching.contracts import (
+    MatchingRequestRecord as MatchingRequestRecord,
+)
+from app.features.matching.contracts import (
+    MatchingSuggestion as MatchingSuggestion,
+)
+from app.features.matching.contracts import (
+    PlayerSummary as PlayerSummary,
+)
+from app.features.matching.contracts import (
+    SuggestedMember as SuggestedMember,
 )
 
 T = TypeVar("T")
@@ -38,14 +52,6 @@ class VenueFilter:
     district_code: str | None = None
     limit: int = 20
     offset: int = 0
-
-
-@dataclass(frozen=True)
-class PlayerSummary:
-    id: int
-    display_name: str
-    skill_level: int
-    gender: Gender
 
 
 # Session
@@ -102,26 +108,6 @@ class SessionFilter:
 
 
 # Matching
-@dataclass(frozen=True)
-class MatchingRequestRecord:
-    id: int
-    user_id: int
-    venue_id: int
-
-    starts_at: datetime
-    ends_at: datetime
-
-    play_type: PlayType
-    proposed_fee_male_vnd: int
-    proposed_fee_female_vnd: int
-    budget_max_vnd: int
-
-    gender_policy: GenderPolicy
-
-    status: MatchingStatus
-    closed_reason: CloseReason | None
-    created_at: datetime
-    closed_at: datetime | None
 
 
 @dataclass(frozen=True)
@@ -144,34 +130,6 @@ class MatchingFilter:
     ends_at: datetime
     exclude_user_id: int
     now: datetime
-
-
-@dataclass(frozen=True)
-class MatchingCandidate:
-    request: MatchingRequestRecord
-    player: PlayerSummary
-
-
-@dataclass(frozen=True)
-class SuggestedMember:
-    id: int
-    display_name: str
-    skill_level: int
-    gender: Gender
-    estimated_fee_vnd: int
-
-
-@dataclass(frozen=True)
-class MatchingSuggestion:
-    venue_id: int
-    play_type: PlayType
-    capacity: int
-    starts_at: datetime
-    ends_at: datetime
-    proposed_fee_male_vnd: int
-    proposed_fee_female_vnd: int
-    members: list[SuggestedMember]
-    requires_confirmation: bool = True
 
 
 @dataclass(frozen=True)

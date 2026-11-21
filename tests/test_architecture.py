@@ -8,6 +8,7 @@ def test_business_modules_do_not_import_web_or_database():
     forbidden = {"fastapi", "starlette", "pydantic", "sqlalchemy", "sqlite3"}
     paths = [
         *Path("app/domain").glob("*.py"),
+        *Path("app/features/matching/domain").rglob("*.py"),
         *Path("app/features").rglob("*service.py"),
         *Path("app/features").rglob("*contracts.py"),
     ]

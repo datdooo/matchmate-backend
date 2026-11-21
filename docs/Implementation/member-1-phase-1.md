@@ -194,6 +194,7 @@ class PlayerProfile:
     skill_level: SkillLevel
     gender: Gender
 
+
 class PlayerProfileReader(Protocol):
     def get_by_id(self, user_id: int) -> PlayerProfile | None: ...
 ```
