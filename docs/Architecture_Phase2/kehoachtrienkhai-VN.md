@@ -73,7 +73,7 @@ Phase 1 hoàn thành ngày 19/11/2026. Hợp đồng, dữ liệu mẫu, kiểm 
 
 
 Member3 hoàn thành phần refactor SQLite và ingress local ngày **22/11/2026**;
-[báo cáo bàn giao](../Implementation/phase2-member3-2026-11-22.md) ghi test, demo
+[báo cáo bàn giao](../Implementation/phase2-member3.md#14-bàn-giao-phase2-sqlite-ngày-22112026) ghi test, demo
 và phần hỗ trợ reader/wiring Identity. Nghiệm thu PostgreSQL tiếp tục ở Giai đoạn 3.
 
 **Mốc kiểm tra ngày 20 tháng 11.** Demo luồng tạo → tham gia → phê duyệt và ghép nhóm trên bản SQLite đã tái cấu trúc. Trình bày các kiểm thử Strategy của Matching và kết quả kiểm tra nhập thử dữ liệu vào PostgreSQL. Ghi lại commit SQLite đã tái cấu trúc này để đo kiểm hiệu năng sau đó.

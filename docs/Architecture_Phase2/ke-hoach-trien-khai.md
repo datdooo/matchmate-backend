@@ -72,7 +72,7 @@ Phase 1 closed on 19 November 2026. The [consolidated Phase 1 report](../Impleme
 - [x] Draft the reverse proxy configuration for local TLS, body size limits, request timeouts, and rate limiting. Plan how limits keyed by authenticated user or normalized account identifier will be enforced with backend-validated data.
 
 Member 3 completed the SQLite refactor and local HTTPS ingress on **22 November 2026**.
-The [handoff report](../Implementation/phase2-member3-2026-11-22.md) records tests,
+The [handoff report](../Implementation/phase2-member3.md#14-bàn-giao-phase2-sqlite-ngày-22112026) records tests,
 demo evidence, and the Identity reader/wiring support. PostgreSQL validation continues in Phase 3.
 
 **Checkpoint on 20 November.** Demo create → join → approve and matching on the refactored SQLite build. Show the matching Strategy tests and PostgreSQL trial import checks. Record this refactored SQLite commit for the later benchmark.

@@ -2,6 +2,10 @@
 
 Ngày lập: **21/11/2026**. Người thực hiện: **Member 3**.
 
+**Quy ước tài liệu:** kế hoạch, tiến độ, bằng chứng, hướng dẫn chạy và bàn giao
+Phase2 của member3 được ghi duy nhất trong file này. Kết quả hiện hành ở mục 14;
+hướng dẫn ingress ở mục 15. Các mục ngày 21/11 giữ làm lịch sử triển khai.
+
 Phạm vi là **Phase2 của kế hoạch triển khai giai đoạn 2**: refactor Catalog,
 Matching và Discovery trên SQLite, bổ sung kiểm thử kiến trúc và soạn cấu hình
 ingress. Mục tiêu là có bản SQLite giữ nguyên hành vi để tích hợp PostgreSQL ở
@@ -38,8 +42,9 @@ nối hiện tại và phần cần member1 bàn giao được ghi ở mục 7.
 
 **Member1 sở hữu** `PlayerProfile`, `PlayerProfileReader`, `PlayerProfilesReader`
 tại `app/features/auth/contracts.py`, composition root và wiring Sessions.
-Member3 dùng các hợp đồng đã chốt, không tạo bộ profile port song song. Reader và wiring thực đã được bổ sung trong lượt tích hợp
-ngày 22/11 theo đúng hợp đồng, xem báo cáo tại mục 14.
+Member3 dùng các hợp đồng đã chốt, không tạo bộ profile port song song. Reader
+và wiring thực đã được bổ sung trong lượt tích hợp ngày 22/11 theo đúng hợp đồng,
+xem báo cáo tại mục 14.
 
 **Member3 bàn giao** reader Catalog và writer mới cho member1 nối vào tạo
 kèo/phê duyệt và detail Sessions. Member3 nối phần Matching của mình và phối hợp
@@ -642,24 +647,170 @@ cuối ngày chưa phải bằng chứng đã đóng toàn bộ Phase2.
 
 ## 14. Bàn giao Phase2 SQLite ngày 22/11/2026
 
-**Tám bước ngày 22/11 đã hoàn thành.** Kết quả mới thay trạng thái chờ reader,
-command, writer và ingress trong các mục lịch sử ngày 21/11.
+**Trạng thái: Phase2 của member3 hoàn thành trên SQLite.** Commit triển khai:
+[`cf989fa`](https://github.com/ncmanh-uet/matchmate-backend/commit/cf989fa5bc508aca78f7ba82181c76a918a0deaf).
 
-- Matching có command/router/schema/repository riêng; Discovery chỉ đọc.
-- Reader Identity đơn/batch và Catalog được nối thực trong cùng UoW của lệnh.
-  Adapter Identity bổ sung đúng hợp đồng Phase1 để hỗ trợ tích hợp member1.
-- Writer duy nhất đã chuyển về Matching; tạo kèo/phê duyệt được nối tại
-  composition root. Kiểm rollback chung, DTO và privacy đạt.
-- Kiểm thử import tuyệt đối/tương đối, chu trình feature, cấm adapter nội bộ
-  xuyên module và cấm framework/DB trong nghiệp vụ đã có cả ca âm/dương.
-- Ingress HTTPS local có cấu hình, CLI kiểm chứng và bước chạy trong CI.
-- Toàn bộ suite **382 passed, 0 skipped**, gồm các ca Locust trước đây bị bỏ qua;
-  2 warning hiện có, Ruff và định dạng toàn repo đạt.
-- Demo HTTPS và kiểm ingress đạt; sau demo Matching có 1 REPLACED, 2 CONFIRMED,
-  0 ACTIVE. API không publish cổng và network backend là internal.
+Đã hoàn thành tám bước ngày 22/11 cho phạm vi member3 trên SQLite: tách Matching
+command, chuyển writer, nối reader thực, hồi quy Discovery/privacy, kiểm tra
+kiến trúc, ingress HTTPS local và demo. Khóa/tranh chấp PostgreSQL, telemetry
+runtime và rate limit theo danh tính tiếp tục ở Phase3.
 
-[Báo cáo và đường dẫn bàn giao](phase2-member3-2026-11-22.md) ghi baseline,
-kết quả test, phần hỗ trợ Identity/Sessions, bằng chứng và các việc Phase3.
-[Hướng dẫn ingress](ingress-local.md) có lệnh chạy, TLS, giới hạn proxy và phương
-án rate limit backend theo danh tính. Phần PostgreSQL/khóa/telemetry thuộc Phase3,
-không dùng kết quả SQLite để đánh dấu nghiệm thu các phần đó.
+### 14.1. Thay đổi và cách tích hợp
+
+- Matching sở hữu [service](../../app/features/matching/service.py),
+  [contracts](../../app/features/matching/contracts.py),
+  [router](../../app/features/matching/router.py), schemas và repository trong
+  infrastructure. Discovery chỉ còn tìm kiếm. Giữ URL, request/response và
+  thứ tự xác thực hiện tại; không đổi thuật toán first-valid.
+- Identity công bố `PlayerProfile`, reader đơn/batch tại `auth/contracts.py`.
+  Bổ sung [adapter Identity](../../app/features/auth/infrastructure/player_profile_reader.py)
+  đúng hợp đồng Phase1 để tích hợp bằng code thực vì GitHub chưa có reader mới.
+  Đây là phần hỗ trợ tích hợp member1, không phải bộ port riêng của Matching.
+- [Composition root](../../app/composition.py) nối Clock, UoW, Strategy, reader
+  Identity/Catalog và writer. Matching, tạo kèo và phê duyệt dùng cùng UoW của
+  thao tác tương ứng; adapter không commit riêng.
+- Writer duy nhất ở
+  [matching/infrastructure/matching_request_writer.py](../../app/features/matching/infrastructure/matching_request_writer.py).
+  Đã xóa adapter cũ và chuyển wiring/test. Lỗi writer rollback cả Sessions/Matching.
+- Sessions dùng Catalog status reader khi tạo kèo và Catalog reader trong
+  detail, giữ sân inactive cho lịch sử. Các DTO dùng chung nằm trong domain/API
+  chung; Discovery không còn phụ thuộc Matching chỉ để biểu diễn hồ sơ.
+- Reader Identity SELECT bốn trường công khai, batch tối đa 500 ID/câu, giữ
+  UNSPECIFIED và bỏ ID thiếu. Matching giữ order request khi ghép profile và
+  dùng `skill_to_rank()` cho caller/candidate. Không query từng ứng viên.
+- [Kiểm tra kiến trúc](../../scripts/check_architecture.py) phân giải import
+  tuyệt đối/tương đối, cấm framework/DB trong nghiệp vụ, cấm adapter xuyên module
+  và phát hiện chu trình feature. Có mẫu vi phạm và mẫu hợp lệ trong test.
+- [Ingress và hướng dẫn chạy](#15-hướng-dẫn-ingress-https-local) gồm TLS local, body/time/rate
+  limit, proxy trust, log hạn chế dữ liệu và phương án limiter backend Phase3.
+
+### 14.2. Kết quả kiểm chứng
+
+Mốc đầu ngày `382468e`: **342 passed, 12 skipped, 2 warnings** trong **40,38s**.
+GitHub không có commit mới khi fetch. Sau tích hợp và cài `requirements-load.txt`:
+
+```powershell
+$env:PYTHONUTF8 = '1'
+.venv/Scripts/python.exe -u -m pytest -q -rs --junitxml=artifacts/member3-phase2-final-2026-11-22.xml
+.venv/Scripts/python.exe -m ruff check .
+.venv/Scripts/python.exe -m ruff format --check .
+.venv/Scripts/python.exe -m scripts.check_architecture
+git diff --check
+```
+
+**382 passed, 0 skipped, 0 failed**, pytest **48,76s** trên Windows/Python 3.14.2.
+Hai warning có sẵn là AnyIO portal deprecated và khóa HS512 ngắn trong ca kiểm
+từ chối thuật toán. Cả 12 ca workload trước đây skipped nay đã chạy đạt.
+
+Nhóm trọng tâm: **50 Matching**, **17 Catalog**, **3 reader Identity**,
+**9 kiến trúc**, **8 corpus Matching qua API**. Corpus chỉ đổi Clock dependency
+sang composition root; dữ liệu và assertions giữ nguyên, đã đối chiếu AST.
+
+Test mới kiểm rollback tại create/candidates/profile batch/Strategy/commit,
+candidate thiếu/UNSPECIFIED, thứ tự dict khác request, rank enum, lỗi Catalog,
+thay Strategy qua wiring, lỗi writer trong tạo kèo, bộ lọc/count/page và việc
+Discovery không SELECT email/password hash. Các ca privacy và writer phê duyệt
+hiện có đều đạt trong toàn bộ suite.
+
+Docker API Python 3.11 và Nginx được chạy thật. Demo HTTPS, cấu hình `nginx -t`,
+413/429, chống header giả danh, request ID, network private và trạng thái
+Matching sau commit đều được kiểm chứng; chi tiết tại [ingress local](#15-hướng-dẫn-ingress-https-local).
+
+Bằng chứng cục bộ trong `artifacts/` được Git bỏ qua:
+[pytest](../../artifacts/member3-phase2-final-2026-11-22.txt),
+[JUnit](../../artifacts/member3-phase2-final-2026-11-22.xml),
+[tổng hợp](../../artifacts/member3-phase2-summary-2026-11-22.json),
+[demo HTTPS](../../artifacts/member3-phase2-demo-2026-11-22.txt),
+[kiểm ingress](../../artifacts/member3-phase2-ingress-2026-11-22.txt).
+
+### 14.3. Bàn giao tiếp theo
+
+Member1 có thể dùng các profile reader/Catalog reader và wiring đã nối thực;
+rà soát cùng các thay đổi Identity/Sessions của mình trước khi tích hợp nhánh
+khác. Member2 ghép ingress vào topology PostgreSQL và fixture của nhóm. Bộ
+Compose ingress hiện dùng volume SQLite riêng, không thay Compose PostgreSQL.
+
+Phase3 tiếp tục `TransactionLocks`, Clock/state đọc lại sau khóa, tranh chấp
+Matching với tạo kèo/phê duyệt trên PostgreSQL, DB snapshot, telemetry và limiter
+theo principal. Kết quả ở đây không thay bằng chứng PostgreSQL hoặc benchmark.
+
+## 15. Hướng dẫn ingress HTTPS local
+
+Bản demo SQLite dùng `compose.ingress.yaml` độc lập với `compose.yaml` và
+Compose PostgreSQL của member2. Chỉ ingress mở cổng trên loopback: HTTP 8080,
+HTTPS 8443. API ở mạng backend internal, không publish cổng 8000; dữ liệu nằm
+trong volume `matchmate-phase2-ingress_ingress_data` riêng.
+
+### 15.1. Khởi tạo và chạy
+
+Cần Docker Desktop đang chạy, Python với `requirements-dev.txt` và OpenSSL.
+Script tìm OpenSSL trên PATH hoặc trong Git for Windows; có thể chỉ định
+`--openssl PATH`. Các lệnh dưới đây chạy tại gốc repo bằng PowerShell.
+
+```powershell
+python -m scripts.init_env
+python -m scripts.prepare_ingress_tls
+docker compose -f compose.ingress.yaml config --quiet
+docker compose -f compose.ingress.yaml build api
+docker compose -f compose.ingress.yaml run --rm --no-deps api python -m scripts.seed
+docker compose -f compose.ingress.yaml up -d --wait
+docker compose -f compose.ingress.yaml exec -T ingress nginx -t
+python -m scripts.demo --base-url https://localhost:8443 --ca artifacts/ingress-tls/fullchain.pem
+python -m scripts.check_ingress
+```
+
+Tạo TLS ở lần đầu; nếu thư mục đã có certificate/key thì bỏ qua lệnh tạo TLS.
+Certificate tự ký có SAN localhost/127.0.0.1, thời hạn 7 ngày. Script kiểm chứng
+dùng CA được chỉ định để xác minh TLS; không tắt kiểm tra certificate. Private
+key và `.env` nằm ngoài Git và Docker build context.
+
+Xem API tại `https://localhost:8443/docs`. Dừng bằng
+`docker compose -f compose.ingress.yaml down`; lệnh này giữ volume dữ liệu demo.
+Không dùng volume demo làm nguồn dữ liệu sản xuất hoặc bằng chứng migration PostgreSQL.
+
+### 15.2. Giới hạn và danh tính
+
+`deploy/nginx/nginx.conf` áp body limit **64 KiB**, timeout header/body **10s**,
+connect upstream **5s**, send/read upstream **30s** và `proxy_next_upstream off`
+để không phát lại POST. `proxy_read_timeout` đo khoảng cách giữa hai lần đọc
+upstream, không phải tổng deadline của request.
+[Hành vi timeout và retry của Nginx](https://nginx.org/en/docs/http/ngx_http_proxy_module.html).
+
+Ba bucket theo IP dùng cho demo: đăng ký/đăng nhập **10 request/phút, burst 5**;
+ghi Sessions/Participations/Matching **10 request/giây, burst 20**; tìm kiếm công
+khai **20 request/giây, burst 40**. Request vượt giới hạn trả **429** với
+`Retry-After: 6`, error envelope và request ID. Các ngưỡng này là cấu hình demo,
+chưa là kết quả tối ưu tải. Nginx dùng leaky bucket; `burst` không phải quota
+trong một cửa sổ thời gian cố định.
+[Cấu hình rate limit Nginx](https://nginx.org/en/docs/http/ngx_http_limit_req_module.html).
+
+Proxy ghi đè X-Forwarded-For/Proto theo connection thật và xóa X-User-ID,
+X-Account-ID từ client. Uvicorn chỉ tin proxy tại `172.29.22.2`; API backend
+mặc định `172.29.22.3`, subnet `172.29.22.0/24`. Nếu subnet trùng môi trường,
+đặt đồng thời `MATCHMATE_PROXY_IP`, `MATCHMATE_API_IP`, `MATCHMATE_BACKEND_SUBNET`
+trước khi tạo network. Backend vẫn kiểm JWT và quyền đối tượng trên từng lệnh.
+
+Rate limit theo **user/tài khoản đã chuẩn hóa** được nối ở Phase3: backend lấy
+user ID từ principal đã xác minh, hoặc khóa đăng nhập từ định danh đã được
+Identity chuẩn hóa sau kiểm tra payload. Không lấy danh tính từ header client.
+Limiter không ghi email/token vào log hoặc nhãn metrics, trả cùng envelope 429.
+Khi có nhiều process/instance phải dùng bộ đếm dùng chung; bucket theo IP tại
+ingress tiếp tục bảo vệ trước bước xác thực. Bản Phase2 hiện thực bucket IP và
+bàn giao điểm nối backend, chưa tuyên bố có limiter theo tài khoản.
+
+### 15.3. Log và kết quả kiểm chứng ngày 22 tháng 11
+
+Access log chỉ có request ID, method, status, duration; không ghi body, query
+string, Authorization hoặc email. ID phản hồi backend được giữ ở ingress;
+413/429 do ingress sinh có ID riêng khớp body và header.
+
+- Docker build API Python 3.11 thành công; Nginx **1.30.7**, `nginx -t` đạt.
+- API không publish cổng; network backend có `Internal=true`.
+- Demo HTTPS tạo/thay request Matching, nhận gợi ý, tạo kèo, xin/duyệt, rút/hủy đạt.
+- Sau demo: Matching **1 REPLACED, 2 CONFIRMED, 0 ACTIVE**; rút/hủy không mở lại request.
+- TLS được xác minh bằng CA local; header giả danh bị từ chối 401; body quá lớn
+  trả 413; burst 15 lần login nhận **10 phản hồi 422 và 5 phản hồi 429**.
+- Request ID khớp error body/header, không có header X-Request-ID trùng lặp.
+
+Chạy lại trên dữ liệu/bucket đã tồn tại có thể cho số phản hồi 429 khác; điều
+kiện kiểm chứng là có 429 cùng Retry-After và request ID đúng, không cố định tỷ lệ.

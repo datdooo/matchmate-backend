@@ -33,8 +33,8 @@ Các module `auth`, `catalog`, `matching`, `discovery`, `sessions` tách API, ng
 
 Chi tiết ở [docs/kien-truc.md](docs/kien-truc.md).
 
-Bàn giao refactor SQLite giai đoạn 2 tại [báo cáo member3 ngày 22/11](docs/Implementation/phase2-member3-2026-11-22.md).
-Chạy bản demo HTTPS, kiểm tra 413/429 và proxy trust theo [hướng dẫn ingress local](docs/Implementation/ingress-local.md).
+Bàn giao refactor SQLite giai đoạn 2 tại [báo cáo member3 ngày 22/11](docs/Implementation/phase2-member3.md#14-bàn-giao-phase2-sqlite-ngày-22112026).
+Chạy bản demo HTTPS, kiểm tra 413/429 và proxy trust theo [hướng dẫn ingress local](docs/Implementation/phase2-member3.md#15-hướng-dẫn-ingress-https-local).
 
 ## Chạy
 
