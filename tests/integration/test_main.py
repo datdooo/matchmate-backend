@@ -6,11 +6,10 @@ from types import SimpleNamespace
 import pytest
 from sqlalchemy import select
 
+from app import composition
 from app.db.models import MatchingRequestModel, ParticipationModel, SessionModel, UserModel
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.domain.errors import DatabaseBusyError
-from app.features.discovery import dependencies as discovery_dependencies
-from app.features.sessions import session_router
 from app.features.sessions.participation_repository import SqlAlchemyParticipationRepository
 
 
@@ -54,7 +53,7 @@ def test_display_status_agrees_across_list_detail_and_participation(
             )
         )
     clock = SimpleNamespace(now=lambda: now)
-    for module in (session_router, discovery_dependencies):
+    for module in (composition,):
         monkeypatch.setattr(module, "SystemClock", lambda: clock)
     host = auth_headers(game_data["host"])
     listed = client.get("/sessions", params={"host_me": "true"}, headers=host)
@@ -201,7 +200,7 @@ def test_cancel_preserves_history_and_checks_owner_before_idempotency(
         assert all(row.cancelled_at is None for row in rows if row.status == "REJECTED")
     # DELETE lặp sau starts_at vẫn trả bản cũ, nhưng người khác vẫn không được hủy.
     monkeypatch.setattr(
-        session_router,
+        composition,
         "SystemClock",
         lambda: SimpleNamespace(now=lambda: datetime(2035, 1, 1, tzinfo=timezone.utc)),
     )

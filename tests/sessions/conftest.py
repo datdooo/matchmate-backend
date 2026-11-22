@@ -2,9 +2,12 @@ from datetime import datetime, timezone
 
 import pytest
 
-from app.db.matching_request_writer import SqlAlchemyMatchingRequestWriter
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.domain.errors import DatabaseBusyError
+from app.features.auth.infrastructure.player_profile_reader import SqlAlchemyPlayerProfileReader
+from app.features.matching.infrastructure.matching_request_writer import (
+    SqlAlchemyMatchingRequestWriter,
+)
 from app.features.sessions import participation_dependencies
 from app.features.sessions.participation_repository import SqlAlchemyParticipationRepository
 from app.features.sessions.participation_service import ParticipationService
@@ -35,6 +38,7 @@ def make_service(db_session_factory, clock):
             uow,
             SqlAlchemyMatchingRequestWriter(lambda: uow.session),
             timer or clock,
+            SqlAlchemyPlayerProfileReader(lambda: uow.session),
         )
 
     return build

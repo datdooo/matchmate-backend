@@ -3,6 +3,7 @@
 from fastapi import FastAPI
 
 from app.api.error_handlers import register_error_handlers
+from app.composition import provide_discovery_service, provide_matching_service
 from app.features.auth.dependencies import (
     provide_login_service,
     provide_registration_service,
@@ -10,8 +11,8 @@ from app.features.auth.dependencies import (
 )
 from app.features.auth.middleware import JwtMiddleware
 from app.features.auth.router import create_auth_router, create_login_router
-from app.features.discovery.dependencies import provide_discovery_service
 from app.features.discovery.router import create_discovery_router
+from app.features.matching.router import create_matching_router
 from app.features.sessions.participation_router import router as participation_router
 from app.features.sessions.session_router import router as session_router
 
@@ -32,6 +33,7 @@ app.include_router(
     )
 )
 app.include_router(create_discovery_router(provide_discovery_service))
+app.include_router(create_matching_router(provide_matching_service))
 app.include_router(session_router)
 app.include_router(participation_router)
 

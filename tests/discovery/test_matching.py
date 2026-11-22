@@ -4,8 +4,8 @@ import pytest
 from pydantic import ValidationError
 
 from app.domain.enums import GenderPolicy, PlayType
-from app.features.discovery.router import to_matching_input
-from app.features.discovery.schemas import CreateMatchingRequest
+from app.features.matching.router import to_matching_input
+from app.features.matching.schemas import CreateMatchingRequest
 
 
 def _first(enum_cls):

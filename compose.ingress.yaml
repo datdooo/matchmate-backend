@@ -1,0 +1,63 @@
+name: matchmate-phase2-ingress
+
+services:
+  api:
+    build: .
+    environment:
+      DATABASE_URL: sqlite:////app/data/matchmate.db
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Run python -m scripts.init_env first}
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      SQLITE_BUSY_TIMEOUT_MS: ${SQLITE_BUSY_TIMEOUT_MS:-5000}
+    command:
+      - python
+      - -m
+      - uvicorn
+      - app.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --workers
+      - "1"
+      - --no-access-log
+      - --proxy-headers
+      - --forwarded-allow-ips
+      - ${MATCHMATE_PROXY_IP:-172.29.22.2}
+    volumes:
+      - ingress_data:/app/data
+    networks:
+      backend:
+        ipv4_address: ${MATCHMATE_API_IP:-172.29.22.3}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  ingress:
+    image: nginx:stable-alpine@sha256:caf4e1e032a20f9c3c5e28fc7f25ffd768ad8677b4975c54193075997b3a97e3
+    ports:
+      - "127.0.0.1:8080:80"
+      - "127.0.0.1:8443:443"
+    volumes:
+      - ./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./artifacts/ingress-tls:/etc/nginx/tls:ro
+    networks:
+      frontend:
+      backend:
+        ipv4_address: ${MATCHMATE_PROXY_IP:-172.29.22.2}
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  ingress_data:
+
+networks:
+  frontend:
+  backend:
+    internal: true
+    ipam:
+      config:
+        - subnet: ${MATCHMATE_BACKEND_SUBNET:-172.29.22.0/24}

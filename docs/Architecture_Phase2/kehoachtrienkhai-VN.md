@@ -65,11 +65,16 @@ Phase 1 hoàn thành ngày 19/11/2026. Hợp đồng, dữ liệu mẫu, kiểm 
 
 **Thành viên 3 — Matching và Discovery**
 
-- [ ] Tách Strategy chọn nhóm hợp lệ đầu tiên thành hàm hoặc lớp thuần túy với thứ tự ứng viên xác định. Dùng các trường hợp ở Giai đoạn 1 để xác minh nhóm được chọn và các phản hồi không tìm được nhóm vẫn như cũ.
-- [ ] Tách mã thay đổi dữ liệu ghép nhóm khỏi luồng đọc của Discovery. Cung cấp bản triển khai thành phần ghi của Matching sử dụng giao dịch của bên gọi. Xác minh DTO và hành vi riêng tư của Discovery.
-- [ ] Mở rộng `tests/test_architecture.py` để kiểm tra hướng phụ thuộc, chu trình giữa các mô-đun và việc import trực tiếp bộ điều hợp nội bộ của mô-đun khác.
-- [ ] Đưa quyền sở hữu địa điểm và việc truy cập trạng thái hoạt động ra sau hợp đồng của Catalog. Giữ các phép kết hợp dữ liệu tìm kiếm và ánh xạ DTO của Discovery trong bộ điều hợp đọc; xác minh bộ lọc, phân trang và tính tương thích của phản hồi. Giữ kiểm thử độ chênh lệch trình độ và ngân sách nhóm tách biệt với kiểm thử điều kiện tham gia của Sessions.
-- [ ] Soạn cấu hình reverse proxy cho TLS cục bộ, giới hạn kích thước nội dung yêu cầu, thời gian chờ yêu cầu và giới hạn tần suất. Lập phương án thực thi các giới hạn theo người dùng đã xác thực hoặc định danh tài khoản đã chuẩn hóa bằng dữ liệu được backend xác minh.
+- [x] Tách Strategy chọn nhóm hợp lệ đầu tiên thành hàm hoặc lớp thuần túy với thứ tự ứng viên xác định. Dùng các trường hợp ở Giai đoạn 1 để xác minh nhóm được chọn và các phản hồi không tìm được nhóm vẫn như cũ.
+- [x] Tách mã thay đổi dữ liệu ghép nhóm khỏi luồng đọc của Discovery. Cung cấp bản triển khai thành phần ghi của Matching sử dụng giao dịch của bên gọi. Xác minh DTO và hành vi riêng tư của Discovery.
+- [x] Mở rộng `tests/test_architecture.py` để kiểm tra hướng phụ thuộc, chu trình giữa các mô-đun và việc import trực tiếp bộ điều hợp nội bộ của mô-đun khác.
+- [x] Đưa quyền sở hữu địa điểm và việc truy cập trạng thái hoạt động ra sau hợp đồng của Catalog. Giữ các phép kết hợp dữ liệu tìm kiếm và ánh xạ DTO của Discovery trong bộ điều hợp đọc; xác minh bộ lọc, phân trang và tính tương thích của phản hồi. Giữ kiểm thử độ chênh lệch trình độ và ngân sách nhóm tách biệt với kiểm thử điều kiện tham gia của Sessions.
+- [x] Soạn cấu hình reverse proxy cho TLS cục bộ, giới hạn kích thước nội dung yêu cầu, thời gian chờ yêu cầu và giới hạn tần suất. Lập phương án thực thi các giới hạn theo người dùng đã xác thực hoặc định danh tài khoản đã chuẩn hóa bằng dữ liệu được backend xác minh.
+
+
+Member3 hoàn thành phần refactor SQLite và ingress local ngày **22/11/2026**;
+[báo cáo bàn giao](../Implementation/phase2-member3-2026-11-22.md) ghi test, demo
+và phần hỗ trợ reader/wiring Identity. Nghiệm thu PostgreSQL tiếp tục ở Giai đoạn 3.
 
 **Mốc kiểm tra ngày 20 tháng 11.** Demo luồng tạo → tham gia → phê duyệt và ghép nhóm trên bản SQLite đã tái cấu trúc. Trình bày các kiểm thử Strategy của Matching và kết quả kiểm tra nhập thử dữ liệu vào PostgreSQL. Ghi lại commit SQLite đã tái cấu trúc này để đo kiểm hiệu năng sau đó.
 

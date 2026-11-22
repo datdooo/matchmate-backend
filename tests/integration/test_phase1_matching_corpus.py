@@ -5,8 +5,8 @@ from types import SimpleNamespace
 import pytest
 from sqlalchemy import select
 
+from app import composition
 from app.db.models import MatchingRequestModel, UserModel, VenueModel
-from app.features.discovery import dependencies
 
 NOW = datetime(2030, 11, 2, 10, tzinfo=timezone.utc)
 STARTS_AT = NOW + timedelta(hours=2)
@@ -86,7 +86,7 @@ def test_phase1_matching_corpus(
     client, auth_headers, db_session_factory, monkeypatch, play_type, candidates, expected_members
 ):
     clock = SimpleNamespace(now=lambda: NOW)
-    monkeypatch.setattr(dependencies, "SystemClock", lambda: clock)
+    monkeypatch.setattr(composition, "SystemClock", lambda: clock)
     payload = {
         "venue_id": VENUE_ID,
         "starts_at": STARTS_AT,

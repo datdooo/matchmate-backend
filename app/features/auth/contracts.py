@@ -6,6 +6,22 @@ from app.domain.enums import Gender, SkillLevel
 
 
 @dataclass(frozen=True)
+class PlayerProfile:
+    id: int
+    display_name: str
+    skill_level: SkillLevel
+    gender: Gender
+
+
+class PlayerProfileReader(Protocol):
+    def get_by_id(self, user_id: int) -> PlayerProfile | None: ...
+
+
+class PlayerProfilesReader(Protocol):
+    def get_by_ids(self, user_ids: list[int]) -> dict[int, PlayerProfile]: ...
+
+
+@dataclass(frozen=True)
 class User:
     id: int
     email: str

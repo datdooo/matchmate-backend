@@ -7,6 +7,7 @@ import pytest
 
 from app.domain.errors import DomainError
 from app.domain.ports import MatchingRequestWriter
+from app.features.auth.contracts import PlayerProfileReader
 from app.features.sessions.participation_contracts import ParticipationRepository
 from app.features.sessions.participation_service import ParticipationService
 
@@ -33,7 +34,11 @@ def test_missing_session_rolls_back_before_any_mutation():
     repository = Mock(spec=ParticipationRepository)
     repository.get_session.side_effect = lambda _id: events.append("lookup")
     service = ParticipationService(
-        repository, FakeUow(), Mock(spec=MatchingRequestWriter), SimpleNamespace(now=now)
+        repository,
+        FakeUow(),
+        Mock(spec=MatchingRequestWriter),
+        SimpleNamespace(now=now),
+        Mock(spec=PlayerProfileReader),
     )
     with pytest.raises(DomainError) as caught:
         service.join(1, 999)

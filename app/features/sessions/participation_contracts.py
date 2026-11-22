@@ -4,7 +4,6 @@ from typing import Protocol
 
 from app.domain.entities import Participation, Session
 from app.domain.enums import Gender, ParticipationStatus
-from app.features.auth.contracts import User
 from app.features.discovery.contracts import PlayerSummary, SessionRecord
 
 
@@ -31,8 +30,6 @@ class ParticipationDetail(ParticipationRecord):
 
 
 class ParticipationRepository(Protocol):
-    def get_user(self, user_id: int) -> User | None: ...
-
     def get_by_id(self, participation_id: int) -> Participation | None: ...
 
     def get_session(self, session_id: int) -> Session | None: ...

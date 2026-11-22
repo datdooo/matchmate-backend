@@ -3,8 +3,7 @@ from datetime import datetime
 from typing import Any, Literal, Protocol
 
 from app.domain.enums import SkillLevel
-from app.domain.ports import MatchingRequestWriter
-from app.features.auth.contracts import User
+from app.features.auth.contracts import PlayerProfile
 
 
 @dataclass(frozen=True)
@@ -29,14 +28,14 @@ class SessionError(Exception):
         self.message = message
 
 
-class SessionRepository(MatchingRequestWriter, Protocol):
-    def venue_is_active(self, venue_id: int) -> bool | None: ...
-
+class SessionRepository(Protocol):
     def has_accepted_overlap(
         self, user_id: int, starts_at: datetime, ends_at: datetime
     ) -> bool: ...
 
-    def create_with_host(self, data: CreateSessionInput, host: User, now: datetime) -> int: ...
+    def create_with_host(
+        self, data: CreateSessionInput, host: PlayerProfile, now: datetime
+    ) -> int: ...
 
     def get_detail_data(self, session_id: int) -> dict[str, Any] | None: ...
 

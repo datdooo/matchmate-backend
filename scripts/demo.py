@@ -5,6 +5,7 @@ import json
 import os
 import secrets
 import socket
+import ssl
 import subprocess
 import sys
 import tempfile
@@ -12,16 +13,17 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.request import ProxyHandler, Request, build_opener
+from urllib.request import HTTPSHandler, ProxyHandler, Request, build_opener
 
 
 class DemoError(Exception):
     pass
 
 
-def run_demo(base_url: str, step: bool) -> None:
+def run_demo(base_url: str, step: bool, ca_file: str | None = None) -> None:
     # Chỉ gọi server loopback do script mở, không gửi token qua proxy của máy.
-    client = build_opener(ProxyHandler({}))
+    tls = [HTTPSHandler(context=ssl.create_default_context(cafile=ca_file))] if ca_file else []
+    client = build_opener(ProxyHandler({}), *tls)
 
     def api(method, path, data=None, token=None, expected=200):
         headers = {"Content-Type": "application/json"}
@@ -88,6 +90,32 @@ def run_demo(base_url: str, step: bool) -> None:
     }
     print(f"  Sân: {venue['name']}; 2 người tính cả host, thời lượng 120 phút.")
 
+    show("2a. Tạo, thay thế nhu cầu Matching và nhận nhóm hợp lệ")
+    matching = {key: game[key] for key in ("venue_id", "starts_at", "ends_at", "play_type")} | {
+        "proposed_fee_male_vnd": 60000,
+        "proposed_fee_female_vnd": 40000,
+        "budget_max_vnd": 60000,
+    }
+    first = api("POST", "/matching/requests", matching, host, expected=201)
+    check(first["suggestion"] is None, "Không có ứng viên nhưng có gợi ý")
+    replacement = api("POST", "/matching/requests", matching, host, expected=201)
+    check(replacement["request"]["id"] != first["request"]["id"], "Gửi lại không tạo ID mới")
+    grouped = api("POST", "/matching/requests", matching, player, expected=201)
+    suggestion = grouped["suggestion"]
+    check(suggestion is not None and len(suggestion["members"]) == 2, "Không chọn được nhóm đơn")
+    check(suggestion["requires_confirmation"] is True, "Gợi ý phải cần xác nhận")
+    check(
+        {member["estimated_fee_vnd"] for member in suggestion["members"]} == {40000, 60000},
+        "Sai phí gợi ý",
+    )
+    check(
+        all(
+            "email" not in member and "budget_max_vnd" not in member
+            for member in suggestion["members"]
+        ),
+        "Gợi ý lộ dữ liệu riêng",
+    )
+
     show("3. Thử nhập sai: thời lượng chỉ 30 phút")
     bad = api(
         "POST",
@@ -144,9 +172,14 @@ def run_demo(base_url: str, step: bool) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--step", action="store_true", help="Nhấn Enter trước mỗi bước demo")
+    parser.add_argument("--base-url", help="Dùng API đang chạy thay vì tạo server/DB tạm")
+    parser.add_argument("--ca", help="Certificate CA cho HTTPS local")
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     try:
+        if args.base_url:
+            run_demo(args.base_url.rstrip("/"), args.step, args.ca)
+            return 0
         # DB và secret riêng: không cần .env và không chạm app.db của người dùng.
         with tempfile.TemporaryDirectory(prefix="matchmate-demo-") as directory:
             env = {

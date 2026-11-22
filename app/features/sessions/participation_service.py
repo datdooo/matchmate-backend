@@ -7,7 +7,7 @@ from app.domain.entities import Session
 from app.domain.enums import Gender, GenderPolicy, ParticipationStatus, SessionStatus, skill_to_rank
 from app.domain.errors import DomainError
 from app.domain.ports import Clock, MatchingRequestWriter, UnitOfWork
-from app.features.auth.contracts import User
+from app.features.auth.contracts import PlayerProfile, PlayerProfileReader
 from app.features.sessions.participation_contracts import (
     CreateParticipationInput,
     ParticipationDetail,
@@ -22,11 +22,13 @@ class ParticipationService:
         uow: UnitOfWork,
         matching_writer: MatchingRequestWriter,
         clock: Clock,
+        profiles: PlayerProfileReader,
     ) -> None:
         self.repository = repository
         self.uow = uow
         self.matching_writer = matching_writer
         self.clock = clock
+        self.profiles = profiles
 
     def join(self, actor_user_id: int, session_id: int) -> ParticipationDetail:
         with self.uow.write():
@@ -132,8 +134,8 @@ class ParticipationService:
         if self.repository.count_accepted(game.id) >= game.capacity:
             raise DomainError("SESSION_FULL", "Kèo không còn chỗ để xác nhận")
 
-    def _eligible_user(self, user_id: int, game: Session) -> User:
-        user = self.repository.get_user(user_id)
+    def _eligible_user(self, user_id: int, game: Session) -> PlayerProfile:
+        user = self.profiles.get_by_id(user_id)
         if user is None:
             raise DomainError("UNAUTHORIZED", "Tài khoản không tồn tại")
         if user.gender not in (Gender.MALE, Gender.FEMALE):

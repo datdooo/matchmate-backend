@@ -4,27 +4,27 @@ from typing import Any
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from app.db.matching_request_writer import SqlAlchemyMatchingRequestWriter
 from app.db.models import (
     ParticipationModel,
     SessionModel,
     UserModel,
-    VenueModel,
 )
 from app.domain.enums import Gender, rank_to_skill, skill_to_rank
-from app.features.auth.contracts import User
+from app.features.auth.contracts import PlayerProfile
+from app.features.catalog.contracts import VenueReader
 from app.features.sessions.participation_repository import SqlAlchemyParticipationRepository
 from app.features.sessions.session_contracts import CreateSessionInput
 
 
 class SqlAlchemySessionRepository:
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session, venues: VenueReader) -> None:
         self.session = session
+        self._venues = venues
 
     def create_with_host(
         self,
         data: CreateSessionInput,
-        host: User,
+        host: PlayerProfile,
         now: datetime,
     ) -> int:
         quoted_fee = {
@@ -66,9 +66,6 @@ class SqlAlchemySessionRepository:
 
         return model.id
 
-    def venue_is_active(self, venue_id: int) -> bool | None:
-        return self.session.scalar(select(VenueModel.is_active).where(VenueModel.id == venue_id))
-
     def has_accepted_overlap(
         self,
         user_id: int,
@@ -89,17 +86,6 @@ class SqlAlchemySessionRepository:
         )
         return self.session.scalar(statement) is not None
 
-    def close_overlapping(
-        self,
-        user_id: int,
-        starts_at: datetime,
-        ends_at: datetime,
-        now: datetime,
-    ) -> None:
-        SqlAlchemyMatchingRequestWriter(lambda: self.session).close_overlapping(
-            user_id, starts_at, ends_at, now
-        )
-
     @staticmethod
     def _player_summary(model: UserModel) -> dict[str, Any]:
         return {
@@ -115,7 +101,7 @@ class SqlAlchemySessionRepository:
             return None
 
         host = self.session.get(UserModel, model.host_user_id)
-        venue = self.session.get(VenueModel, model.venue_id)
+        venue = self._venues.get_by_id(model.venue_id)
         if host is None or venue is None:
             raise RuntimeError("Session references missing host or venue")
 

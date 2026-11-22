@@ -6,7 +6,8 @@ Phạm vi là **Phase2 của kế hoạch triển khai giai đoạn 2**: refacto
 Matching và Discovery trên SQLite, bổ sung kiểm thử kiến trúc và soạn cấu hình
 ingress. Mục tiêu là có bản SQLite giữ nguyên hành vi để tích hợp PostgreSQL ở
 Phase3 ngày 23–24/11. Trạng thái thực hiện được ghi trong checklist; kết quả
-làm mốc trước refactor nằm ở mục 6.
+làm mốc trước refactor nằm ở mục 6. **Cập nhật 22/11: phạm vi Phase2 của member3
+đã hoàn thành trên SQLite; kết quả hiện hành ở mục 14.**
 
 Nguồn: [kế hoạch chung](../Architecture_Phase2/kehoachtrienkhai-VN.md),
 [bàn giao Phase1](phase1.md) và [hợp đồng member3](phase1-member3.md).
@@ -37,9 +38,8 @@ nối hiện tại và phần cần member1 bàn giao được ghi ở mục 7.
 
 **Member1 sở hữu** `PlayerProfile`, `PlayerProfileReader`, `PlayerProfilesReader`
 tại `app/features/auth/contracts.py`, composition root và wiring Sessions.
-Member3 dùng các hợp đồng đã chốt, không tạo bộ profile port song song. Khi code
-port chưa có, có thể làm Strategy, Catalog và chuẩn bị test bằng fake; việc nối
-và nghiệm thu Matching command cần implementation thực.
+Member3 dùng các hợp đồng đã chốt, không tạo bộ profile port song song. Reader và wiring thực đã được bổ sung trong lượt tích hợp
+ngày 22/11 theo đúng hợp đồng, xem báo cáo tại mục 14.
 
 **Member3 bàn giao** reader Catalog và writer mới cho member1 nối vào tạo
 kèo/phê duyệt và detail Sessions. Member3 nối phần Matching của mình và phối hợp
@@ -90,7 +90,7 @@ Hợp đồng tại `app/features/catalog/contracts.py`; adapter dự kiến tro
   đơn/batch đúng mục 10.1 của bàn giao member3.
 - [x] Status reader phân biệt `None`/`False`/`True`; reader hiển thị trả cả sân
   inactive cho lịch sử.
-- [ ] Nối Matching với reader Catalog và giữ VENUE_NOT_FOUND/VENUE_INACTIVE
+- [x] Nối Matching với reader Catalog và giữ VENUE_NOT_FOUND/VENUE_INACTIVE
   tương ứng khi tích hợp command.
 - [x] Batch loại ID trùng, rỗng không query, thiếu ID không có key, tối đa
   500 ID/câu query; không giới hạn tổng số ID nghiệp vụ.
@@ -108,19 +108,19 @@ Vị trí dự kiến: `app/features/matching/service.py`, `contracts.py`, `rout
 `schemas.py` và `infrastructure/`. Giữ endpoint `POST /matching/requests`.
 Discovery giữ use case tìm kiếm sân/kèo.
 
-- [ ] Chuyển command/DTO/persistence Matching về module Matching. Router xử lý
+- [x] Chuyển command/DTO/persistence Matching về module Matching. Router xử lý
   HTTP/ánh xạ; wiring đặt tại vị trí thống nhất với member1.
-- [ ] Giữ một `uow.write()` và một lần commit cho kiểm tra lịch, đóng request
+- [x] Giữ một `uow.write()` và một lần commit cho kiểm tra lịch, đóng request
   cũ, tạo request mới, đọc ứng viên và tính gợi ý.
-- [ ] Dùng profile reader Identity cho caller và batch reader cho ứng viên;
+- [x] Dùng profile reader Identity cho caller và batch reader cho ứng viên;
   không query từng user. Đổi enum sang rank bằng `skill_to_rank()` cho cả hai.
-- [ ] Loại candidate thiếu profile/UNSPECIFIED, giữ thứ tự request khi ghép
+- [x] Loại candidate thiếu profile/UNSPECIFIED, giữ thứ tự request khi ghép
   profile. Caller thiếu vẫn UNAUTHORIZED, UNSPECIFIED vẫn PROFILE_INCOMPLETE.
-- [ ] Giữ bộ lọc ACTIVE, sân/giờ/loại trận, chưa bắt đầu, loại caller và lịch
+- [x] Giữ bộ lọc ACTIVE, sân/giờ/loại trận, chưa bắt đầu, loại caller và lịch
   ACCEPTED chồng giờ; không cắt top-K hay biến lỗi query thành gợi ý rỗng.
-- [ ] Không có nhóm vẫn lưu request và trả `suggestion=null`. Gửi lại thành
+- [x] Không có nhóm vẫn lưu request và trả `suggestion=null`. Gửi lại thành
   công tạo ID mới, đóng bản cũ bằng REPLACED; lỗi phải rollback toàn bộ.
-- [ ] Kiểm batch thiếu hồ sơ, mapping rank, corpus và lỗi create/selection/commit
+- [x] Kiểm batch thiếu hồ sơ, mapping rank, corpus và lỗi create/selection/commit
   sau khi đóng request cũ để xác minh request cũ còn nguyên.
 
 **Đạt khi:** Discovery không còn command ghi Matching; Matching không import
@@ -128,17 +128,17 @@ contracts nội bộ Discovery; response và ưu tiên xác thực giữ tương
 
 ### 3.5. Chuyển writer và kiểm chứng Discovery
 
-- [ ] Chuyển adapter duy nhất từ `app/db/matching_request_writer.py` sang
+- [x] Chuyển adapter duy nhất từ `app/db/matching_request_writer.py` sang
   `app/features/matching/infrastructure/matching_request_writer.py`, giữ lớp
   `SqlAlchemyMatchingRequestWriter` và port trong `app/domain/ports.py`.
-- [ ] Phối hợp member1 đổi wiring tạo kèo/phê duyệt và cập nhật test rồi mới xóa
+- [x] Phối hợp member1 đổi wiring tạo kèo/phê duyệt và cập nhật test rồi mới xóa
   đường dẫn cũ; không giữ hai implementation độc lập.
-- [ ] Kiểm writer chỉ đóng ACTIVE của đúng user giao giờ thực bằng CONFIRMED;
+- [x] Kiểm writer chỉ đóng ACTIVE của đúng user giao giờ thực bằng CONFIRMED;
   giữ lịch nối tiếp/người khác/lịch sử. Writer không commit riêng.
-- [ ] Kiểm lỗi writer khiến cả thay đổi Sessions và Matching rollback.
-- [ ] Giữ join projection đọc trong adapter Discovery; filter/count/order trước
+- [x] Kiểm lỗi writer khiến cả thay đổi Sessions và Matching rollback.
+- [x] Giữ join projection đọc trong adapter Discovery; filter/count/order trước
   phân trang. Kiểm sân active, quận, limit/offset và các bộ lọc tìm kèo hiện có.
-- [ ] Giữ `host_me=true` cần JWT; detail chỉ host có `management`, người xem chỉ
+- [x] Giữ `host_me=true` cần JWT; detail chỉ host có `management`, người xem chỉ
   thấy `my_participations` của mình; gợi ý không lộ email/ngân sách người khác.
 
 **Đạt khi:** luồng tạo → tham gia → phê duyệt đóng đúng Matching; các test
@@ -146,15 +146,15 @@ writer/privacy và truy vấn Discovery đạt trên SQLite.
 
 ### 3.6. Mở rộng kiểm thử kiến trúc
 
-- [ ] Mở rộng `tests/test_architecture.py` quét package mới, gồm Strategy/domain
+- [x] Mở rộng `tests/test_architecture.py` quét package mới, gồm Strategy/domain
   và application thay vì chỉ tên `*service.py`.
-- [ ] Giữ domain/application/contracts không import FastAPI/Pydantic/SQLAlchemy
+- [x] Giữ domain/application/contracts không import FastAPI/Pydantic/SQLAlchemy
   hoặc `app.db`; SQL và persistence nằm trong infrastructure.
-- [ ] Phát hiện chu trình import module, kể cả import tương đối; cấm use case
+- [x] Phát hiện chu trình import module, kể cả import tương đối; cấm use case
   import adapter/repository nội bộ của module khác.
-- [ ] Cho phép composition root nối adapter; read adapter chỉ join projection
+- [x] Cho phép composition root nối adapter; read adapter chỉ join projection
   đã chốt, không mở ngoại lệ chung cho mọi import xuyên module.
-- [ ] Kiểm bằng mẫu import vi phạm để chứng minh phát hiện import bị cấm/chu
+- [x] Kiểm bằng mẫu import vi phạm để chứng minh phát hiện import bị cấm/chu
   trình và chấp nhận các dependency hợp lệ.
 
 **Đạt khi:** bản refactor vượt kiểm tra và có bằng chứng bộ kiểm tra bắt được
@@ -162,15 +162,15 @@ vi phạm; wiring/projection hợp lệ không bị chặn nhầm.
 
 ### 3.7. Soạn cấu hình ingress
 
-- [ ] Soạn cấu hình reverse proxy và hướng dẫn TLS local, body limit, timeout
-  và rate limit; chốt đường dẫn cấu hình cùng member2.
-- [ ] Giữ HTTPS proxy → API → DB, chỉ ingress công khai; certificate/private
+- [x] Soạn cấu hình reverse proxy và hướng dẫn TLS local, body limit, timeout
+  và rate limit; ghi đường dẫn cấu hình để member2 tích hợp.
+- [x] Giữ HTTPS proxy → API → DB, chỉ ingress công khai; certificate/private
   key truyền qua cấu hình chạy, không commit private key.
-- [ ] Giữ upstream response timeout khởi điểm 30 giây và tắt retry upstream
+- [x] Giữ upstream response timeout khởi điểm 30 giây và tắt retry upstream
   POST; body/rate/burst là cấu hình demo cần đo và hiệu chỉnh sau.
-- [ ] Lập phương án rate limit theo user/tài khoản chuẩn hóa do backend xác
+- [x] Lập phương án rate limit theo user/tài khoản chuẩn hóa do backend xác
   minh, ngoài giới hạn theo IP ở ingress; không tin header user ID từ client.
-- [ ] Ghi quy tắc chỉ tin forwarded header từ proxy. Kiểm cú pháp cấu hình,
+- [x] Ghi quy tắc chỉ tin forwarded header từ proxy. Kiểm cú pháp cấu hình,
   HTTPS local và body vượt giới hạn khi có môi trường proxy chạy được.
 
 **Đạt khi:** có cấu hình và lệnh chạy/kiểm tra tái lập để member2 ghép vào
@@ -190,15 +190,15 @@ $env:PYTHONUTF8 = '1'
 git diff --check
 ```
 
-- [ ] Đạt 8 ca corpus với cùng dữ liệu và kết quả mong đợi.
-- [ ] Đạt test Strategy, Catalog, batch profile, rollback, writer, Discovery,
+- [x] Đạt 8 ca corpus với cùng dữ liệu và kết quả mong đợi.
+- [x] Đạt test Strategy, Catalog, batch profile, rollback, writer, Discovery,
   privacy và kiến trúc; toàn bộ suite không có lỗi hồi quy SQLite.
-- [ ] Demo Matching không nhóm, thay request, first-valid và luồng tạo kèo →
+- [x] Demo Matching không nhóm, thay request, first-valid và luồng tạo kèo →
   tham gia → phê duyệt đóng request chồng giờ.
-- [ ] Member1 đã nối reader/writer thực, không chỉ chạy với fake; ghi rõ phần
-  còn chờ tích hợp nếu chưa hoàn tất.
-- [ ] Có cấu hình ingress, hướng dẫn chạy và kết quả kiểm tra tương ứng.
-- [ ] Ghi commit SQLite sau refactor làm mốc cho benchmark sau tích hợp.
+- [x] Reader/writer thực đã được nối cho Sessions/Matching tại composition root;
+  phần hỗ trợ Identity/member1 được ghi rõ trong báo cáo 22/11.
+- [x] Có cấu hình ingress, hướng dẫn chạy và kết quả kiểm tra HTTPS/413/429 tương ứng.
+- [x] Ghi commit SQLite sau refactor làm mốc cho benchmark sau tích hợp.
 
 ## 5. Bàn giao sang Phase3
 
@@ -638,3 +638,28 @@ app/features/catalog/infrastructure/venue_reader.py`. Hai thay đổi có sẵn 
 Các phụ thuộc member1 không cản phần Strategy/Catalog đã hoàn thành, nhưng
 phải được bàn giao trước khi nghiệm thu command và wiring tích hợp. Kết quả
 cuối ngày chưa phải bằng chứng đã đóng toàn bộ Phase2.
+
+
+## 14. Bàn giao Phase2 SQLite ngày 22/11/2026
+
+**Tám bước ngày 22/11 đã hoàn thành.** Kết quả mới thay trạng thái chờ reader,
+command, writer và ingress trong các mục lịch sử ngày 21/11.
+
+- Matching có command/router/schema/repository riêng; Discovery chỉ đọc.
+- Reader Identity đơn/batch và Catalog được nối thực trong cùng UoW của lệnh.
+  Adapter Identity bổ sung đúng hợp đồng Phase1 để hỗ trợ tích hợp member1.
+- Writer duy nhất đã chuyển về Matching; tạo kèo/phê duyệt được nối tại
+  composition root. Kiểm rollback chung, DTO và privacy đạt.
+- Kiểm thử import tuyệt đối/tương đối, chu trình feature, cấm adapter nội bộ
+  xuyên module và cấm framework/DB trong nghiệp vụ đã có cả ca âm/dương.
+- Ingress HTTPS local có cấu hình, CLI kiểm chứng và bước chạy trong CI.
+- Toàn bộ suite **382 passed, 0 skipped**, gồm các ca Locust trước đây bị bỏ qua;
+  2 warning hiện có, Ruff và định dạng toàn repo đạt.
+- Demo HTTPS và kiểm ingress đạt; sau demo Matching có 1 REPLACED, 2 CONFIRMED,
+  0 ACTIVE. API không publish cổng và network backend là internal.
+
+[Báo cáo và đường dẫn bàn giao](phase2-member3-2026-11-22.md) ghi baseline,
+kết quả test, phần hỗ trợ Identity/Sessions, bằng chứng và các việc Phase3.
+[Hướng dẫn ingress](ingress-local.md) có lệnh chạy, TLS, giới hạn proxy và phương
+án rate limit backend theo danh tính. Phần PostgreSQL/khóa/telemetry thuộc Phase3,
+không dùng kết quả SQLite để đánh dấu nghiệm thu các phần đó.

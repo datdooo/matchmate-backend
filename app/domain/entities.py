@@ -69,3 +69,11 @@ class Participation:
     created_at: datetime
     decided_at: datetime | None
     cancelled_at: datetime | None
+
+
+@dataclass(frozen=True)
+class PlayerSummary:
+    id: int
+    display_name: str
+    skill_level: int
+    gender: Gender

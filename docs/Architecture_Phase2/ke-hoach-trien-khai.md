@@ -65,11 +65,15 @@ Phase 1 closed on 19 November 2026. The [consolidated Phase 1 report](../Impleme
 
 **Member 3 — Matching and Discovery**
 
-- [ ] Extract the first-valid Strategy into a pure function or class with deterministic candidate ordering. Use the cases from Phase 1 to verify the same selected group and the same no-match responses.
-- [ ] Separate matching mutation code from Discovery's read path. Supply the matching writer implementation using the caller's transaction. Verify Discovery DTOs and privacy behavior.
-- [ ] Extend `tests/test_architecture.py` to cover dependency direction, module cycles, and direct imports of another module's internal adapters.
-- [ ] Move venue ownership and active-status access behind a Catalog contract. Keep Discovery's search joins and DTO mapping in read adapters and verify filter, pagination, and response compatibility. Keep group rank spread and group budget tests distinct from Sessions eligibility tests.
-- [ ] Draft the reverse proxy configuration for local TLS, body size limits, request timeouts, and rate limiting. Plan how limits keyed by authenticated user or normalized account identifier will be enforced with backend-validated data.
+- [x] Extract the first-valid Strategy into a pure function or class with deterministic candidate ordering. Use the cases from Phase 1 to verify the same selected group and the same no-match responses.
+- [x] Separate matching mutation code from Discovery's read path. Supply the matching writer implementation using the caller's transaction. Verify Discovery DTOs and privacy behavior.
+- [x] Extend `tests/test_architecture.py` to cover dependency direction, module cycles, and direct imports of another module's internal adapters.
+- [x] Move venue ownership and active-status access behind a Catalog contract. Keep Discovery's search joins and DTO mapping in read adapters and verify filter, pagination, and response compatibility. Keep group rank spread and group budget tests distinct from Sessions eligibility tests.
+- [x] Draft the reverse proxy configuration for local TLS, body size limits, request timeouts, and rate limiting. Plan how limits keyed by authenticated user or normalized account identifier will be enforced with backend-validated data.
+
+Member 3 completed the SQLite refactor and local HTTPS ingress on **22 November 2026**.
+The [handoff report](../Implementation/phase2-member3-2026-11-22.md) records tests,
+demo evidence, and the Identity reader/wiring support. PostgreSQL validation continues in Phase 3.
 
 **Checkpoint on 20 November.** Demo create → join → approve and matching on the refactored SQLite build. Show the matching Strategy tests and PostgreSQL trial import checks. Record this refactored SQLite commit for the later benchmark.
 

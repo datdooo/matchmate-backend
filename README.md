@@ -25,13 +25,16 @@ Pha 1 của bài tập lớn môn Kiến trúc phần mềm (UET): backend cơ b
 
 ## Kiến trúc
 
-Ba tầng: router (API), service (nghiệp vụ), repository (truy cập dữ liệu), chia thành ba module `auth`, `discovery`, `sessions` trong `app/features/`.
+Các module `auth`, `catalog`, `matching`, `discovery`, `sessions` tách API, nghiệp vụ và adapter lưu trữ. `app/composition.py` nối reader, writer, Strategy và Unit of Work; Matching ghi dữ liệu, Discovery chỉ truy vấn.
 
 - Service, domain và contracts không import FastAPI, Pydantic hay SQLAlchemy (`tests/test_architecture.py` kiểm).
 - Repository dùng SQLAlchemy ORM. JWT được kiểm một lần ở middleware.
 - Thao tác ghi dùng `BEGIN IMMEDIATE` và commit một lần. Chờ khóa quá 5 giây thì trả `503 DATABASE_BUSY`.
 
 Chi tiết ở [docs/kien-truc.md](docs/kien-truc.md).
+
+Bàn giao refactor SQLite giai đoạn 2 tại [báo cáo member3 ngày 22/11](docs/Implementation/phase2-member3-2026-11-22.md).
+Chạy bản demo HTTPS, kiểm tra 413/429 và proxy trust theo [hướng dẫn ingress local](docs/Implementation/ingress-local.md).
 
 ## Chạy
 

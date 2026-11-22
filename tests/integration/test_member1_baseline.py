@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
+from app import composition
 from app.db.models import (
     MatchingRequestModel,
     ParticipationModel,
@@ -17,7 +18,6 @@ from app.db.models import (
 )
 from app.db.session import create_db_engine, create_session_factory
 from app.features.auth import dependencies as auth_dependencies
-from app.features.sessions import participation_dependencies, session_router
 
 
 def database_snapshot(factory):
@@ -177,7 +177,7 @@ def test_invalid_payload_priority_while_writer_is_locked(
     contender = create_db_engine(str(db_engine.url), busy_timeout=20)
     try:
         factory = create_session_factory(contender)
-        for module in (auth_dependencies, session_router, participation_dependencies):
+        for module in (auth_dependencies, composition):
             monkeypatch.setattr(module, "_session_factory", factory)
         with db_engine.connect() as blocker:
             blocker.exec_driver_sql("BEGIN IMMEDIATE")

@@ -64,6 +64,21 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: docker compose logs api
+      - name: HTTPS ingress and matching demo
+        run: |
+          python3 -m scripts.prepare_ingress_tls
+          docker compose -f compose.ingress.yaml build api
+          docker compose -f compose.ingress.yaml run --rm --no-deps api python -m scripts.seed
+          docker compose -f compose.ingress.yaml up -d --wait
+          docker compose -f compose.ingress.yaml exec -T ingress nginx -t
+          python3 -m scripts.demo --base-url https://localhost:8443 --ca artifacts/ingress-tls/fullchain.pem
+          python3 -m scripts.check_ingress
+      - name: Show ingress logs on failure
+        if: failure()
+        run: docker compose -f compose.ingress.yaml logs api ingress
+      - name: Stop ingress
+        if: always()
+        run: docker compose -f compose.ingress.yaml down -v
       - name: Stop
         if: always()
         run: docker compose down -v

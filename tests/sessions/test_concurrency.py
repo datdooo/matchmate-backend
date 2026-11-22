@@ -11,7 +11,14 @@ from app.db.models import ParticipationModel, SessionModel
 from app.db.session import create_db_engine, create_session_factory
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.domain.errors import DatabaseBusyError, DomainError
-from app.features.auth.repository import SqlAlchemyUserRepository
+from app.features.auth.infrastructure.player_profile_reader import SqlAlchemyPlayerProfileReader
+from app.features.catalog.infrastructure.venue_reader import (
+    SqlAlchemyVenueReader,
+    SqlAlchemyVenueStatusReader,
+)
+from app.features.matching.infrastructure.matching_request_writer import (
+    SqlAlchemyMatchingRequestWriter,
+)
 from app.features.sessions.session_repository import SqlAlchemySessionRepository
 from app.features.sessions.session_service import SessionService
 
@@ -126,9 +133,13 @@ def test_approval_against_session_cancellation(
         uow = SqlAlchemyUnitOfWork(db_session_factory, DatabaseBusyError)
         with uow.write():
             SessionService(
-                SqlAlchemySessionRepository(uow.session),
-                SqlAlchemyUserRepository(uow.session),
+                SqlAlchemySessionRepository(
+                    uow.session, SqlAlchemyVenueReader(lambda: uow.session)
+                ),
+                SqlAlchemyPlayerProfileReader(lambda: uow.session),
                 clock,
+                SqlAlchemyVenueStatusReader(lambda: uow.session),
+                SqlAlchemyMatchingRequestWriter(lambda: uow.session),
             ).cancel(game_data["first"], game_data["host"])
             uow.commit()
 

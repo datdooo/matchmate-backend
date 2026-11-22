@@ -17,8 +17,6 @@ from app.domain.enums import (
     SessionStatus,
 )
 from app.domain.errors import DomainError
-from app.features.auth.contracts import User
-from app.features.auth.repository import SqlAlchemyUserRepository
 from app.features.discovery.contracts import PlayerSummary, SessionRecord, VenueRecord
 from app.features.sessions.participation_contracts import (
     CreateParticipationInput,
@@ -33,9 +31,6 @@ class SqlAlchemyParticipationRepository:
 
     def __init__(self, session_provider: Callable[[], Session]) -> None:
         self._session_provider = session_provider
-
-    def get_user(self, user_id: int) -> User | None:
-        return SqlAlchemyUserRepository(self._session_provider()).get_by_id(user_id)
 
     def count_accepted(self, session_id: int) -> int:
         return self._session_provider().scalar(

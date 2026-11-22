@@ -3,9 +3,11 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from sqlalchemy import select
 
-from app.db.matching_request_writer import SqlAlchemyMatchingRequestWriter
 from app.db.models import MatchingRequestModel, VenueModel
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
+from app.features.matching.infrastructure.matching_request_writer import (
+    SqlAlchemyMatchingRequestWriter,
+)
 
 START = datetime(2030, 11, 1, 12, tzinfo=timezone.utc)
 NOW = START - timedelta(hours=1)

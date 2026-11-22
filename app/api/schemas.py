@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import Annotated, Any
 
-from pydantic import AfterValidator, AwareDatetime, BaseModel, BeforeValidator
+from pydantic import AfterValidator, AwareDatetime, BaseModel, BeforeValidator, ConfigDict
 
+from app.domain.enums import Gender, SkillLevel
 from app.domain.time_rules import to_utc
 
 
@@ -30,3 +31,12 @@ class ErrorPayload(BaseModel):
 
 class ErrorResponse(BaseModel):
     error: ErrorPayload
+
+
+class PlayerSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    display_name: str
+    skill_level: SkillLevel
+    gender: Gender

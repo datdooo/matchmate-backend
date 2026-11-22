@@ -2,9 +2,10 @@ from typing import Any
 
 from app.domain.entities import compute_display_status
 from app.domain.enums import Gender, SessionStatus, skill_to_rank
-from app.domain.ports import Clock
+from app.domain.ports import Clock, MatchingRequestWriter
 from app.domain.time_rules import is_valid_time_window
-from app.features.auth.contracts import UserRepository
+from app.features.auth.contracts import PlayerProfileReader
+from app.features.catalog.contracts import VenueStatusReader
 from app.features.sessions.session_contracts import (
     CreateSessionInput,
     SessionError,
@@ -16,12 +17,16 @@ class SessionService:
     def __init__(
         self,
         sessions: SessionRepository,
-        users: UserRepository,
+        users: PlayerProfileReader,
         clock: Clock,
+        venues: VenueStatusReader,
+        matching_writer: MatchingRequestWriter,
     ) -> None:
         self.sessions = sessions
         self.users = users
         self.clock = clock
+        self.venues = venues
+        self.matching_writer = matching_writer
 
     def create(self, data: CreateSessionInput, host_id: int) -> int:
         # Caller phải mở uow.write() trước khi gọi phương thức này.
@@ -38,7 +43,7 @@ class SessionService:
                 "Kèo phải ở tương lai và dài từ 60 đến 240 phút",
             )
 
-        active = self.sessions.venue_is_active(data.venue_id)
+        active = self.venues.is_active(data.venue_id)
         if active is None:
             raise SessionError("VENUE_NOT_FOUND", "Không tìm thấy sân")
         if not active:
@@ -69,7 +74,7 @@ class SessionService:
             raise SessionError("TIME_CONFLICT", "Host đã có lịch chồng giờ")
 
         session_id = self.sessions.create_with_host(data, host, now)
-        self.sessions.close_overlapping(host_id, data.starts_at, data.ends_at, now)
+        self.matching_writer.close_overlapping(host_id, data.starts_at, data.ends_at, now)
         return session_id
 
     def get_detail(self, session_id: int, viewer_id: int) -> dict[str, Any]:

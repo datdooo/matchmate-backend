@@ -3,14 +3,12 @@ from datetime import timedelta
 import pytest
 from pydantic import ValidationError
 
-from app.features.discovery.schemas import (
+from app.features.discovery.schemas import SessionQuery, SessionSummary, VenueQuery
+from app.features.matching.schemas import (
     CreateMatchingRequest,
     MatchingRequestSelf,
     MatchingResult,
     MatchingSuggestion,
-    SessionQuery,
-    SessionSummary,
-    VenueQuery,
 )
 
 START = "2026-11-01T19:00:00+07:00"

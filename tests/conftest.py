@@ -7,12 +7,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from app import composition
 from app.db.models import ParticipationModel, SessionModel, UserModel, VenueModel
 from app.db.session import create_db_engine, create_session_factory
 from app.features.auth import dependencies as auth_dependencies
 from app.features.auth.tokens import JwtTokenIssuer
-from app.features.discovery import dependencies as discovery_dependencies
-from app.features.sessions import participation_dependencies, session_router
 from app.main import app
 
 TEST_SECRET = "matchmate-tests-only-secret-32-bytes"
@@ -24,9 +23,7 @@ def client(monkeypatch, db_session_factory):
     monkeypatch.setenv("JWT_SECRET_KEY", TEST_SECRET)
     for module in (
         auth_dependencies,
-        discovery_dependencies,
-        participation_dependencies,
-        session_router,
+        composition,
     ):
         monkeypatch.setattr(module, "_session_factory", db_session_factory)
     saved = app.dependency_overrides.copy()
