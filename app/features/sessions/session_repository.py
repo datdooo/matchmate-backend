@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
@@ -17,8 +18,8 @@ from app.features.sessions.session_contracts import CreateSessionInput
 
 
 class SqlAlchemySessionRepository:
-    def __init__(self, session: Session, venues: VenueReader) -> None:
-        self.session = session
+    def __init__(self, session_provider: Callable[[], Session], venues: VenueReader) -> None:
+        self._session_provider = session_provider
         self._venues = venues
 
     def create_with_host(
@@ -48,10 +49,11 @@ class SqlAlchemySessionRepository:
             status="OPEN",
             created_at=now,
         )
-        self.session.add(model)
-        self.session.flush()
+        session = self._session_provider()
+        session.add(model)
+        session.flush()
 
-        self.session.add(
+        session.add(
             ParticipationModel(
                 user_id=host.id,
                 session_id=model.id,
@@ -62,7 +64,7 @@ class SqlAlchemySessionRepository:
                 decided_at=now,
             )
         )
-        self.session.flush()
+        session.flush()
 
         return model.id
 
@@ -84,7 +86,7 @@ class SqlAlchemySessionRepository:
             )
             .limit(1)
         )
-        return self.session.scalar(statement) is not None
+        return self._session_provider().scalar(statement) is not None
 
     @staticmethod
     def _player_summary(model: UserModel) -> dict[str, Any]:
@@ -96,11 +98,12 @@ class SqlAlchemySessionRepository:
         }
 
     def get_detail_data(self, session_id: int) -> dict[str, Any] | None:
-        model = self.session.get(SessionModel, session_id)
+        session = self._session_provider()
+        model = session.get(SessionModel, session_id)
         if model is None:
             return None
 
-        host = self.session.get(UserModel, model.host_user_id)
+        host = session.get(UserModel, model.host_user_id)
         venue = self._venues.get_by_id(model.venue_id)
         if host is None or venue is None:
             raise RuntimeError("Session references missing host or venue")
@@ -156,7 +159,7 @@ class SqlAlchemySessionRepository:
             "quoted_fee_vnd",
         )
         records = []
-        for participation, player in self.session.execute(statement):
+        for participation, player in session.execute(statement):
             record = {name: getattr(participation, name) for name in participation_fields}
             record["player"] = self._player_summary(player)
             records.append(record)
@@ -168,13 +171,13 @@ class SqlAlchemySessionRepository:
         }
 
     def cancel_active(self, session_id: int, now: datetime) -> None:
-        self.session.execute(
+        self._session_provider().execute(
             update(SessionModel)
             .where(SessionModel.id == session_id)
             .values(status="CANCELLED", cancelled_at=now)
         )
 
         # Cùng Session với UPDATE kèo; caller commit cả hai bước một lần.
-        SqlAlchemyParticipationRepository(lambda: self.session).cancel_active_for_session(
+        SqlAlchemyParticipationRepository(self._session_provider).cancel_active_for_session(
             session_id, now
         )

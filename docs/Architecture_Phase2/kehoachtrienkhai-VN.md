@@ -50,7 +50,8 @@ Phase 1 hoàn thành ngày 19/11/2026. Hợp đồng, dữ liệu mẫu, kiểm 
 
 **Thành viên 1 — Giao dịch ở tầng ứng dụng**
 
-- [ ] Đưa việc khởi tạo bộ điều hợp ra khỏi router của Sessions. Để ca sử dụng ở tầng ứng dụng mở và commit Unit of Work của chính nó; các thành phần cung cấp phụ thuộc chịu trách nhiệm kết nối. Bảo đảm lỗi commit được truyền lên dưới dạng lỗi và các thay đổi được rollback.
+- [x] Đưa việc khởi tạo bộ điều hợp ra khỏi router của Sessions. Để ca sử dụng ở tầng ứng dụng mở và commit Unit of Work của chính nó; các thành phần cung cấp phụ thuộc chịu trách nhiệm kết nối. Bảo đảm lỗi commit được truyền lên dưới dạng lỗi và các thay đổi được rollback.
+  - `POST /sessions` trả về `422` khi dữ liệu đầu vào không hợp lệ, kể cả khi khóa ghi SQLite đang được giữ.
 - [ ] Đưa việc băm và xác minh mật khẩu ra ngoài các giao dịch cơ sở dữ liệu tương ứng. Giữ nguyên thứ tự ưu tiên xác thực và ghi lại mọi thay đổi đã thống nhất về thứ tự ưu tiên 422/503 sau khi chuyển việc kiểm tra đầu vào lên trước giao dịch ghi.
 - [ ] Xác minh việc tạo phiên chơi vẫn tạo lượt tham gia đã được chấp nhận cho chủ phiên, phê duyệt vẫn giữ các giá trị phí và giới tính đã chụp tại thời điểm liên quan, và thao tác hủy/rút tham gia lặp lại vẫn giữ hành vi hiện tại. Kết nối thao tác tạo và phê duyệt với thành phần ghi của Matching qua cổng đã thống nhất.
 - [ ] Cung cấp `PlayerProfileReader` tối thiểu từ Identity để Sessions và Matching sử dụng DTO hồ sơ không chứa trường thông tin xác thực. Kết nối thành phần này, `Clock` và các bộ điều hợp kho dữ liệu tại composition root. Tách các quy tắc đủ tư cách tham gia và chuyển trạng thái của Sessions, đồng thời kiểm thử đơn vị bằng các đối tượng giả khi hữu ích.

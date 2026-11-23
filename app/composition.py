@@ -1,7 +1,5 @@
 """Connect public ports to adapters. Feature use cases never select implementations."""
 
-from collections.abc import Iterator
-
 from app.db.session import create_session_factory, engine
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.domain.errors import DatabaseBusyError
@@ -57,25 +55,14 @@ def provide_participation_service() -> ParticipationService:
     )
 
 
-def _session_service(uow: SqlAlchemyUnitOfWork) -> SessionService:
+def provide_session_service() -> SessionService:
+    uow = SqlAlchemyUnitOfWork(_session_factory, DatabaseBusyError)
     venues = SqlAlchemyVenueReader(lambda: uow.session)
     return SessionService(
-        sessions=SqlAlchemySessionRepository(uow.session, venues),
+        uow=uow,
+        sessions=SqlAlchemySessionRepository(lambda: uow.session, venues),
         users=SqlAlchemyPlayerProfileReader(lambda: uow.session),
         clock=SystemClock(),
         venues=SqlAlchemyVenueStatusReader(lambda: uow.session),
         matching_writer=SqlAlchemyMatchingRequestWriter(lambda: uow.session),
     )
-
-
-def provide_create_session_service() -> Iterator[SessionService]:
-    uow = SqlAlchemyUnitOfWork(_session_factory, DatabaseBusyError)
-    with uow.write():
-        yield _session_service(uow)
-        uow.commit()
-
-
-def provide_read_session_service() -> Iterator[SessionService]:
-    uow = SqlAlchemyUnitOfWork(_session_factory, DatabaseBusyError)
-    with uow.read():
-        yield _session_service(uow)

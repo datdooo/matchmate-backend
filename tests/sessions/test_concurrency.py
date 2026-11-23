@@ -131,17 +131,16 @@ def test_approval_against_session_cancellation(
     def cancel():
         # Dùng luồng hủy thật, với connection riêng đối đầu thao tác duyệt.
         uow = SqlAlchemyUnitOfWork(db_session_factory, DatabaseBusyError)
-        with uow.write():
-            SessionService(
-                SqlAlchemySessionRepository(
-                    uow.session, SqlAlchemyVenueReader(lambda: uow.session)
-                ),
-                SqlAlchemyPlayerProfileReader(lambda: uow.session),
-                clock,
-                SqlAlchemyVenueStatusReader(lambda: uow.session),
-                SqlAlchemyMatchingRequestWriter(lambda: uow.session),
-            ).cancel(game_data["first"], game_data["host"])
-            uow.commit()
+        SessionService(
+            uow,
+            SqlAlchemySessionRepository(
+                lambda: uow.session, SqlAlchemyVenueReader(lambda: uow.session)
+            ),
+            SqlAlchemyPlayerProfileReader(lambda: uow.session),
+            clock,
+            SqlAlchemyVenueStatusReader(lambda: uow.session),
+            SqlAlchemyMatchingRequestWriter(lambda: uow.session),
+        ).cancel(game_data["first"], game_data["host"])
 
     approved, cancelled = run_pair(
         lambda: make_service().decide(game_data["host"], pending.id, "APPROVE"),
