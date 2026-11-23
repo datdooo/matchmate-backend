@@ -11,30 +11,7 @@ from app.api.error_handlers import make_error_response
 from app.config import load_settings
 from app.domain.errors import DatabaseBusyError
 from app.features.auth.dependencies import lookup_authenticated_user
-
-
-def requires_authentication(request: Request) -> bool:
-    path = request.url.path.rstrip("/") or "/"
-    method = request.method
-
-    if method == "GET" and path == "/sessions":
-        host_me = request.query_params.get("host_me", "").lower()
-        return host_me in {"true", "1", "yes", "on", "t", "y"}
-
-    protected = [
-        ("POST", r"/sessions"),
-        ("GET", r"/sessions/[^/]+"),
-        ("DELETE", r"/sessions/[^/]+"),
-        ("POST", r"/participations"),
-        ("POST", r"/participations/[^/]+/decision"),
-        ("DELETE", r"/participations/[^/]+"),
-        ("POST", r"/matching/requests"),
-    ]
-
-    return any(
-        method == required_method and re.fullmatch(pattern, path)
-        for required_method, pattern in protected
-    )
+from app.features.auth.route_access import requires_authentication
 
 
 class JwtMiddleware(BaseHTTPMiddleware):

@@ -5,8 +5,7 @@ from fastapi import FastAPI
 from app.api.error_handlers import register_error_handlers
 from app.composition import provide_discovery_service, provide_matching_service
 from app.features.auth.dependencies import (
-    provide_login_service,
-    provide_registration_service,
+    provide_auth_service,
     provide_token_issuer,
 )
 from app.features.auth.middleware import JwtMiddleware
@@ -25,10 +24,10 @@ app.add_middleware(JwtMiddleware)
 
 register_error_handlers(app)
 
-app.include_router(create_auth_router(provide_registration_service))
+app.include_router(create_auth_router(provide_auth_service))
 app.include_router(
     create_login_router(
-        provide_login_service,
+        provide_auth_service,
         provide_token_issuer,
     )
 )

@@ -1,7 +1,5 @@
 """Connect public ports to adapters. Feature use cases never select implementations."""
 
-from collections.abc import Iterator
-
 from app.db.session import create_session_factory, engine
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.domain.errors import DatabaseBusyError
@@ -21,6 +19,8 @@ from app.features.matching.infrastructure.repository import SqlAlchemyMatchingRe
 from app.features.matching.service import MatchingService
 from app.features.sessions.participation_repository import SqlAlchemyParticipationRepository
 from app.features.sessions.participation_service import ParticipationService
+from app.features.sessions.session_detail_reader import SqlAlchemySessionDetailReader
+from app.features.sessions.session_detail_service import SessionDetailService
 from app.features.sessions.session_repository import SqlAlchemySessionRepository
 from app.features.sessions.session_service import SessionService
 
@@ -57,10 +57,12 @@ def provide_participation_service() -> ParticipationService:
     )
 
 
-def _session_service(uow: SqlAlchemyUnitOfWork) -> SessionService:
-    venues = SqlAlchemyVenueReader(lambda: uow.session)
+def provide_session_service() -> SessionService:
+    uow = SqlAlchemyUnitOfWork(_session_factory, DatabaseBusyError)
     return SessionService(
-        sessions=SqlAlchemySessionRepository(uow.session, venues),
+        uow=uow,
+        sessions=SqlAlchemySessionRepository(lambda: uow.session),
+        details=_session_detail_reader(uow),
         users=SqlAlchemyPlayerProfileReader(lambda: uow.session),
         clock=SystemClock(),
         venues=SqlAlchemyVenueStatusReader(lambda: uow.session),
@@ -68,14 +70,11 @@ def _session_service(uow: SqlAlchemyUnitOfWork) -> SessionService:
     )
 
 
-def provide_create_session_service() -> Iterator[SessionService]:
+def provide_session_detail_service() -> SessionDetailService:
     uow = SqlAlchemyUnitOfWork(_session_factory, DatabaseBusyError)
-    with uow.write():
-        yield _session_service(uow)
-        uow.commit()
+    return SessionDetailService(uow, _session_detail_reader(uow), SystemClock())
 
 
-def provide_read_session_service() -> Iterator[SessionService]:
-    uow = SqlAlchemyUnitOfWork(_session_factory, DatabaseBusyError)
-    with uow.read():
-        yield _session_service(uow)
+def _session_detail_reader(uow: SqlAlchemyUnitOfWork) -> SqlAlchemySessionDetailReader:
+    venues = SqlAlchemyVenueReader(lambda: uow.session)
+    return SqlAlchemySessionDetailReader(lambda: uow.session, venues)

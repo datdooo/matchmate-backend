@@ -18,6 +18,7 @@ from app.db.models import (
 )
 from app.db.session import create_db_engine, create_session_factory
 from app.features.auth import dependencies as auth_dependencies
+from app.main import app
 
 
 def database_snapshot(factory):
@@ -163,17 +164,27 @@ def test_protected_routes_authenticate_before_payload_validation(client, method,
 
 
 @pytest.mark.parametrize(
-    "path,expected",
+    "path,payload,expected",
     [
-        ("/auth/register", 503),
-        ("/sessions", 503),
-        ("/participations", 422),
+        ("/auth/register", {}, 422),
+        ("/sessions", {}, 422),
+        ("/participations", {}, 422),
+        (
+            "/auth/register",
+            {
+                "email": "locked@example.com",
+                "password": "test-password-123",
+                "display_name": "Lock test",
+                "skill_level": "TB",
+                "gender": "MALE",
+            },
+            503,
+        ),
     ],
 )
-def test_invalid_payload_priority_while_writer_is_locked(
-    client, auth_headers, game_data, db_engine, monkeypatch, path, expected
+def test_payload_validation_priority_while_writer_is_locked(
+    client, auth_headers, game_data, db_engine, monkeypatch, path, payload, expected
 ):
-    # This intentionally records the pre-refactor 422/503 difference.
     contender = create_db_engine(str(db_engine.url), busy_timeout=20)
     try:
         factory = create_session_factory(contender)
@@ -181,7 +192,7 @@ def test_invalid_payload_priority_while_writer_is_locked(
             monkeypatch.setattr(module, "_session_factory", factory)
         with db_engine.connect() as blocker:
             blocker.exec_driver_sql("BEGIN IMMEDIATE")
-            response = client.post(path, json={}, headers=auth_headers(game_data["player"]))
+            response = client.post(path, json=payload, headers=auth_headers(game_data["player"]))
             assert response.status_code == expected, response.text
             assert response.json()["error"]["code"] == (
                 "DATABASE_BUSY" if expected == 503 else "VALIDATION_ERROR"
@@ -194,24 +205,38 @@ def test_invalid_payload_priority_while_writer_is_locked(
 def test_detail_exposes_only_the_viewers_participations_to_non_hosts(
     client, auth_headers, game_data
 ):
+    player = auth_headers(game_data["player"])
+    payload = {"session_id": game_data["first"]}
     pending = client.post(
         "/participations",
-        headers=auth_headers(game_data["player"]),
-        json={"session_id": game_data["first"]},
+        headers=player,
+        json=payload,
     )
     assert pending.status_code == 201, pending.text
+    withdrawn = client.delete(f"/participations/{pending.json()['id']}", headers=player)
+    assert withdrawn.status_code == 200, withdrawn.text
+    rejoined = client.post("/participations", headers=player, json=payload)
+    assert rejoined.status_code == 201, rejoined.text
+
+    def unexpected_command_service():
+        pytest.fail("Session detail must use the read service")
+
+    app.dependency_overrides[composition.provide_session_service] = unexpected_command_service
     for actor in ("host", "player", "other"):
         response = client.get(
             f"/sessions/{game_data['first']}", headers=auth_headers(game_data[actor])
         )
         assert response.status_code == 200, response.text
         data = response.json()
-        assert all(row["user_id"] == game_data[actor] for row in data["my_participations"])
-        assert len(data["my_participations"]) == (0 if actor == "other" else 1)
+        participations = data["my_participations"]
+        assert all(row["user_id"] == game_data[actor] for row in participations)
         if actor == "host":
-            assert len(data["management"]["participations"]) == 2
+            assert [row["status"] for row in participations] == ["ACCEPTED"]
+            assert len(data["management"]["participations"]) == 3
         else:
             assert data["management"] is None
+            expected = {"PENDING", "CANCELLED"} if actor == "player" else set()
+            assert {row["status"] for row in participations} == expected
         assert "password_hash" not in response.text and "email" not in response.text
 
 

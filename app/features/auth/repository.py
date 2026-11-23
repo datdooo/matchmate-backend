@@ -1,4 +1,5 @@
 import sqlite3
+from collections.abc import Callable
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -27,12 +28,12 @@ def to_user(model: UserModel) -> User:
 
 
 class SqlAlchemyUserRepository:
-    def __init__(self, session: Session) -> None:
-        self.session = session
+    def __init__(self, session_provider: Callable[[], Session]) -> None:
+        self._session_provider = session_provider
 
     def get_by_email(self, email: str) -> User | None:
         statement = select(UserModel).where(UserModel.email == email)
-        model = self.session.scalar(statement)
+        model = self._session_provider().scalar(statement)
 
         if model is None:
             return None
@@ -44,7 +45,7 @@ class SqlAlchemyUserRepository:
         email: str,
     ) -> UserCredentials | None:
         statement = select(UserModel).where(UserModel.email == email)
-        model = self.session.scalar(statement)
+        model = self._session_provider().scalar(statement)
 
         if model is None:
             return None
@@ -65,10 +66,11 @@ class SqlAlchemyUserRepository:
             updated_at=data.created_at,
         )
 
-        self.session.add(model)
+        session = self._session_provider()
+        session.add(model)
 
         try:
-            self.session.flush()
+            session.flush()
         except IntegrityError as exc:
             is_duplicate_email = (
                 getattr(exc.orig, "sqlite_errorcode", None) == sqlite3.SQLITE_CONSTRAINT_UNIQUE
@@ -82,7 +84,7 @@ class SqlAlchemyUserRepository:
         return to_user(model)
 
     def get_by_id(self, user_id: int) -> User | None:
-        model = self.session.get(UserModel, user_id)
+        model = self._session_provider().get(UserModel, user_id)
         if model is None:
             return None
 

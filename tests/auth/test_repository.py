@@ -28,14 +28,14 @@ def test_create_user_persists_after_commit(
     new_user: NewUser,
 ) -> None:
     with db_session_factory.begin() as session:
-        repository = SqlAlchemyUserRepository(session)
+        repository = SqlAlchemyUserRepository(lambda: session)
         user = repository.create(new_user)
 
         assert user.id > 0
 
     # Mở session khác để kiểm dữ liệu đã được commit.
     with db_session_factory() as session:
-        repository = SqlAlchemyUserRepository(session)
+        repository = SqlAlchemyUserRepository(lambda: session)
         loaded = repository.get_by_email(new_user.email)
 
         assert loaded == user
@@ -55,11 +55,11 @@ def test_duplicate_email_rolls_back(
     new_user: NewUser,
 ) -> None:
     with db_session_factory.begin() as session:
-        SqlAlchemyUserRepository(session).create(new_user)
+        SqlAlchemyUserRepository(lambda: session).create(new_user)
 
     with pytest.raises(EmailAlreadyExistsError):
         with db_session_factory.begin() as session:
-            SqlAlchemyUserRepository(session).create(new_user)
+            SqlAlchemyUserRepository(lambda: session).create(new_user)
 
     with db_session_factory() as session:
         count = session.scalar(select(func.count()).select_from(UserModel))

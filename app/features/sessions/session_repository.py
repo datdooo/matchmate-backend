@@ -1,25 +1,19 @@
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from app.db.models import (
-    ParticipationModel,
-    SessionModel,
-    UserModel,
-)
-from app.domain.enums import Gender, rank_to_skill, skill_to_rank
+from app.db.models import ParticipationModel, SessionModel
+from app.domain.enums import Gender, skill_to_rank
 from app.features.auth.contracts import PlayerProfile
-from app.features.catalog.contracts import VenueReader
 from app.features.sessions.participation_repository import SqlAlchemyParticipationRepository
 from app.features.sessions.session_contracts import CreateSessionInput
 
 
 class SqlAlchemySessionRepository:
-    def __init__(self, session: Session, venues: VenueReader) -> None:
-        self.session = session
-        self._venues = venues
+    def __init__(self, session_provider: Callable[[], Session]) -> None:
+        self._session_provider = session_provider
 
     def create_with_host(
         self,
@@ -48,10 +42,11 @@ class SqlAlchemySessionRepository:
             status="OPEN",
             created_at=now,
         )
-        self.session.add(model)
-        self.session.flush()
+        session = self._session_provider()
+        session.add(model)
+        session.flush()
 
-        self.session.add(
+        session.add(
             ParticipationModel(
                 user_id=host.id,
                 session_id=model.id,
@@ -62,7 +57,7 @@ class SqlAlchemySessionRepository:
                 decided_at=now,
             )
         )
-        self.session.flush()
+        session.flush()
 
         return model.id
 
@@ -84,97 +79,16 @@ class SqlAlchemySessionRepository:
             )
             .limit(1)
         )
-        return self.session.scalar(statement) is not None
-
-    @staticmethod
-    def _player_summary(model: UserModel) -> dict[str, Any]:
-        return {
-            "id": model.id,
-            "display_name": model.display_name,
-            "skill_level": rank_to_skill(model.skill_level),
-            "gender": model.gender,
-        }
-
-    def get_detail_data(self, session_id: int) -> dict[str, Any] | None:
-        model = self.session.get(SessionModel, session_id)
-        if model is None:
-            return None
-
-        host = self.session.get(UserModel, model.host_user_id)
-        venue = self._venues.get_by_id(model.venue_id)
-        if host is None or venue is None:
-            raise RuntimeError("Session references missing host or venue")
-
-        fields = (
-            "id",
-            "title",
-            "notes",
-            "starts_at",
-            "ends_at",
-            "play_type",
-            "fee_male_vnd",
-            "fee_female_vnd",
-            "gender_policy",
-            "status",
-            "created_at",
-            "cancelled_at",
-        )
-        data = {name: getattr(model, name) for name in fields}
-        data.update(
-            host=self._player_summary(host),
-            venue={
-                "id": venue.id,
-                "name": venue.name,
-                "address": venue.address,
-                "district_code": venue.district_code,
-                "is_active": venue.is_active,
-            },
-            min_level=rank_to_skill(model.min_level),
-            max_level=rank_to_skill(model.max_level),
-        )
-
-        statement = (
-            select(ParticipationModel, UserModel)
-            .select_from(ParticipationModel)
-            .join(UserModel, ParticipationModel.user_id == UserModel.id)
-            .where(ParticipationModel.session_id == session_id)
-            .order_by(
-                ParticipationModel.created_at.desc(),
-                ParticipationModel.id.desc(),
-            )
-        )
-
-        participation_fields = (
-            "id",
-            "user_id",
-            "session_id",
-            "status",
-            "created_at",
-            "decided_at",
-            "cancelled_at",
-            "gender_at_join",
-            "quoted_fee_vnd",
-        )
-        records = []
-        for participation, player in self.session.execute(statement):
-            record = {name: getattr(participation, name) for name in participation_fields}
-            record["player"] = self._player_summary(player)
-            records.append(record)
-
-        return {
-            "session": data,
-            "host_user_id": model.host_user_id,
-            "participations": records,
-        }
+        return self._session_provider().scalar(statement) is not None
 
     def cancel_active(self, session_id: int, now: datetime) -> None:
-        self.session.execute(
+        self._session_provider().execute(
             update(SessionModel)
             .where(SessionModel.id == session_id)
             .values(status="CANCELLED", cancelled_at=now)
         )
 
         # Cùng Session với UPDATE kèo; caller commit cả hai bước một lần.
-        SqlAlchemyParticipationRepository(lambda: self.session).cancel_active_for_session(
+        SqlAlchemyParticipationRepository(self._session_provider).cancel_active_for_session(
             session_id, now
         )

@@ -1,7 +1,10 @@
+from unittest.mock import MagicMock
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api.error_handlers import register_error_handlers
+from app.domain.ports import UnitOfWork
 from app.features.auth.contracts import (
     EmailAlreadyExistsError,
     NewUser,
@@ -39,7 +42,7 @@ class FakeUserRepository:
 
 
 def build_test_app(repository: FakeUserRepository) -> FastAPI:
-    service = AuthService(repository, Argon2PasswordHasher())
+    service = AuthService(repository, Argon2PasswordHasher(), MagicMock(spec=UnitOfWork))
 
     def provide_service() -> AuthService:
         return service

@@ -1,6 +1,9 @@
+from unittest.mock import MagicMock
+
 import pytest
 
 from app.domain.enums import Gender, SkillLevel
+from app.domain.ports import UnitOfWork
 from app.features.auth.contracts import (
     EmailAlreadyExistsError,
     NewUser,
@@ -39,7 +42,7 @@ class FakeUserRepository:
 def test_registers_stores_password_hash() -> None:
     repository = FakeUserRepository()
     hasher = Argon2PasswordHasher()
-    service = AuthService(repository, hasher)
+    service = AuthService(repository, hasher, MagicMock(spec=UnitOfWork))
 
     user = service.register(
         email=" Player01@example.com ",
@@ -64,7 +67,7 @@ def test_registers_stores_password_hash() -> None:
 
 def test_register_rejects_duplicate_email() -> None:
     repository = FakeUserRepository()
-    service = AuthService(repository, Argon2PasswordHasher())
+    service = AuthService(repository, Argon2PasswordHasher(), MagicMock(spec=UnitOfWork))
 
     service.register(
         email="player01@example.com",

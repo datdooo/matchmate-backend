@@ -19,6 +19,7 @@ from app.features.catalog.infrastructure.venue_reader import (
 from app.features.matching.infrastructure.matching_request_writer import (
     SqlAlchemyMatchingRequestWriter,
 )
+from app.features.sessions.session_detail_reader import SqlAlchemySessionDetailReader
 from app.features.sessions.session_repository import SqlAlchemySessionRepository
 from app.features.sessions.session_service import SessionService
 
@@ -131,17 +132,17 @@ def test_approval_against_session_cancellation(
     def cancel():
         # Dùng luồng hủy thật, với connection riêng đối đầu thao tác duyệt.
         uow = SqlAlchemyUnitOfWork(db_session_factory, DatabaseBusyError)
-        with uow.write():
-            SessionService(
-                SqlAlchemySessionRepository(
-                    uow.session, SqlAlchemyVenueReader(lambda: uow.session)
-                ),
-                SqlAlchemyPlayerProfileReader(lambda: uow.session),
-                clock,
-                SqlAlchemyVenueStatusReader(lambda: uow.session),
-                SqlAlchemyMatchingRequestWriter(lambda: uow.session),
-            ).cancel(game_data["first"], game_data["host"])
-            uow.commit()
+        SessionService(
+            uow,
+            SqlAlchemySessionRepository(lambda: uow.session),
+            SqlAlchemySessionDetailReader(
+                lambda: uow.session, SqlAlchemyVenueReader(lambda: uow.session)
+            ),
+            SqlAlchemyPlayerProfileReader(lambda: uow.session),
+            clock,
+            SqlAlchemyVenueStatusReader(lambda: uow.session),
+            SqlAlchemyMatchingRequestWriter(lambda: uow.session),
+        ).cancel(game_data["first"], game_data["host"])
 
     approved, cancelled = run_pair(
         lambda: make_service().decide(game_data["host"], pending.id, "APPROVE"),

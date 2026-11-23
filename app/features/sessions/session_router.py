@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, Path, Request, status
 from fastapi.security import HTTPBearer
 
 from app.api.schemas import ErrorResponse
-from app.composition import provide_create_session_service, provide_read_session_service
+from app.composition import provide_session_detail_service, provide_session_service
+from app.features.sessions.session_detail_service import SessionDetailService
 from app.features.sessions.session_schemas import CreateSessionRequest, SessionDetail
 from app.features.sessions.session_service import SessionService
 
@@ -27,16 +28,13 @@ _bearer = HTTPBearer(auto_error=False)
 def create_session(
     payload: CreateSessionRequest,
     request: Request,
-    service: SessionService = Depends(
-        provide_create_session_service,
-        scope="function",
-    ),
+    service: SessionService = Depends(provide_session_service),
 ) -> SessionDetail:
-    session_id = service.create(
+    detail = service.create(
         data=payload.to_input(),
         host_id=request.state.principal.id,
     )
-    return SessionDetail.model_validate(service.get_detail(session_id, request.state.principal.id))
+    return SessionDetail.model_validate(detail)
 
 
 @router.get(
@@ -53,10 +51,7 @@ def create_session(
 def get_session_detail(
     session_id: Annotated[int, Path(gt=0, le=9223372036854775807)],
     request: Request,
-    service: SessionService = Depends(
-        provide_read_session_service,
-        scope="function",
-    ),
+    service: SessionDetailService = Depends(provide_session_detail_service),
 ) -> SessionDetail:
     return SessionDetail.model_validate(service.get_detail(session_id, request.state.principal.id))
 
@@ -78,9 +73,6 @@ def get_session_detail(
 def cancel_session(
     session_id: Annotated[int, Path(gt=0, le=9223372036854775807)],
     request: Request,
-    service: SessionService = Depends(
-        provide_create_session_service,
-        scope="function",
-    ),
+    service: SessionService = Depends(provide_session_service),
 ) -> SessionDetail:
     return SessionDetail.model_validate(service.cancel(session_id, request.state.principal.id))

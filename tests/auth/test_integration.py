@@ -1,12 +1,44 @@
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import event, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.models import UserModel
 from app.features.auth import dependencies
 from app.features.auth.security import Argon2PasswordHasher
 from app.main import app
+
+
+def test_password_work_runs_outside_database_transactions(client, db_engine, monkeypatch):
+    steps = []
+    event.listen(db_engine, "begin", lambda _connection: steps.append("begin"))
+    event.listen(db_engine, "commit", lambda _connection: steps.append("commit"))
+    event.listen(db_engine, "rollback", lambda _connection: steps.append("rollback"))
+    original_hash = Argon2PasswordHasher.hash
+    original_verify = Argon2PasswordHasher.verify
+
+    def hash_password(self, password):
+        steps.append("hash")
+        return original_hash(self, password)
+
+    def verify_password(self, password, password_hash):
+        steps.append("verify")
+        return original_verify(self, password, password_hash)
+
+    monkeypatch.setattr(Argon2PasswordHasher, "hash", hash_password)
+    monkeypatch.setattr(Argon2PasswordHasher, "verify", verify_password)
+    credentials = {"email": "player@example.com", "password": "example-password"}
+    response = client.post(
+        "/auth/register",
+        json=credentials | {"display_name": "Player", "skill_level": "TB", "gender": "MALE"},
+    )
+    assert response.status_code == 201, response.text
+    assert steps == ["hash", "begin", "commit"]
+
+    steps.clear()
+    response = client.post("/auth/login", json=credentials)
+    assert response.status_code == 200, response.text
+    assert steps == ["begin", "rollback", "verify"]
 
 
 def test_registration_with_sqlite(
