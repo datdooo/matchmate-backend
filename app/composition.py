@@ -19,6 +19,8 @@ from app.features.matching.infrastructure.repository import SqlAlchemyMatchingRe
 from app.features.matching.service import MatchingService
 from app.features.sessions.participation_repository import SqlAlchemyParticipationRepository
 from app.features.sessions.participation_service import ParticipationService
+from app.features.sessions.session_detail_reader import SqlAlchemySessionDetailReader
+from app.features.sessions.session_detail_service import SessionDetailService
 from app.features.sessions.session_repository import SqlAlchemySessionRepository
 from app.features.sessions.session_service import SessionService
 
@@ -57,12 +59,22 @@ def provide_participation_service() -> ParticipationService:
 
 def provide_session_service() -> SessionService:
     uow = SqlAlchemyUnitOfWork(_session_factory, DatabaseBusyError)
-    venues = SqlAlchemyVenueReader(lambda: uow.session)
     return SessionService(
         uow=uow,
-        sessions=SqlAlchemySessionRepository(lambda: uow.session, venues),
+        sessions=SqlAlchemySessionRepository(lambda: uow.session),
+        details=_session_detail_reader(uow),
         users=SqlAlchemyPlayerProfileReader(lambda: uow.session),
         clock=SystemClock(),
         venues=SqlAlchemyVenueStatusReader(lambda: uow.session),
         matching_writer=SqlAlchemyMatchingRequestWriter(lambda: uow.session),
     )
+
+
+def provide_session_detail_service() -> SessionDetailService:
+    uow = SqlAlchemyUnitOfWork(_session_factory, DatabaseBusyError)
+    return SessionDetailService(uow, _session_detail_reader(uow), SystemClock())
+
+
+def _session_detail_reader(uow: SqlAlchemyUnitOfWork) -> SqlAlchemySessionDetailReader:
+    venues = SqlAlchemyVenueReader(lambda: uow.session)
+    return SqlAlchemySessionDetailReader(lambda: uow.session, venues)

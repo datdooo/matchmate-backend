@@ -1,7 +1,5 @@
 from typing import Any
 
-from app.domain.entities import compute_display_status
-from app.domain.enums import SessionStatus
 from app.domain.ports import Clock, MatchingRequestWriter, UnitOfWork
 from app.domain.time_rules import is_valid_time_window
 from app.features.auth.contracts import PlayerProfileReader
@@ -12,9 +10,11 @@ from app.features.sessions.domain.policies import (
 )
 from app.features.sessions.session_contracts import (
     CreateSessionInput,
+    SessionDetailReader,
     SessionError,
     SessionRepository,
 )
+from app.features.sessions.session_detail_service import build_session_detail
 
 
 class SessionService:
@@ -22,6 +22,7 @@ class SessionService:
         self,
         uow: UnitOfWork,
         sessions: SessionRepository,
+        details: SessionDetailReader,
         users: PlayerProfileReader,
         clock: Clock,
         venues: VenueStatusReader,
@@ -29,6 +30,7 @@ class SessionService:
     ) -> None:
         self.uow = uow
         self.sessions = sessions
+        self.details = details
         self.users = users
         self.clock = clock
         self.venues = venues
@@ -65,59 +67,15 @@ class SessionService:
 
             session_id = self.sessions.create_with_host(data, host, now)
             self.matching_writer.close_overlapping(host_id, data.starts_at, data.ends_at, now)
-            detail = self._get_detail(session_id, host_id)
+            detail = build_session_detail(
+                self.details.get_detail_data(session_id), host_id, self.clock
+            )
             self.uow.commit()
             return detail
 
-    def get_detail(self, session_id: int, viewer_id: int) -> dict[str, Any]:
-        with self.uow.read():
-            return self._get_detail(session_id, viewer_id)
-
-    def _get_detail(self, session_id: int, viewer_id: int) -> dict[str, Any]:
-        snapshot = self.sessions.get_detail_data(session_id)
-        if snapshot is None:
-            raise SessionError("SESSION_NOT_FOUND", "Không tìm thấy kèo")
-
-        data = snapshot["session"]
-        records = snapshot["participations"]
-        is_host = snapshot["host_user_id"] == viewer_id
-        now = self.clock.now()
-
-        capacity = 2 if data["play_type"] == "SINGLES" else 4
-        accepted_count = sum(record["status"] == "ACCEPTED" for record in records)
-        available_for_changes = data["status"] == "OPEN" and now < data["starts_at"]
-
-        for record in records:
-            record["can_cancel"] = (
-                available_for_changes
-                and not is_host
-                and record["user_id"] == viewer_id
-                and record["status"] in ("PENDING", "ACCEPTED")
-            )
-            record["can_decide"] = (
-                available_for_changes and is_host and record["status"] == "PENDING"
-            )
-
-        data.update(
-            capacity=capacity,
-            accepted_count=accepted_count,
-            remaining_capacity=capacity - accepted_count,
-            display_status=compute_display_status(
-                SessionStatus(data["status"]),
-                data["starts_at"],
-                data["ends_at"],
-                accepted_count,
-                capacity,
-                now,
-            ),
-            my_participations=[record for record in records if record["user_id"] == viewer_id],
-            management={"participations": records} if is_host else None,
-        )
-        return data
-
     def cancel(self, session_id: int, actor_id: int) -> dict[str, Any]:
         with self.uow.write():
-            snapshot = self.sessions.get_detail_data(session_id)
+            snapshot = self.details.get_detail_data(session_id)
             if snapshot is None:
                 raise SessionError("SESSION_NOT_FOUND", "Không tìm thấy kèo")
 
@@ -132,6 +90,8 @@ class SessionService:
             if cancelled_at is not None:
                 self.sessions.cancel_active(session_id, cancelled_at)
 
-            detail = self._get_detail(session_id, actor_id)
+            detail = build_session_detail(
+                self.details.get_detail_data(session_id), actor_id, self.clock
+            )
             self.uow.commit()
             return detail

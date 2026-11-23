@@ -4,6 +4,9 @@ import time
 import jwt
 import pytest
 
+from app.features.auth.route_access import ROUTE_ACCESS
+from app.main import app
+
 NOW = int(time.time())
 
 
@@ -17,6 +20,46 @@ def assert_unauthorized(response):
     assert response.status_code == 401
     assert response.headers["WWW-Authenticate"] == "Bearer"
     assert response.json()["error"]["code"] == "UNAUTHORIZED"
+
+
+def test_every_http_route_declares_an_access_policy():
+    registered = set()
+    for entry in app.routes:
+        routes = (
+            entry.effective_route_contexts()
+            if hasattr(entry, "effective_route_contexts")
+            else (entry,)
+        )
+        for route in routes:
+            registered.update(
+                (method, route.path) for method in (getattr(route, "methods", None) or ())
+            )
+
+    assert registered == ROUTE_ACCESS.keys()
+
+
+@pytest.mark.parametrize("host_me", ["true", "1", "YES", "on", "t", "y"])
+def test_session_search_requires_authentication_for_truthy_host_me(client, host_me):
+    assert_unauthorized(client.get("/sessions", params={"host_me": host_me}))
+
+
+@pytest.mark.parametrize("params", [{}, {"host_me": "false"}])
+def test_session_search_is_public_without_host_me(client, game_data, params):
+    response = client.get("/sessions", params=params | {"only_available": "false"})
+
+    assert response.status_code == 200, response.text
+    assert response.json()["total"] == 2
+
+
+def test_session_search_scopes_host_me_to_authenticated_viewer(client, auth_headers, game_data):
+    for actor, total in (("host", 2), ("player", 0)):
+        response = client.get(
+            "/sessions",
+            params={"host_me": "YES", "only_available": "false"},
+            headers=auth_headers(game_data[actor]),
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["total"] == total
 
 
 def test_valid_token_is_accepted(client, auth_headers, game_data):
@@ -87,7 +130,8 @@ def test_malformed_authorization_header_is_rejected(client, game_data, header):
     assert_unauthorized(response)
 
 
-def test_invalid_token_is_rejected_even_on_public_route(client):
-    response = client.get("/venues", headers={"Authorization": "Bearer not-a-jwt"})
+@pytest.mark.parametrize("path", ["/venues", "/sessions"])
+def test_invalid_token_is_rejected_even_on_public_route(client, path):
+    response = client.get(path, headers={"Authorization": "Bearer not-a-jwt"})
 
     assert_unauthorized(response)

@@ -138,6 +138,8 @@ def test_matching_replace_group_create_approve_cancel(
         },
     )
     assert game.status_code == 201, game.text
+    detail_url = f"/sessions/{game.json()['id']}"
+    assert client.get(detail_url, headers=host).json() == game.json()
     pending = client.post("/participations", json={"session_id": game.json()["id"]}, headers=player)
     assert pending.status_code == 201, pending.text
     part_id = pending.json()["id"]
@@ -152,9 +154,10 @@ def test_matching_replace_group_create_approve_cancel(
             "CONFIRMED",
             "CONFIRMED",
         ]
-    cancelled = client.delete(f"/sessions/{game.json()['id']}", headers=host)
+    cancelled = client.delete(detail_url, headers=host)
     assert cancelled.status_code == 200, cancelled.text
     assert cancelled.json()["accepted_count"] == 0
+    assert client.get(detail_url, headers=host).json() == cancelled.json()
     assert client.delete(f"/participations/{part_id}", headers=player).status_code == 200
 
 

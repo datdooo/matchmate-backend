@@ -19,6 +19,7 @@ from app.features.catalog.infrastructure.venue_reader import (
 from app.features.matching.infrastructure.matching_request_writer import (
     SqlAlchemyMatchingRequestWriter,
 )
+from app.features.sessions.session_detail_reader import SqlAlchemySessionDetailReader
 from app.features.sessions.session_repository import SqlAlchemySessionRepository
 from app.features.sessions.session_service import SessionService
 
@@ -133,7 +134,8 @@ def test_approval_against_session_cancellation(
         uow = SqlAlchemyUnitOfWork(db_session_factory, DatabaseBusyError)
         SessionService(
             uow,
-            SqlAlchemySessionRepository(
+            SqlAlchemySessionRepository(lambda: uow.session),
+            SqlAlchemySessionDetailReader(
                 lambda: uow.session, SqlAlchemyVenueReader(lambda: uow.session)
             ),
             SqlAlchemyPlayerProfileReader(lambda: uow.session),

@@ -56,7 +56,8 @@ Phase 1 hoàn thành ngày 19/11/2026. Hợp đồng, dữ liệu mẫu, kiểm 
   - `POST /auth/register` trả về `422` khi dữ liệu đầu vào không hợp lệ, kể cả khi khóa ghi SQLite đang được giữ. Yêu cầu hợp lệ vẫn nhận `503` nếu hết thời gian chờ khóa. Các tuyến được bảo vệ vẫn xác thực trước khi kiểm tra dữ liệu đầu vào.
 - [x] Xác minh việc tạo phiên chơi vẫn tạo lượt tham gia đã được chấp nhận cho chủ phiên, phê duyệt vẫn giữ các giá trị phí và giới tính đã chụp tại thời điểm liên quan, và thao tác hủy/rút tham gia lặp lại vẫn giữ hành vi hiện tại. Kết nối thao tác tạo và phê duyệt với thành phần ghi của Matching qua cổng đã thống nhất.
 - [x] Cung cấp `PlayerProfileReader` tối thiểu từ Identity để Sessions và Matching sử dụng DTO hồ sơ không chứa trường thông tin xác thực. Kết nối thành phần này, `Clock` và các bộ điều hợp kho dữ liệu tại composition root. Tách các quy tắc đủ tư cách tham gia và chuyển trạng thái của Sessions, đồng thời kiểm thử đơn vị bằng các đối tượng giả khi hữu ích.
-- [ ] Tách luồng đọc chi tiết Sessions khỏi các lệnh vòng đời. Giữ nguyên `management` chỉ dành cho chủ phiên và `my_participations` riêng cho từng người xem. Khai báo chính sách truy cập công khai/được bảo vệ cho các tuyến API và kiểm thử hành vi xác thực có điều kiện.
+- [x] Tách luồng đọc chi tiết Sessions khỏi các lệnh vòng đời. Giữ nguyên `management` chỉ dành cho chủ phiên và `my_participations` riêng cho từng người xem. Khai báo chính sách truy cập công khai/được bảo vệ cho các tuyến API và kiểm thử hành vi xác thực có điều kiện.
+  - [Chính sách truy cập](../../app/features/auth/route_access.py) bao phủ tất cả các tuyến HTTP đã đăng ký. Tìm kiếm phiên chơi yêu cầu xác thực khi `host_me` là `true`.
 
 **Thành viên 2 — Lưu trữ trên PostgreSQL**
 

@@ -56,7 +56,8 @@ Phase 1 closed on 19 November 2026. The [consolidated Phase 1 report](../Impleme
   - `POST /auth/register` returns `422` for invalid input even when the SQLite write lock is held. A valid request still returns `503` if the lock times out. Protected routes still authenticate before validating input.
 - [x] Verify create-session still creates the host's accepted participation, approval preserves fee and gender snapshots, and repeated cancel/withdraw retains its current behavior. Connect create and approve to the matching writer through the agreed port.
 - [x] Expose a minimal `PlayerProfileReader` from Identity so Sessions and Matching consume profile DTOs without credential fields. Wire it, `Clock`, and repository adapters in the composition root. Extract and unit-test the Sessions eligibility and transition rules with fakes where useful.
-- [ ] Separate Sessions detail reads from lifecycle commands. Preserve host-only `management` and each viewer's `my_participations`. Declare public/protected route access policies and cover conditional authentication behavior.
+- [x] Separate Sessions detail reads from lifecycle commands. Preserve host-only `management` and each viewer's `my_participations`. Declare public/protected route access policies and cover conditional authentication behavior.
+  - [Route access policies](../../app/features/auth/route_access.py) cover every registered HTTP route. Session search requires authentication when `host_me` is true.
 
 **Member 2 — PostgreSQL persistence**
 
