@@ -4,10 +4,16 @@ from datetime import datetime
 from typing import Literal
 
 from app.domain.entities import Session
-from app.domain.enums import Gender, GenderPolicy, ParticipationStatus, SessionStatus, skill_to_rank
+from app.domain.enums import Gender, ParticipationStatus
 from app.domain.errors import DomainError
 from app.domain.ports import Clock, MatchingRequestWriter, UnitOfWork
 from app.features.auth.contracts import PlayerProfile, PlayerProfileReader
+from app.features.sessions.domain.policies import (
+    require_decision_allowed,
+    require_open_session,
+    require_player_eligibility,
+    should_withdraw,
+)
 from app.features.sessions.participation_contracts import (
     CreateParticipationInput,
     ParticipationDetail,
@@ -35,7 +41,7 @@ class ParticipationService:
             # BEGIN IMMEDIATE đã thành công. Không dùng thời gian cũ trước khi chờ khóa.
             now = self.clock.now()
             game = self._session(session_id)
-            self._require_open(game, now)
+            require_open_session(game, now)
             self._require_capacity(game)
             user = self._eligible_user(actor_user_id, game)
             if self.repository.has_active(actor_user_id, session_id):
@@ -68,11 +74,7 @@ class ParticipationService:
             if part is None:
                 raise DomainError("PARTICIPATION_NOT_FOUND", "Không tìm thấy lượt tham gia")
             game = self._session(part.session_id)
-            if actor_user_id != game.host_user_id:
-                raise DomainError("FORBIDDEN", "Chỉ chủ kèo được quyết định yêu cầu")
-            if part.status != ParticipationStatus.PENDING:
-                raise DomainError("INVALID_STATE", "Chỉ quyết định yêu cầu đang PENDING")
-            self._require_open(game, now)
+            require_decision_allowed(game, part, actor_user_id, now)
 
             if decision == "APPROVE":
                 # Kiểm lại hồ sơ hiện tại; snapshot lúc xin tham gia vẫn giữ nguyên.
@@ -102,18 +104,8 @@ class ParticipationService:
             if part is None:
                 raise DomainError("PARTICIPATION_NOT_FOUND", "Không tìm thấy lượt tham gia")
             game = self._session(part.session_id)
-            if actor_user_id != part.user_id:
-                raise DomainError("FORBIDDEN", "Chỉ được rút lượt của mình")
-            if actor_user_id == game.host_user_id:
-                raise DomainError("HOST_PARTICIPATION_REQUIRED", "Chủ kèo phải hủy kèo để rút")
-
-            # DELETE lặp trả bản cũ trước kiểm giờ; không đổi timestamp lần hai.
-            if part.status == ParticipationStatus.CANCELLED:
-                return self._finish(part.id, actor_user_id, now)
-            if part.status not in (ParticipationStatus.PENDING, ParticipationStatus.ACCEPTED):
-                raise DomainError("INVALID_STATE", "Lượt này không thể rút")
-            self._require_open(game, now)
-            self.repository.set_status(part.id, ParticipationStatus.CANCELLED, now)
+            if should_withdraw(game, part, actor_user_id, now):
+                self.repository.set_status(part.id, ParticipationStatus.CANCELLED, now)
             # Matching đã đóng không mở lại khi người chơi rút lượt.
             return self._finish(part.id, actor_user_id, now)
 
@@ -123,13 +115,6 @@ class ParticipationService:
             raise DomainError("SESSION_NOT_FOUND", "Không tìm thấy kèo")
         return game
 
-    @staticmethod
-    def _require_open(game: Session, now: datetime) -> None:
-        if game.status == SessionStatus.CANCELLED:
-            raise DomainError("SESSION_CANCELLED", "Kèo đã hủy")
-        if now >= game.starts_at:
-            raise DomainError("SESSION_ALREADY_STARTED", "Kèo đã bắt đầu")
-
     def _require_capacity(self, game: Session) -> None:
         if self.repository.count_accepted(game.id) >= game.capacity:
             raise DomainError("SESSION_FULL", "Kèo không còn chỗ để xác nhận")
@@ -138,17 +123,7 @@ class ParticipationService:
         user = self.profiles.get_by_id(user_id)
         if user is None:
             raise DomainError("UNAUTHORIZED", "Tài khoản không tồn tại")
-        if user.gender not in (Gender.MALE, Gender.FEMALE):
-            raise DomainError("PROFILE_INCOMPLETE", "Cần khai giới tính để xác định phí")
-        policy_matches = (
-            game.gender_policy == GenderPolicy.ANY
-            or game.gender_policy.value == f"{user.gender.value}_ONLY"
-        )
-        if (
-            not policy_matches
-            or not game.min_level <= skill_to_rank(user.skill_level) <= game.max_level
-        ):
-            raise DomainError("ELIGIBILITY_MISMATCH", "Hồ sơ không đáp ứng điều kiện của kèo")
+        require_player_eligibility(user, game)
         return user
 
     def _finish(

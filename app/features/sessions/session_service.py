@@ -1,11 +1,15 @@
 from typing import Any
 
 from app.domain.entities import compute_display_status
-from app.domain.enums import Gender, SessionStatus, skill_to_rank
+from app.domain.enums import SessionStatus
 from app.domain.ports import Clock, MatchingRequestWriter, UnitOfWork
 from app.domain.time_rules import is_valid_time_window
 from app.features.auth.contracts import PlayerProfileReader
 from app.features.catalog.contracts import VenueStatusReader
+from app.features.sessions.domain.policies import (
+    require_host_eligibility,
+    session_cancellation_time,
+)
 from app.features.sessions.session_contracts import (
     CreateSessionInput,
     SessionError,
@@ -54,23 +58,7 @@ class SessionService:
             host = self.users.get_by_id(host_id)
             if host is None:
                 raise SessionError("UNAUTHORIZED", "Tài khoản không tồn tại")
-            if host.gender not in (Gender.MALE, Gender.FEMALE):
-                raise SessionError("PROFILE_INCOMPLETE", "Hồ sơ chưa đầy đủ")
-
-            minimum = skill_to_rank(data.min_level)
-            maximum = skill_to_rank(data.max_level)
-            if minimum > maximum:
-                raise SessionError("VALIDATION_ERROR", "Khoảng trình độ không hợp lệ")
-
-            allowed_policy = ("ANY", f"{host.gender.value}_ONLY")
-            if (
-                not minimum <= skill_to_rank(host.skill_level) <= maximum
-                or data.gender_policy not in allowed_policy
-            ):
-                raise SessionError(
-                    "ELIGIBILITY_MISMATCH",
-                    "Host không đáp ứng điều kiện của kèo",
-                )
+            require_host_eligibility(host, data)
 
             if self.sessions.has_accepted_overlap(host_id, data.starts_at, data.ends_at):
                 raise SessionError("TIME_CONFLICT", "Host đã có lịch chồng giờ")
@@ -133,14 +121,16 @@ class SessionService:
             if snapshot is None:
                 raise SessionError("SESSION_NOT_FOUND", "Không tìm thấy kèo")
 
-            if snapshot["host_user_id"] != actor_id:
-                raise SessionError("FORBIDDEN", "Chỉ host được hủy kèo")
-            if snapshot["session"]["status"] != "CANCELLED":
-                now = self.clock.now()
-                if now >= snapshot["session"]["starts_at"]:
-                    raise SessionError("SESSION_ALREADY_STARTED", "Kèo đã bắt đầu")
-
-                self.sessions.cancel_active(session_id, now)
+            data = snapshot["session"]
+            cancelled_at = session_cancellation_time(
+                host_id=snapshot["host_user_id"],
+                actor_id=actor_id,
+                status=data["status"],
+                starts_at=data["starts_at"],
+                clock=self.clock,
+            )
+            if cancelled_at is not None:
+                self.sessions.cancel_active(session_id, cancelled_at)
 
             detail = self._get_detail(session_id, actor_id)
             self.uow.commit()
