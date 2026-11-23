@@ -4,5 +4,7 @@ uvicorn
 email-validator
 pwdlib[argon2]
 SQLAlchemy
+alembic
+psycopg[binary]
 PyJWT
 python-dotenv

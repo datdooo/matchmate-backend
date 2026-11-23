@@ -1,18 +1,24 @@
 from datetime import datetime
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
     ForeignKey,
+    Identity,
     Index,
     Integer,
     String,
+    UniqueConstraint,
     text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 from app.db.types import UTCDateTimeText
+
+# SQLite needs the exact type INTEGER for its rowid primary key.
+_WIDE_INTEGER = BigInteger().with_variant(Integer(), "sqlite")
 
 
 class VenueModel(Base):
@@ -24,10 +30,10 @@ class VenueModel(Base):
         CheckConstraint(
             "is_active IN (0, 1)",
             name="ck_venues_is_active",
-        ),
+        ).ddl_if(dialect="sqlite"),
     )
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(_WIDE_INTEGER, Identity(), primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     address: Mapped[str] = mapped_column(String, nullable=False)
 
@@ -44,6 +50,7 @@ class UserModel(Base):
     __tablename__ = "users"
 
     __table_args__ = (
+        UniqueConstraint("email", name="uq_users_email"),
         CheckConstraint(
             "skill_level BETWEEN 1 AND 19",
             name="ck_users_skill_level",
@@ -54,8 +61,8 @@ class UserModel(Base):
         ),
     )
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    email: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    id: Mapped[int] = mapped_column(_WIDE_INTEGER, Identity(), primary_key=True)
+    email: Mapped[str] = mapped_column(String, nullable=False)
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
     display_name: Mapped[str] = mapped_column(String, nullable=False)
 
@@ -115,7 +122,7 @@ class SessionModel(Base):
         ),
     )
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(_WIDE_INTEGER, Identity(), primary_key=True)
 
     # Không xóa cascade để giữ lịch sử kèo và lượt tham gia.
     host_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
@@ -129,8 +136,8 @@ class SessionModel(Base):
 
     # Sức chứa suy từ play_type: đơn 2, đôi 4; không lưu cột capacity.
     play_type: Mapped[str] = mapped_column(String, nullable=False)
-    fee_male_vnd: Mapped[int] = mapped_column(Integer, nullable=False)
-    fee_female_vnd: Mapped[int] = mapped_column(Integer, nullable=False)
+    fee_male_vnd: Mapped[int] = mapped_column(_WIDE_INTEGER, nullable=False)
+    fee_female_vnd: Mapped[int] = mapped_column(_WIDE_INTEGER, nullable=False)
 
     min_level: Mapped[int] = mapped_column(Integer, nullable=False)
     max_level: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -166,6 +173,7 @@ class ParticipationModel(Base):
             "session_id",
             unique=True,
             sqlite_where=text("status IN ('PENDING', 'ACCEPTED')"),
+            postgresql_where=text("status IN ('PENDING', 'ACCEPTED')"),
         ),
         Index(
             "ix_participations_session_status",
@@ -179,7 +187,7 @@ class ParticipationModel(Base):
         ),
     )
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(_WIDE_INTEGER, Identity(), primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     session_id: Mapped[int] = mapped_column(ForeignKey("sessions.id"), nullable=False)
 
@@ -187,7 +195,7 @@ class ParticipationModel(Base):
 
     # Snapshot lúc đăng ký; duyệt, rút hoặc hủy đều giữ nguyên.
     gender_at_join: Mapped[str] = mapped_column(String, nullable=False)
-    quoted_fee_vnd: Mapped[int] = mapped_column(Integer, nullable=False)
+    quoted_fee_vnd: Mapped[int] = mapped_column(_WIDE_INTEGER, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(UTCDateTimeText(), nullable=False)
     decided_at: Mapped[datetime | None] = mapped_column(UTCDateTimeText(), nullable=True)
@@ -234,6 +242,7 @@ class MatchingRequestModel(Base):
             "user_id",
             unique=True,
             sqlite_where=text("status = 'ACTIVE'"),
+            postgresql_where=text("status = 'ACTIVE'"),
         ),
         Index(
             "ix_matching_requests_candidates",
@@ -245,7 +254,7 @@ class MatchingRequestModel(Base):
         ),
     )
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(_WIDE_INTEGER, Identity(), primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     venue_id: Mapped[int] = mapped_column(ForeignKey("venues.id"), nullable=False)
 
@@ -253,9 +262,9 @@ class MatchingRequestModel(Base):
     ends_at: Mapped[datetime] = mapped_column(UTCDateTimeText(), nullable=False)
     play_type: Mapped[str] = mapped_column(String, nullable=False)
 
-    proposed_fee_male_vnd: Mapped[int] = mapped_column(Integer, nullable=False)
-    proposed_fee_female_vnd: Mapped[int] = mapped_column(Integer, nullable=False)
-    budget_max_vnd: Mapped[int] = mapped_column(Integer, nullable=False)
+    proposed_fee_male_vnd: Mapped[int] = mapped_column(_WIDE_INTEGER, nullable=False)
+    proposed_fee_female_vnd: Mapped[int] = mapped_column(_WIDE_INTEGER, nullable=False)
+    budget_max_vnd: Mapped[int] = mapped_column(_WIDE_INTEGER, nullable=False)
     gender_policy: Mapped[str] = mapped_column(String, nullable=False, default="ANY")
 
     status: Mapped[str] = mapped_column(String, nullable=False, default="ACTIVE")
