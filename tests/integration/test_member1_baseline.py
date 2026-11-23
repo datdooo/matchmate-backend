@@ -163,17 +163,27 @@ def test_protected_routes_authenticate_before_payload_validation(client, method,
 
 
 @pytest.mark.parametrize(
-    "path,expected",
+    "path,payload,expected",
     [
-        ("/auth/register", 503),
-        ("/sessions", 422),
-        ("/participations", 422),
+        ("/auth/register", {}, 422),
+        ("/sessions", {}, 422),
+        ("/participations", {}, 422),
+        (
+            "/auth/register",
+            {
+                "email": "locked@example.com",
+                "password": "test-password-123",
+                "display_name": "Lock test",
+                "skill_level": "TB",
+                "gender": "MALE",
+            },
+            503,
+        ),
     ],
 )
-def test_invalid_payload_priority_while_writer_is_locked(
-    client, auth_headers, game_data, db_engine, monkeypatch, path, expected
+def test_payload_validation_priority_while_writer_is_locked(
+    client, auth_headers, game_data, db_engine, monkeypatch, path, payload, expected
 ):
-    # Sessions validates the request before the use case tries to acquire the write lock.
     contender = create_db_engine(str(db_engine.url), busy_timeout=20)
     try:
         factory = create_session_factory(contender)
@@ -181,7 +191,7 @@ def test_invalid_payload_priority_while_writer_is_locked(
             monkeypatch.setattr(module, "_session_factory", factory)
         with db_engine.connect() as blocker:
             blocker.exec_driver_sql("BEGIN IMMEDIATE")
-            response = client.post(path, json={}, headers=auth_headers(game_data["player"]))
+            response = client.post(path, json=payload, headers=auth_headers(game_data["player"]))
             assert response.status_code == expected, response.text
             assert response.json()["error"]["code"] == (
                 "DATABASE_BUSY" if expected == 503 else "VALIDATION_ERROR"

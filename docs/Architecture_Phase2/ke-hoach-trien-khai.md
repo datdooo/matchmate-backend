@@ -52,7 +52,8 @@ Phase 1 closed on 19 November 2026. The [consolidated Phase 1 report](../Impleme
 
 - [x] Move adapter construction out of the session router. Have the application use case open and commit its Unit of Work, with dependencies responsible for wiring. Ensure failed commits propagate as errors and mutations roll back.
   - `POST /sessions` now returns `422` for an invalid payload even when the SQLite write lock is held.
-- [ ] Move password hashing and verification outside the corresponding database transactions. Preserve authentication precedence and document any agreed change in 422/503 ordering after moving validation ahead of write transactions.
+- [x] Move password hashing and verification outside the corresponding database transactions. Preserve authentication precedence and document any agreed change in 422/503 ordering after moving validation ahead of write transactions.
+  - `POST /auth/register` returns `422` for invalid input even when the SQLite write lock is held. A valid request still returns `503` if the lock times out. Protected routes still authenticate before validating input.
 - [ ] Verify create-session still creates the host's accepted participation, approval preserves fee and gender snapshots, and repeated cancel/withdraw retains its current behavior. Connect create and approve to the matching writer through the agreed port.
 - [ ] Expose a minimal `PlayerProfileReader` from Identity so Sessions and Matching consume profile DTOs without credential fields. Wire it, `Clock`, and repository adapters in the composition root. Extract and unit-test the Sessions eligibility and transition rules with fakes where useful.
 - [ ] Separate Sessions detail reads from lifecycle commands. Preserve host-only `management` and each viewer's `my_participations`. Declare public/protected route access policies and cover conditional authentication behavior.
