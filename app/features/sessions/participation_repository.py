@@ -1,4 +1,3 @@
-import sqlite3
 from collections.abc import Callable
 from datetime import datetime
 
@@ -6,6 +5,7 @@ from sqlalchemy import exists, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.db.errors import is_unique_violation
 from app.db.models import ParticipationModel, SessionModel, UserModel, VenueModel
 from app.domain.entities import Participation, compute_display_status
 from app.domain.entities import Session as Game
@@ -111,10 +111,10 @@ class SqlAlchemyParticipationRepository:
             session.flush()
         except IntegrityError as error:
             # Chỉ unique đúng hai cột này là trùng lượt; FK/CHECK vẫn là lỗi kỹ thuật.
-            if getattr(
-                error.orig, "sqlite_errorcode", None
-            ) == sqlite3.SQLITE_CONSTRAINT_UNIQUE and str(error.orig) == (
-                "UNIQUE constraint failed: participations.user_id, participations.session_id"
+            if is_unique_violation(
+                error,
+                postgres_constraint="uq_participations_active",
+                sqlite_columns="participations.user_id, participations.session_id",
             ):
                 raise DomainError(
                     "PARTICIPATION_ALREADY_EXISTS", "Đã có lượt tham gia đang hoạt động"

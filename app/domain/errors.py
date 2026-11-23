@@ -11,3 +11,13 @@ class DomainError(Exception):
 
 class DatabaseBusyError(Exception):
     """Không lấy được khóa ghi DB trong thời gian cho phép."""
+
+
+class DatabaseTimeoutError(Exception):
+    """Câu lệnh vượt quá thời gian thực thi cho phép."""
+
+
+class DatabaseUnavailableError(Exception):
+    def __init__(self, *, outcome_unknown: bool = False) -> None:
+        super().__init__()
+        self.outcome_unknown = outcome_unknown

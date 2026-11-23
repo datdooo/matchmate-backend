@@ -7,7 +7,12 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app.domain.errors import DatabaseBusyError, DomainError
+from app.domain.errors import (
+    DatabaseBusyError,
+    DatabaseTimeoutError,
+    DatabaseUnavailableError,
+    DomainError,
+)
 from app.features.auth.contracts import (
     EmailAlreadyExistsError,
     InvalidCredentialsError,
@@ -34,6 +39,9 @@ _HTTP_STATUS = {
     "INVALID_TIME_WINDOW": 422,
 }
 
+DatabaseFailure = DatabaseBusyError | DatabaseTimeoutError | DatabaseUnavailableError
+DATABASE_FAILURES = (DatabaseBusyError, DatabaseTimeoutError, DatabaseUnavailableError)
+
 
 def make_error_response(
     request: Request,
@@ -59,7 +67,39 @@ def make_error_response(
     )
 
 
+async def database_failure(request: Request, exc: DatabaseFailure) -> JSONResponse:
+    if isinstance(exc, DatabaseBusyError):
+        return make_error_response(
+            request,
+            status_code=503,
+            code="DATABASE_BUSY",
+            message="Hệ thống đang bận, vui lòng thử lại",
+            headers={"Retry-After": "1"},
+        )
+    if isinstance(exc, DatabaseTimeoutError):
+        return make_error_response(
+            request,
+            status_code=503,
+            code="DATABASE_TIMEOUT",
+            message="Thao tác dữ liệu vượt quá thời gian cho phép",
+        )
+    return make_error_response(
+        request,
+        status_code=503,
+        code="DATABASE_UNAVAILABLE",
+        message=(
+            "Chưa xác định được kết quả thao tác dữ liệu"
+            if exc.outcome_unknown
+            else "Không thể kết nối cơ sở dữ liệu"
+        ),
+        details={"outcome": "unknown"} if exc.outcome_unknown else None,
+    )
+
+
 def register_error_handlers(app: FastAPI) -> None:
+    for error_type in DATABASE_FAILURES:
+        app.add_exception_handler(error_type, database_failure)
+
     @app.exception_handler(EmailAlreadyExistsError)
     async def duplicate_email(request: Request, exc: EmailAlreadyExistsError) -> JSONResponse:
         return make_error_response(
@@ -74,16 +114,6 @@ def register_error_handlers(app: FastAPI) -> None:
             code="INVALID_CREDENTIALS",
             message="Email hoặc mật khẩu không đúng",
             headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    @app.exception_handler(DatabaseBusyError)
-    async def database_busy(request: Request, exc: DatabaseBusyError) -> JSONResponse:
-        return make_error_response(
-            request,
-            status_code=503,
-            code="DATABASE_BUSY",
-            message="Hệ thống đang bận, vui lòng thử lại",
-            headers={"Retry-After": "1"},
         )
 
     @app.exception_handler(RequestValidationError)

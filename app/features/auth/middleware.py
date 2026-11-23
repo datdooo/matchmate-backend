@@ -7,9 +7,8 @@ from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 
-from app.api.error_handlers import make_error_response
+from app.api.error_handlers import DATABASE_FAILURES, database_failure, make_error_response
 from app.config import load_settings
-from app.domain.errors import DatabaseBusyError
 from app.features.auth.dependencies import lookup_authenticated_user
 from app.features.auth.route_access import requires_authentication
 
@@ -75,14 +74,8 @@ class JwtMiddleware(BaseHTTPMiddleware):
 
                 try:
                     user = await run_in_threadpool(lookup_authenticated_user, user_id)
-                except DatabaseBusyError:
-                    return make_error_response(
-                        request,
-                        status_code=503,
-                        code="DATABASE_BUSY",
-                        message="Hệ thống đang bận, vui lòng thử lại",
-                        headers={"Retry-After": "1"},
-                    )
+                except DATABASE_FAILURES as error:
+                    return await database_failure(request, error)
 
                 if user is None:
                     return unauthorized()

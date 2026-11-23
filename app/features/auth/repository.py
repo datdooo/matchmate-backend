@@ -1,10 +1,10 @@
-import sqlite3
 from collections.abc import Callable
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.db.errors import is_unique_violation
 from app.db.models import UserModel
 from app.domain.enums import Gender, rank_to_skill, skill_to_rank
 from app.features.auth.contracts import (
@@ -72,12 +72,9 @@ class SqlAlchemyUserRepository:
         try:
             session.flush()
         except IntegrityError as exc:
-            is_duplicate_email = (
-                getattr(exc.orig, "sqlite_errorcode", None) == sqlite3.SQLITE_CONSTRAINT_UNIQUE
-                and str(exc.orig) == "UNIQUE constraint failed: users.email"
-            )
-
-            if is_duplicate_email:
+            if is_unique_violation(
+                exc, postgres_constraint="uq_users_email", sqlite_columns="users.email"
+            ):
                 raise EmailAlreadyExistsError() from exc
             raise
 

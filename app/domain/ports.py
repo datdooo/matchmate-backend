@@ -15,11 +15,7 @@ class UnitOfWork(Protocol):
     """Quản lý một thao tác dùng chung connection và transaction."""
 
     def write(self) -> AbstractContextManager[Self]:
-        """Lấy khóa ghi bằng BEGIN IMMEDIATE trước khi vào khối with.
-
-        Service đọc Clock sau khi vào khối này.
-        Nếu có lỗi hoặc chưa commit thì rollback khi thoát.
-        """
+        """Mở giao dịch ghi. Nếu có lỗi hoặc chưa commit thì rollback khi thoát."""
         ...
 
     def read(self) -> AbstractContextManager[Self]:
@@ -28,6 +24,14 @@ class UnitOfWork(Protocol):
 
     def commit(self) -> None:
         """Commit thao tác ghi; chỉ gọi một lần khi thành công."""
+        ...
+
+    def lock_session(self, session_id: int) -> bool:
+        """Trả True nếu kèo tồn tại và được bảo vệ đến cuối giao dịch ghi."""
+        ...
+
+    def lock_user(self, user_id: int) -> bool:
+        """Trả True nếu người dùng tồn tại và được bảo vệ đến cuối giao dịch ghi."""
         ...
 
 
