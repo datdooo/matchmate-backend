@@ -13,12 +13,15 @@ from app.features.matching.contracts import (
     MatchingResult,
     MatchingStrategy,
 )
-from app.features.matching.domain.strategy import fee_for, find_group, policy_allows
+from app.features.matching.strategy import fee_for, find_group, policy_allows
 
 
 def to_player(profile: PlayerProfile) -> PlayerSummary:
     return PlayerSummary(
-        profile.id, profile.display_name, skill_to_rank(profile.skill_level), profile.gender
+        id=profile.id,
+        display_name=profile.display_name,
+        skill_level=skill_to_rank(profile.skill_level),
+        gender=profile.gender,
     )
 
 
@@ -61,15 +64,21 @@ class MatchingService:
                 raise DomainError("INVALID_TIME_WINDOW", "Thời gian không hợp lệ")
             if not policy_allows(data.gender_policy, caller.gender):
                 raise DomainError("ELIGIBILITY_MISMATCH", "Hồ sơ không đáp ứng policy giới tính")
-            if (
-                fee_for(caller.gender, data.proposed_fee_male_vnd, data.proposed_fee_female_vnd)
-                > data.budget_max_vnd
-            ):
+            caller_fee = fee_for(
+                gender=caller.gender,
+                fee_male_vnd=data.proposed_fee_male_vnd,
+                fee_female_vnd=data.proposed_fee_female_vnd,
+            )
+            if caller_fee > data.budget_max_vnd:
                 raise DomainError("VALIDATION_ERROR", "Phí đề xuất vượt ngân sách của bạn")
             if self._matching.has_accepted_overlap(actor_user_id, data.starts_at, data.ends_at):
                 raise DomainError("TIME_CONFLICT", "Đã có lịch ACCEPTED chồng giờ")
-            self._matching.close_active_for_user(actor_user_id, CloseReason.REPLACED, now)
-            created = self._matching.create(data, actor_user_id, now)
+            self._matching.close_active_for_user(
+                user_id=actor_user_id,
+                reason=CloseReason.REPLACED,
+                closed_at=now,
+            )
+            created = self._matching.create(data=data, user_id=actor_user_id, created_at=now)
             requests = self._matching.candidates(
                 MatchingFilter(
                     venue_id=data.venue_id,
@@ -80,13 +89,18 @@ class MatchingService:
                     now=now,
                 )
             )
-            profiles = self._profiles.get_by_ids([request.user_id for request in requests])
-            candidates = [
-                MatchingCandidate(request=request, player=to_player(candidate))
-                for request in requests
-                if (candidate := profiles.get(request.user_id)) is not None
-                and candidate.gender in (Gender.MALE, Gender.FEMALE)
-            ]
+            user_ids = [request.user_id for request in requests]
+            profiles = self._profiles.get_by_ids(user_ids)
+            candidates = []
+            for request in requests:
+                candidate_profile = profiles.get(request.user_id)
+                if candidate_profile is None:
+                    continue
+                if candidate_profile.gender not in (Gender.MALE, Gender.FEMALE):
+                    continue
+
+                player = to_player(candidate_profile)
+                candidates.append(MatchingCandidate(request=request, player=player))
             suggestion = self._strategy(caller, created, candidates)
             self._uow.commit()
             return MatchingResult(request=created, suggestion=suggestion)

@@ -15,6 +15,19 @@ def test_application_respects_architecture():
         ({"app/features/a/service.py": "import sqlalchemy"}, "business layer imports"),
         ({"app/features/a/service.py": "from app.api.schemas import Reply"}, "business layer"),
         ({"app/features/a/domain/strategy.py": "from fastapi import Request"}, "business layer"),
+        ({"app/features/a/strategy.py": "from sqlalchemy import select"}, "business layer"),
+        (
+            {"app/features/a/service.py": "from .venue_reader import Reader"},
+            "imports implementation",
+        ),
+        (
+            {"app/features/a/service.py": "from .matching_request_writer import Writer"},
+            "imports implementation",
+        ),
+        (
+            {"app/features/a/service.py": "from .routers.sessions import create_sessions_router"},
+            "imports implementation",
+        ),
         (
             {"app/features/a/service.py": "from .infrastructure.repo import Repository"},
             "imports implementation",
@@ -39,6 +52,10 @@ def test_application_respects_architecture():
         "sql-in-service",
         "http-schema",
         "http-in-domain",
+        "sql-in-flat-strategy",
+        "own-flat-reader",
+        "own-flat-writer",
+        "own-routers-package",
         "own-adapter",
         "cross-adapter",
         "relative",

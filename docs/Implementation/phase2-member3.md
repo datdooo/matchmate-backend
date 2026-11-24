@@ -5,6 +5,7 @@ Ngày lập: **21/11/2026**. Người thực hiện: **Member 3**.
 **Quy ước tài liệu:** kế hoạch, tiến độ, bằng chứng, hướng dẫn chạy và bàn giao
 Phase2 của member3 được ghi duy nhất trong file này. Kết quả hiện hành ở mục 14;
 hướng dẫn ingress ở mục 15. Các mục ngày 21/11 giữ làm lịch sử triển khai.
+Đợt refactor cách viết và thư mục ngày 24/11 được ghi riêng ở mục 16.
 
 Phạm vi là **Phase2 của kế hoạch triển khai giai đoạn 2**: refactor Catalog,
 Matching và Discovery trên SQLite, bổ sung kiểm thử kiến trúc và soạn cấu hình
@@ -814,3 +815,117 @@ string, Authorization hoặc email. ID phản hồi backend được giữ ở i
 
 Chạy lại trên dữ liệu/bucket đã tồn tại có thể cho số phản hồi 429 khác; điều
 kiện kiểm chứng là có 429 cùng Retry-After và request ID đúng, không cố định tỷ lệ.
+
+
+## 16. Refactor cách viết và thư mục member3 ngày 24/11/2026
+
+### 16.1. Ngữ cảnh và phạm vi được người dùng xác nhận
+
+Người dùng là **member3**, đã hoàn thành **Phase1 và Phase2 của giai đoạn 2**.
+Đợt này chỉ refactor phần đã làm để gần mẫu trong `docs/style_code_of_mine`:
+Catalog, Matching, Discovery và kiểm tra kiến trúc tương ứng. Không triển khai
+Phase3 hoặc thay đổi nghiệp vụ của member1/member2.
+
+Ưu tiên cách viết tuần tự, tên biến rõ, biến trung gian `query`/`result`,
+khởi tạo đối tượng bằng tham số có tên và router chia theo tài nguyên.
+Giữ service sở hữu transaction, reader/writer không commit riêng, Strategy thuần,
+response/error contract, first-valid và quyền riêng tư hiện có. Giữ nguyên code
+Identity, Sessions, DB/UoW, model, migration, cấu hình triển khai và các test
+Auth/Sessions/foundation/integration/load.
+
+### 16.2. Đường dẫn code chính sau refactor
+
+```text
+app/features/
+├── catalog/
+│   ├── contracts.py
+│   └── venue_reader.py
+├── matching/
+│   ├── routers/requests.py
+│   ├── schemas.py
+│   ├── contracts.py
+│   ├── service.py
+│   ├── strategy.py
+│   ├── repository.py
+│   └── matching_request_writer.py
+└── discovery/
+    ├── routers/venues.py
+    ├── routers/sessions.py
+    ├── schemas.py
+    ├── contracts.py
+    ├── service.py
+    └── repository.py
+```
+
+Lược `__init__.py` và các file chuyển tiếp khỏi cây để thể hiện vị trí code chính.
+Không tạo thêm model, engine, transaction hoặc router Catalog không cần thiết.
+
+Các file cũ trong `catalog/infrastructure/`, `matching/infrastructure/`,
+`matching/domain/strategy.py`, `matching/router.py` và `discovery/router.py`
+được giữ làm đường dẫn tương thích. Chúng chỉ import lại đúng class/hàm mới;
+không có SQL hoặc thuật toán thứ hai. Nhờ đó không phải sửa import trong
+`app/main.py`, code hoặc test của member1/member2. Code/test của member3 sử dụng
+đường dẫn mới. Hai provider Matching/Discovery trong `app/composition.py` dùng
+tham số có tên; các provider Sessions/Participation/detail giữ nguyên logic.
+
+### 16.3. Những thay đổi về cách viết
+
+- Matching ghép request với hồ sơ bằng vòng lặp và `continue`, bỏ biểu thức `:=`.
+  Thứ tự request và cách loại hồ sơ thiếu/UNSPECIFIED giữ nguyên.
+- Tách biến phí người gửi; truyền tên trường khi tạo `PlayerSummary` và nối
+  dependency; giữ thứ tự kiểm tra lỗi và một lần commit cuối command.
+- Strategy dùng tên `required_candidates`, `ordered_candidates`,
+  `candidate_group`; vẫn sắp `(created_at, id)` và chọn tổ hợp hợp lệ đầu tiên.
+- Catalog tách `session`, `query`, `result`; batch vẫn tối đa 500 ID/câu, đầu vào
+  rỗng không lấy session, chỉ đọc projection đã chốt.
+- Discovery đổi tên viết tắt trong mapper/truy vấn, tách bước tạo hồ sơ host và
+  record; giữ điều kiện lọc/count/order trước phân trang.
+- Router tách tìm sân/tìm kèo/tạo Matching theo tài nguyên; bổ sung kiểu đầu vào
+  cho hàm ánh xạ response, dùng `payload` cho body tạo Matching.
+- Bộ kiểm tra kiến trúc tiếp tục kiểm Strategy sau khi bỏ thư mục `domain/`;
+  cấm service import trực tiếp reader/writer và package routers, có bốn ca
+  kiểm tra vi phạm mới.
+
+### 16.4. Kiểm chứng trước và sau
+
+Bằng chứng cục bộ lưu trong `artifacts/member3-style-refactor/` (Git bỏ qua).
+Trước sửa: **411 passed**, hai warning có sẵn, pytest **50,06 giây**.
+Lần chạy toàn bộ ban đầu không collect được test PostgreSQL vì môi trường thiếu
+`alembic`; baseline SQLite dùng cùng lệnh bỏ riêng module đó. Không sửa dependency
+hoặc test PostgreSQL của member2 để xử lý vấn đề môi trường.
+
+```powershell
+$env:PYTHONUTF8 = '1'
+.venv/Scripts/python.exe -m pytest -q -rs --ignore=tests/integration/test_member2_postgres.py --junitxml=artifacts/member3-style-refactor/after-sqlite.xml
+.venv/Scripts/python.exe -m ruff check app tests scripts
+.venv/Scripts/python.exe -m ruff format --check app tests scripts
+.venv/Scripts/python.exe -m scripts.check_architecture
+git diff --check
+```
+
+Sau refactor: **415 passed, 0 skipped, 0 failed**, hai warning có sẵn, pytest
+**47,12 giây**. Tăng đúng bốn ca kiểm tra kiến trúc; 411 ca cũ vẫn đạt, gồm các
+test Auth/Sessions, tám ca corpus Matching, rollback, quyền riêng tư và workload.
+Ruff check đạt; Ruff format kiểm tra 143 file đạt; architecture checker và
+`git diff --check` đạt.
+
+Đối chiếu tính tương thích:
+
+- OpenAPI sinh từ ứng dụng trước/sau giống nhau hoàn toàn, gồm URL, schema,
+  operation ID, mã phản hồi và khai báo bảo mật.
+- SHA-256 của 95 file trong phạm vi bảo vệ không đổi, gồm code/test của
+  Auth/Sessions/DB/domain/API, migration, CI, entry point và các cấu hình chạy.
+- AST của bốn hàm `provide_participation_service`, `provide_session_service`,
+  `provide_session_detail_service`, `_session_detail_reader` không đổi. Trong
+  composition root chỉ đổi đường dẫn import adapter member3 và cách truyền
+  tham số của hai provider Matching/Discovery.
+- Các đường dẫn import cũ trả đúng cùng đối tượng class/hàm với đường dẫn mới;
+  patch writer từ test Sessions vẫn tác động đúng implementation đang chạy.
+- File corpus Phase1 giữ nguyên trong nhóm 95 file đã đối chiếu hash.
+- Các thay đổi có sẵn trong `.gitignore`, `.dockerignore` và mẫu
+  `docs/style_code_of_mine/` không được sửa trong đợt này.
+
+Bằng chứng: `baseline-sqlite.xml`, `after-sqlite.xml`, `protected-before.json`,
+`openapi-before.json`, `openapi-after.json`, `compatibility.json` trong thư mục
+artifacts nêu trên. Kết quả SQLite không thay bằng chứng PostgreSQL hoặc demo
+TLS/benchmark mới; cấu hình ingress không thay đổi trong đợt refactor này.

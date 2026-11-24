@@ -1,61 +1,11 @@
-from collections.abc import Callable
+"""Compatibility imports; implementation lives in the flat feature package."""
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
-from app.db.models import VenueModel
-from app.features.catalog.contracts import VenueSummary
-
-_BATCH_SIZE = 500
-_SUMMARY_COLUMNS = (
-    VenueModel.id,
-    VenueModel.name,
-    VenueModel.address,
-    VenueModel.district_code,
-    VenueModel.is_active,
+from app.features.catalog.venue_reader import (
+    SqlAlchemyVenueReader,
+    SqlAlchemyVenueStatusReader,
 )
 
-
-class SqlAlchemyVenueStatusReader:
-    """Đọc trạng thái sân bằng session của UoW bên gọi."""
-
-    def __init__(self, session_provider: Callable[[], Session]) -> None:
-        self._session_provider = session_provider
-
-    def is_active(self, venue_id: int) -> bool | None:
-        return self._session_provider().scalar(
-            select(VenueModel.is_active).where(VenueModel.id == venue_id)
-        )
-
-
-class SqlAlchemyVenueReader:
-    """Đọc DTO sân, gồm cả inactive, không mở transaction hoặc commit riêng."""
-
-    def __init__(self, session_provider: Callable[[], Session]) -> None:
-        self._session_provider = session_provider
-
-    def get_by_id(self, venue_id: int) -> VenueSummary | None:
-        row = (
-            self._session_provider()
-            .execute(select(*_SUMMARY_COLUMNS).where(VenueModel.id == venue_id))
-            .mappings()
-            .one_or_none()
-        )
-        return VenueSummary(**row) if row is not None else None
-
-    def get_by_ids(self, venue_ids: list[int]) -> dict[int, VenueSummary]:
-        unique_ids = list(dict.fromkeys(venue_ids))
-        if not unique_ids:
-            return {}
-
-        session = self._session_provider()
-        summaries: dict[int, VenueSummary] = {}
-        for offset in range(0, len(unique_ids), _BATCH_SIZE):
-            batch = unique_ids[offset : offset + _BATCH_SIZE]
-            rows = session.execute(
-                select(*_SUMMARY_COLUMNS).where(VenueModel.id.in_(batch))
-            ).mappings()
-            for row in rows:
-                summary = VenueSummary(**row)
-                summaries[summary.id] = summary
-        return summaries
+__all__ = [
+    "SqlAlchemyVenueReader",
+    "SqlAlchemyVenueStatusReader",
+]

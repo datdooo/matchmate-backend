@@ -38,7 +38,7 @@ def violations(root: Path) -> list[str]:
             graph.setdefault(owner, set())
         business = (
             module.startswith("app.domain.")
-            or path.name.endswith(("service.py", "contracts.py"))
+            or path.name.endswith(("service.py", "contracts.py", "strategy.py"))
             or (owner is not None and any(p in ("domain", "application") for p in path.parts))
         )
         tree = ast.parse(path.read_text(encoding="utf-8"))
@@ -61,8 +61,10 @@ def violations(root: Path) -> list[str]:
                 business
                 and tail
                 and (
-                    tail[0] in {"infrastructure", "schemas", "router", "dependencies"}
-                    or tail[0].endswith(("repository", "router", "dependencies", "schemas"))
+                    tail[0] in {"infrastructure", "schemas", "router", "routers", "dependencies"}
+                    or tail[0].endswith(
+                        ("repository", "router", "dependencies", "schemas", "reader", "writer")
+                    )
                 )
             ):
                 errors.append(

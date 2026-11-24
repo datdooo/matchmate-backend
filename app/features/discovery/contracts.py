@@ -86,9 +86,6 @@ class SessionFilter:
     offset: int = 0
 
 
-# Matching
-
-
 class DiscoveryRepository(Protocol):
     def find_venues(self, filter: VenueFilter) -> Page[VenueRecord]:
         """Trả về sân theo yêu cầu."""

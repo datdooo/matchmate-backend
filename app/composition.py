@@ -5,18 +5,18 @@ from app.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.domain.errors import DatabaseBusyError
 from app.domain.time_rules import SystemClock
 from app.features.auth.infrastructure.player_profile_reader import SqlAlchemyPlayerProfileReader
-from app.features.catalog.infrastructure.venue_reader import (
+from app.features.catalog.venue_reader import (
     SqlAlchemyVenueReader,
     SqlAlchemyVenueStatusReader,
 )
 from app.features.discovery.repository import SqlAlchemyDiscoveryRepository
 from app.features.discovery.service import DiscoveryService
-from app.features.matching.domain.strategy import find_group
-from app.features.matching.infrastructure.matching_request_writer import (
+from app.features.matching.matching_request_writer import (
     SqlAlchemyMatchingRequestWriter,
 )
-from app.features.matching.infrastructure.repository import SqlAlchemyMatchingRepository
+from app.features.matching.repository import SqlAlchemyMatchingRepository
 from app.features.matching.service import MatchingService
+from app.features.matching.strategy import find_group
 from app.features.sessions.participation_repository import SqlAlchemyParticipationRepository
 from app.features.sessions.participation_service import ParticipationService
 from app.features.sessions.session_detail_reader import SqlAlchemySessionDetailReader
@@ -29,20 +29,24 @@ _session_factory = create_session_factory(engine)
 
 def provide_discovery_service() -> DiscoveryService:
     uow = SqlAlchemyUnitOfWork(_session_factory, DatabaseBusyError)
-    return DiscoveryService(uow, SystemClock(), SqlAlchemyDiscoveryRepository(uow))
+    return DiscoveryService(
+        uow=uow,
+        clock=SystemClock(),
+        discovery_repo=SqlAlchemyDiscoveryRepository(uow),
+    )
 
 
 def provide_matching_service() -> MatchingService:
     uow = SqlAlchemyUnitOfWork(_session_factory, DatabaseBusyError)
     profiles = SqlAlchemyPlayerProfileReader(lambda: uow.session)
     return MatchingService(
-        uow,
-        SystemClock(),
-        SqlAlchemyMatchingRepository(uow),
-        profiles,
-        profiles,
-        SqlAlchemyVenueStatusReader(lambda: uow.session),
-        find_group,
+        uow=uow,
+        clock=SystemClock(),
+        matching_repo=SqlAlchemyMatchingRepository(uow),
+        profile_reader=profiles,
+        profiles_reader=profiles,
+        venues=SqlAlchemyVenueStatusReader(lambda: uow.session),
+        strategy=find_group,
     )
 
 

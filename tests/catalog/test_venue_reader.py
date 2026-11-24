@@ -8,7 +8,7 @@ from app.db.models import VenueModel
 from app.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.domain.errors import DatabaseBusyError
 from app.features.catalog.contracts import VenueSummary
-from app.features.catalog.infrastructure.venue_reader import (
+from app.features.catalog.venue_reader import (
     SqlAlchemyVenueReader,
     SqlAlchemyVenueStatusReader,
 )

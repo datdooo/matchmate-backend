@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from app.domain.enums import Gender, PlayType, SkillLevel, skill_to_rank
 from app.features.discovery.contracts import SessionFilter
-from app.features.discovery.router import to_session_filter
+from app.features.discovery.routers.sessions import to_session_filter
 from app.features.discovery.schemas import SessionQuery
 
 

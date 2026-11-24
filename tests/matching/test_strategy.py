@@ -5,7 +5,7 @@ import pytest
 
 from app.domain.enums import Gender, GenderPolicy, MatchingStatus, PlayType
 from app.features.matching.contracts import MatchingCandidate, MatchingRequestRecord, PlayerSummary
-from app.features.matching.domain.strategy import find_group
+from app.features.matching.strategy import find_group
 
 NOW = datetime(2030, 11, 2, 10, tzinfo=timezone.utc)
 CALLER = PlayerSummary(id=100, display_name="Caller", skill_level=9, gender=Gender.MALE)

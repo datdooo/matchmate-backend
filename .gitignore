@@ -16,3 +16,5 @@ build/
 dist/
 .DS_Store
 *.pdf
+/docs/Kien_Thuc_KTPM/
+/style_code_of_mine/

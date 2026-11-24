@@ -8,20 +8,42 @@ Python 3.11+, FastAPI, Pydantic, SQLAlchemy 2, SQLite. Đăng nhập bằng JWT 
 app/
 ├── main.py        ghép router, middleware, xử lý lỗi
 ├── config.py      đọc biến môi trường
+├── composition.py nối UoW, reader, writer, repository và Strategy
 ├── api/           xử lý lỗi HTTP dùng chung
 ├── domain/        enum, entity, luật thời gian, Protocol (Python thuần)
 ├── db/            model SQLAlchemy, session, UnitOfWork
 └── features/
     ├── auth/        đăng ký, đăng nhập, JWT middleware
-    ├── discovery/   tìm sân, tìm kèo, matching
+    ├── catalog/
+    │   ├── contracts.py
+    │   └── venue_reader.py
+    ├── matching/
+    │   ├── routers/requests.py
+    │   ├── schemas.py
+    │   ├── contracts.py
+    │   ├── service.py
+    │   ├── strategy.py
+    │   ├── repository.py
+    │   └── matching_request_writer.py
+    ├── discovery/
+    │   ├── routers/venues.py
+    │   ├── routers/sessions.py
+    │   ├── schemas.py
+    │   ├── contracts.py
+    │   ├── service.py
+    │   └── repository.py
     └── sessions/    kèo (session_*) và lượt tham gia (participation_*)
 ```
 
-Ba tầng: router (API), service (nghiệp vụ), repository (truy cập dữ liệu). Mỗi module có router, `schemas` (dữ liệu vào/ra HTTP), `service`, `contracts` (kiểu dữ liệu và `Protocol` mà service dùng), `repository` và `dependencies` (lắp ghép). `sessions` gom kèo và lượt tham gia vào một module vì tạo kèo, xin, duyệt và hủy dùng chung một transaction. Trong `sessions`, tên file có tiền tố, ví dụ `session_service.py` và `participation_service.py`.
+Ba tầng: router (API), service (nghiệp vụ), repository (truy cập dữ liệu). `schemas.py` chứa dữ liệu vào/ra HTTP; `contracts.py` chứa dữ liệu thuần và interface mà nghiệp vụ sử dụng. Chỉ tạo thành phần khi module cần: Catalog hiện cung cấp reader, chưa cần router riêng. Matching xử lý nhu cầu ghép nhóm; Discovery chỉ tìm sân và tìm kèo. `composition.py` nối implementation vào các interface.
+
+`sessions` gom kèo và lượt tham gia vào một module vì tạo kèo, xin, duyệt và hủy dùng chung một transaction. Trong `sessions`, tên file có tiền tố, ví dụ `session_service.py` và `participation_service.py`.
+
+Cây trên cập nhật phần member3 ngày 24/11/2026. Các đường dẫn cũ như `catalog/infrastructure/venue_reader.py`, `matching/domain/strategy.py`, `matching/infrastructure/*.py` và `discovery/router.py`, `matching/router.py` chỉ chuyển tiếp import sang implementation mới. Chúng giữ tương thích cho entry point và code/test của các thành viên khác, không chứa bản triển khai thứ hai. Chi tiết phạm vi ở [bàn giao member3, mục 16](Implementation/phase2-member3.md#16-refactor-cách-viết-và-thư-mục-member3-ngày-24112026).
 
 ## Luật phụ thuộc
 
-- `app/domain/`, mọi `service.py` và mọi `contracts.py` không import `fastapi`, `starlette`, `pydantic`, `sqlalchemy`, `sqlite3` hay `app.db`. `tests/test_architecture.py` kiểm luật này.
+- `app/domain/`, mọi `service.py`, `contracts.py` và `strategy.py` không import `fastapi`, `starlette`, `pydantic`, `sqlalchemy`, `sqlite3` hay `app.db`. `tests/test_architecture.py` kiểm luật này, kể cả Strategy đặt trực tiếp trong module.
 - Repository dùng SQLAlchemy ORM và trả dữ liệu thuần cho service.
 - Lỗi nghiệp vụ là `DomainError` kèm mã lỗi. `app/api/error_handlers.py` đổi mã đó sang HTTP status.
 - JWT được kiểm một lần ở middleware. Endpoint không tự giải mã token. Quyền trên từng bản ghi (host, chủ lượt) do service kiểm.

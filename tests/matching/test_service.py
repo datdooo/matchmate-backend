@@ -11,22 +11,22 @@ from app.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.domain.enums import Gender, GenderPolicy, PlayType, rank_to_skill
 from app.domain.errors import DatabaseBusyError, DomainError
 from app.features.auth.infrastructure.player_profile_reader import SqlAlchemyPlayerProfileReader
-from app.features.catalog.infrastructure.venue_reader import SqlAlchemyVenueStatusReader
+from app.features.catalog.venue_reader import SqlAlchemyVenueStatusReader
 from app.features.matching.contracts import CreateMatchingInput
-from app.features.matching.domain.strategy import find_group
-from app.features.matching.infrastructure.repository import SqlAlchemyMatchingRepository
+from app.features.matching.repository import SqlAlchemyMatchingRepository
 from app.features.matching.service import MatchingService
+from app.features.matching.strategy import find_group
 
 NOW = datetime(2030, 11, 2, 10, tzinfo=timezone.utc)
 DATA = CreateMatchingInput(
-    10,
-    NOW + timedelta(hours=2),
-    NOW + timedelta(hours=4),
-    PlayType.SINGLES,
-    60_000,
-    40_000,
-    60_000,
-    GenderPolicy.ANY,
+    venue_id=10,
+    starts_at=NOW + timedelta(hours=2),
+    ends_at=NOW + timedelta(hours=4),
+    play_type=PlayType.SINGLES,
+    proposed_fee_male_vnd=60_000,
+    proposed_fee_female_vnd=40_000,
+    budget_max_vnd=60_000,
+    gender_policy=GenderPolicy.ANY,
 )
 
 
@@ -75,13 +75,13 @@ def build(factory, *, rewrite=None, strategy=find_group):
         batch.get_by_ids.side_effect = lambda ids: rewrite(profiles.get_by_ids(ids))
     repo = SqlAlchemyMatchingRepository(uow)
     service = MatchingService(
-        uow,
-        SimpleNamespace(now=lambda: NOW),
-        repo,
-        profiles,
-        batch,
-        SqlAlchemyVenueStatusReader(lambda: uow.session),
-        strategy,
+        uow=uow,
+        clock=SimpleNamespace(now=lambda: NOW),
+        matching_repo=repo,
+        profile_reader=profiles,
+        profiles_reader=batch,
+        venues=SqlAlchemyVenueStatusReader(lambda: uow.session),
+        strategy=strategy,
     )
     return service, uow, repo, profiles, batch
 
@@ -185,7 +185,7 @@ def test_session_creation_writer_failure_rolls_back_session_and_matching(
     client, auth_headers, db_session_factory, matching_data, monkeypatch
 ):
     from app.db.models import SessionModel
-    from app.features.matching.infrastructure.matching_request_writer import (
+    from app.features.matching.matching_request_writer import (
         SqlAlchemyMatchingRequestWriter,
     )
 
